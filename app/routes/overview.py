@@ -214,11 +214,35 @@ ORG_ROW_SQL = """
 """
 
 
+MAP_W, MAP_H, MAP_TITLE = 1130.0, 520.0, 24.0      # the map's layout box; it is drawn in percent, so it scales
+
+
+def org_map(conn, org_id: int) -> list[dict]:
+    """A two-level treemap below an org. Area is approved seats. Sizes come out
+    in percent of the map, or of the block a tile sits in."""
+    children = db.query(conn, ORG_ROW_SQL + " WHERE u.parent_id = %s", (org_id,))
+    kids = db.query(conn, ORG_ROW_SQL + " WHERE u.parent_id = ANY(%s)", ([c["org_id"] for c in children],)) if children else []
+    percent = lambda r, w, h: {"left": round(r["x"] / w * 100, 3), "top": round(r["y"] / h * 100, 3),
+                               "width": round(r["w"] / w * 100, 3), "height": round(r["h"] / h * 100, 3)}
+    blocks = []
+    for block in charts.treemap(children, "approved", MAP_W, MAP_H):
+        inside = [k for k in kids if k["parent_id"] == block["org_id"]]
+        tiles = charts.treemap(inside, "approved", block["w"], block["h"] - MAP_TITLE) if block["h"] > MAP_TITLE * 2 else []
+        blocks.append({**block, "box": percent(block, MAP_W, MAP_H),
+                       "tiles": [{**t, "box": percent(t, block["w"], block["h"] - MAP_TITLE)} for t in tiles]})
+    return blocks
+
+
 @router.get("/org", response_class=HTMLResponse, include_in_schema=False)
-def org_explorer(request: Request):
+def org_explorer(request: Request, view: str = "table", org: int = 1):
     """Browse the hierarchy with seats and dollars at every level. Deeper levels load on demand."""
     with db.get_conn() as conn:
         ctx = web.page_context(request, conn)
+        if view == "map":
+            get_org(conn, org)
+            ctx.update(view="map", org=db.one(conn, "SELECT o.id, o.name, o.level FROM orgs o WHERE o.id = %s", (org,)),
+                       blocks=org_map(conn, org), crumbs=breadcrumbs(conn, org))
+            return web.render(request, "org.html", ctx)
         rows = db.query(conn, ORG_ROW_SQL + " WHERE u.level IN ('company', 'svp', 'vp') ORDER BY u.org_id")
         by_parent: dict = {}
         for r in rows:
@@ -230,7 +254,7 @@ def org_explorer(request: Request):
                 ordered.append({**r, "depth": depth, "expanded": r["level"] in ("company", "svp")})
                 walk(r["org_id"], depth + 1)
         walk(None, 0)
-        ctx.update(rows=ordered)
+        ctx.update(rows=ordered, view="table", org=None)
     return web.render(request, "org.html", ctx)
 
 

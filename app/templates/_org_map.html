@@ -1,0 +1,25 @@
+{% import "_macros.html" as m %}
+{% macro tile_tip(t) %}{{ t.name }}: {{ t.approved | num }} approved, {{ t.usable_open | num }} usable open, {{ t.pct_of_budget }}% of budget{% endmacro %}
+{% macro box(b) %}left: {{ b.left }}%; top: {{ b.top }}%; width: {{ b.width }}%; height: {{ b.height }}%{% endmacro %}
+{% macro zoom(t) %}{{ "/org?view=map&org=" ~ t.org_id if t.has_children else "/?org=" ~ t.org_id }}{% endmacro %}
+<div class="tm" role="group" aria-label="Org map. Area is approved seats, shading is budget position." {{ IN_PLACE }}>
+  {% for b in blocks %}
+  {% if b.tiles %}
+  <div class="tm-block" style="{{ box(b.box) }}">
+    <a class="tm-title" href="{{ zoom(b) }}" data-chart-tip="{{ tile_tip(b) }}"><b>{{ b.name }}</b><span>{{ b.pct_of_budget }}%</span></a>
+    <div class="tm-inner">
+      {% for t in b.tiles %}
+      <a class="tm-tile {{ t.state }}" style="{{ box(t.box) }}" href="{{ zoom(t) }}" hx-boost="{{ 'true' if t.has_children else 'false' }}" data-chart-tip="{{ tile_tip(t) }}">
+        <b>{{ t.name }}</b><span class="num">{% if t.state == "over" %}{{ ico("up") }}{% endif %}{{ t.pct_of_budget }}%</span>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% else %}
+  <a class="tm-tile lone {{ b.state }}" style="{{ box(b.box) }}" href="{{ zoom(b) }}" hx-boost="{{ 'true' if b.has_children else 'false' }}" data-chart-tip="{{ tile_tip(b) }}">
+    <b>{{ b.name }}</b><span class="num">{% if b.state == "over" %}{{ ico("up") }}{% endif %}{{ b.pct_of_budget }}%</span>
+  </a>
+  {% endif %}
+  {% endfor %}
+</div>
+<p class="stack-key tm-key"><span><i class="tm-under"></i>Under budget</span><span><i class="tm-watch"></i>Close</span><span><i class="tm-over"></i>Over budget</span><span class="muted">Area shows approved seats</span></p>

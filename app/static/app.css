@@ -51,7 +51,7 @@ body { margin: 0; overflow-x: clip; }
 a { color: var(--accent-ink); text-decoration: none; }
 a:hover { text-decoration: underline; }
 /* Links inside running text are underlined, so they never rely on color alone. */
-p a, dd a, .sub a, .money-line a, .changes span a, .note-box a { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+p a, dd a, .sub a, .changes span a { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
 p a.btn, p a.chip { text-decoration: none; }
 h1, h2, h3, p { margin: 0; }
 h1 { font-size: 22px; line-height: 1.25; font-weight: 650; letter-spacing: -0.015em; }
@@ -302,7 +302,26 @@ a.hero-number:hover { color: var(--accent-ink); text-decoration: none; }
 
 #chart-tip { position: fixed; z-index: 95; pointer-events: none; max-width: 240px; padding: 6px 9px; border-radius: 6px; background: #12161c; color: #fff; font-size: 12.5px; box-shadow: var(--e2); }
 
-.fc { display: grid; gap: var(--s4); }
+.tm { position: relative; height: 520px; }
+.tm-block { position: absolute; padding: 1px; display: flex; flex-direction: column; }
+.tm-title { flex: none; height: 24px; display: flex; justify-content: space-between; gap: 8px; align-items: center; padding: 0 6px; font-size: 12.5px; color: var(--text); overflow: hidden; }
+.tm-title:hover { text-decoration: none; color: var(--accent-ink); }
+.tm-title b { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tm-title span { color: var(--muted); font-size: 12px; }
+.tm-inner { position: relative; flex: 1; }
+.tm-tile { position: absolute; display: flex; flex-direction: column; gap: 1px; padding: 6px 8px; overflow: hidden; color: var(--text); background: var(--surface-3); border: 1px solid var(--surface); border-radius: 4px; font-size: 12.5px; transition: filter var(--fast) var(--ease); }
+.tm-tile:hover { text-decoration: none; filter: brightness(.96); }
+.tm-tile b { font-weight: 500; line-height: 1.25; }
+.tm-tile span { display: inline-flex; align-items: center; gap: 3px; color: var(--muted); font-size: 12px; }
+.tm-tile.watch, .tm-watch { background: var(--warn-soft); }
+.tm-tile.over, .tm-over { background: var(--bad-soft); }
+.tm-tile.over span { color: var(--bad); font-weight: 600; }
+.tm-under { background: var(--surface-3); box-shadow: inset 0 0 0 1px var(--border-strong); }
+.tm-watch { box-shadow: inset 0 0 0 1px var(--warn); } .tm-over { box-shadow: inset 0 0 0 1px var(--bad); }
+.tm-key { display: flex; flex-wrap: wrap; gap: 2px 14px; margin: var(--s3) 0 0; font-size: 12px; color: var(--muted); }
+.tm-key span { display: inline-flex; align-items: center; gap: 5px; }
+.tm-key i { width: 11px; height: 11px; border-radius: 2px; }
+.fc { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s4); }
 .fc-top { display: flex; justify-content: space-between; gap: var(--s5); flex-wrap: wrap; align-items: flex-start; }
 .fc-flag { margin-top: var(--s2); display: flex; gap: 6px; flex-wrap: wrap; }
 .fc-math { flex: 1; max-width: 560px; margin: 0; grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -603,7 +622,7 @@ tr.hot td { background: var(--warn-soft) !important; }
 .swatch { font-size: 11.5px; color: var(--muted); }
 .swatch i { display: block; height: 36px; border-radius: 6px; border: 1px solid var(--border); margin-bottom: 4px; }
 
-@media (max-width: 479px) { .topbar .brand { display: none; } }
+@media (max-width: 479px) { .topbar .brand { display: none; } .fresh-chip summary span { display: none; } .fresh-chip summary { padding: 0 9px; } .topbar-right { gap: 4px; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
 
 /* ── Narrow containers: tables become cards ──────────────────────────────── */
@@ -631,6 +650,9 @@ tr.hot td { background: var(--warn-soft) !important; }
   .fc-sliders { grid-template-columns: minmax(0, 1fr); }
   .envelopes { grid-template-columns: minmax(0, 1fr); }
   .hm { padding: var(--s2); }
+  .tm { height: 480px; }
+  .tm-tile { padding: 3px 5px; font-size: 11.5px; }
+  .tm-tile span, .tm-title span { display: none; }
   .finding-body { flex-direction: column; align-items: flex-start; gap: var(--s2); }
   .flow { flex-wrap: wrap; }
   .flow a { flex-basis: 30% !important; min-width: 0; padding: 6px 8px; }

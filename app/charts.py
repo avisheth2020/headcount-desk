@@ -43,3 +43,46 @@ def share_bars(rows: list[dict], key: str) -> list[dict]:
     top = max((max(r[key], 0) for r in rows), default=0) or 1
     ordered = sorted(rows, key=lambda r: -r[key])
     return [{**r, "bar": round(max(r[key], 0) / top * 100, 1)} for r in ordered]
+
+
+def treemap(items: list[dict], key: str, width: float, height: float) -> list[dict]:
+    """Squarified treemap: lay items out so each area matches its value and the
+    blocks stay close to square. Returns the items with x, y, w, h in the same
+    units as width and height."""
+    rows = sorted((r for r in items if r[key] > 0), key=lambda r: -r[key])
+    total = sum(r[key] for r in rows)
+    if not total:
+        return []
+    scale = width * height / total
+    placed, x, y, w, h = [], 0.0, 0.0, float(width), float(height)
+
+    def worst(row, side):
+        area = sum(r[key] * scale for r in row)
+        return max(max((side * side * r[key] * scale) / (area * area), (area * area) / (side * side * r[key] * scale)) for r in row)
+
+    while rows:
+        side = min(w, h)
+        row = [rows[0]]
+        rest = rows[1:]
+        while rest and worst(row + [rest[0]], side) <= worst(row, side):
+            row.append(rest[0])
+            rest = rest[1:]
+        area = sum(r[key] * scale for r in row)
+        if w >= h:                                        # a column down the left of the space left over
+            depth = area / h
+            offset = y
+            for r in row:
+                size = r[key] * scale / depth
+                placed.append({**r, "x": x, "y": offset, "w": depth, "h": size})
+                offset += size
+            x, w = x + depth, w - depth
+        else:                                             # a row across the top
+            depth = area / w
+            offset = x
+            for r in row:
+                size = r[key] * scale / depth
+                placed.append({**r, "x": offset, "y": y, "w": size, "h": depth})
+                offset += size
+            y, h = y + depth, h - depth
+        rows = rest
+    return placed

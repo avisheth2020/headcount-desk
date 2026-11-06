@@ -143,6 +143,20 @@ def test_queue_works_from_the_keyboard(browser, base_url):
     assert page.errors == []
 
 
+def test_plan_steppers_update_dollars_and_room_at_once(browser, base_url):
+    page = new_page(browser, base_url, role="vp")
+    page.goto(base_url + "/planning", wait_until="networkidle")
+    page.locator("a", has_text="Edit your plan").click()
+    page.wait_for_load_state("networkidle")
+    before = page.locator("[data-room-left-text]").inner_text()
+    page.locator("#inc_change_research").click()
+    assert page.locator("[data-room-left-text]").inner_text() != before
+    page.wait_for_selector(".saved")
+    page.locator("#dec_change_research").click()
+    wait_until(lambda: page.locator("[data-room-left-text]").inner_text() == before)
+    assert page.errors == []
+
+
 def test_planning_cycle_end_to_end(browser, base_url):
     """VP finishes a draft and submits; the SVP trims and approves it, sends one back, then locks the plan."""
     page = new_page(browser, base_url, role="vp")
@@ -183,22 +197,6 @@ def test_planning_cycle_end_to_end(browser, base_url):
     assert "FY28 Plan was locked" in page.content() and "what was locked" in page.content()
     page.goto(base_url + "/", wait_until="networkidle")                  # this year's plan is still the current one
     assert "FY27 Q1 Refresh" in page.locator(".fresh-chip summary").inner_text()
-    assert page.errors == []
-
-
-def test_plan_steppers_update_dollars_and_room_at_once(browser, base_url):
-    page = new_page(browser, base_url, role="vp")
-    page.goto(base_url + "/planning", wait_until="networkidle")
-    if page.locator("a", has_text="Edit your plan").count() == 0:
-        pytest.skip("this role's plan was already submitted by an earlier test")
-    page.locator("a", has_text="Edit your plan").click()
-    page.wait_for_load_state("networkidle")
-    before = page.locator("[data-room-left-text]").inner_text()
-    page.locator("#inc_change_research").click()
-    assert page.locator("[data-room-left-text]").inner_text() != before
-    page.wait_for_selector(".saved")
-    page.locator("#dec_change_research").click()
-    wait_until(lambda: page.locator("[data-room-left-text]").inner_text() == before)
     assert page.errors == []
 
 
@@ -295,8 +293,21 @@ def test_org_explorer_expands_and_collapses(browser, base_url):
     assert page.errors == []
 
 
+def test_org_map_zooms_in_place(browser, base_url):
+    page = new_page(browser, base_url)
+    page.goto(base_url + "/org", wait_until="networkidle")
+    page.locator(".pills a", has_text="Map").click()
+    page.wait_for_url("**view=map**")
+    page.wait_for_selector(".tm-tile")
+    page.locator(".tm-title", has_text="Research").click()
+    page.wait_for_url("**org=2**")
+    page.wait_for_selector(".crumbs .here")
+    assert page.locator(".crumbs .here").inner_text() == "Research" and page.locator(".tm-tile").count() > 3
+    assert page.errors == []
+
+
 PAGES = [("/today", "svp"), ("/today", "vp"), ("/today", "recruiter"), ("/today", "rm"), ("/today", "requester"),
-         ("/", "svp"), ("/budget", "svp"), ("/org", "svp"), ("/positions?org=2&bucket=committed", "svp"),
+         ("/", "svp"), ("/budget", "svp"), ("/org", "svp"), ("/org?view=map", "svp"), ("/org?view=map&org=2", "svp"), ("/positions?org=2&bucket=committed", "svp"),
          ("/positions/12", "svp"), ("/plan?org=3", "svp"), ("/requests", "vp"), ("/requests/1001", "requester"),
          ("/backfill/new", "requester"), ("/exceptions", "rm"), ("/health", "rm"), ("/health/check/ratio", "rm"),
          ("/health/snapshots?org=3", "rm"), ("/about", "svp"), ("/styleguide", "svp"),
