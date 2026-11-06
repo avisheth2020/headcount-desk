@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% import "_macros.html" as m %}
+{% import "_charts.html" as ch %}
 {% block title %}Exceptions{% endblock %}
 
 {% block content %}
@@ -21,21 +22,19 @@
 <div class="stack">
   {% include "_exceptions_progress.html" %}
 
-  <nav class="tiles" aria-label="Filter by type">
-    <a class="card tile" href="/exceptions?{{ q_org }}{{ q_show }}" {% if not type %}aria-current="true"{% endif %}>
-      <span>All types</span><b>{{ by_type.values() | sum | num }}</b>
-    </a>
-    {% for key, (label, definition) in TYPES.items() %}
-    <a class="card tile" href="/exceptions?{{ q_org }}&type={{ key }}{{ q_show }}" {% if type == key %}aria-current="true"{% endif %}>
-      <span>{{ label }}<span class="tip" tabindex="0" role="note" aria-label="{{ definition }}" data-tip="{{ definition }}">i</span></span>
-      <b>{{ by_type.get(key, 0) | num }}</b>
-    </a>
-    {% endfor %}
-  </nav>
+  {% if done %}
+  <form class="flash row spread" role="status" hx-post="/exceptions/undo-batch" hx-target="#main" hx-select="#main" hx-swap="outerHTML show:none" hx-push-url="true">
+    <span>{{ done }} marked resolved.</span>
+    <input type="hidden" name="batch" value="{{ batch }}"><input type="hidden" name="org" value="{{ org.id }}"><input type="hidden" name="type" value="{{ type or '' }}"><input type="hidden" name="show" value="{{ show }}">
+    <button class="btn btn-sm" type="submit">Undo</button>
+  </form>
+  {% endif %}
 
-  <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap">
-    <span></span>
-    <span class="row"><a class="small" href="/exceptions?{{ q_org }}{{ q_type }}{{ '' if show == 'all' else '&show=all' }}">{{ "Hide resolved" if show == "all" else "Show resolved too" }}</a>
+  <nav class="card card-pad" aria-label="Filter by type" {{ IN_PLACE }}>{{ ch.bars(type_bars, "", current=type) }}</nav>
+
+  <div class="ex-tools">
+    {% if can_resolve and shown %}<label class="check-all"><input type="checkbox" data-select-all> Select all {{ shown | num }}</label>{% else %}<span></span>{% endif %}
+    <span class="row"><a class="small" {{ IN_PLACE }} href="/exceptions?{{ q_org }}{{ q_type }}{{ '' if show == 'all' else '&show=all' }}">{{ "Hide resolved" if show == "all" else "Show resolved too" }}</a>
       <a class="btn btn-sm" href="{{ url_with(request, format='csv') }}">{{ ico("download") }}CSV</a></span>
   </div>
 
@@ -45,20 +44,30 @@
       <h2>{{ g.owner_name }}<span class="sub">{{ g.owner_org_name }}</span></h2>
       <span class="chip {{ 'chip-warn' if g.open else 'chip-good' }}">{% if g.open %}{{ g.open }} to fix{% else %}{{ ico("check") }}All clear{% endif %}</span>
     </summary>
+    {% for kind, items in g.rows | groupby("exception_type") %}
+    <div class="type-head"><b>{{ items[0].type_label }}</b> <span class="muted">Fix: {{ items[0].suggested_fix }}</span></div>
     <ul class="todo">
-      {% for e in g.rows[:6] %}{% include "_exception_row.html" %}{% endfor %}
+      {% for e in items[:6] %}{% include "_exception_row.html" %}{% endfor %}
     </ul>
-    {% if g.rows | length > 6 %}
+    {% if items | length > 6 %}
     <details class="more">
-      <summary>Show {{ g.rows | length - 6 }} more for {{ g.owner_name }}</summary>
+      <summary>Show {{ items | length - 6 }} more</summary>
       <ul class="todo">
-        {% for e in g.rows[6:] %}{% include "_exception_row.html" %}{% endfor %}
+        {% for e in items[6:] %}{% include "_exception_row.html" %}{% endfor %}
       </ul>
     </details>
     {% endif %}
+    {% endfor %}
   </details>
   {% else %}
   <div class="card empty-state"><b>Nothing to fix here</b>No open exceptions match this filter.</div>
   {% endfor %}
 </div>
+{% if can_resolve %}
+<form class="bulk-bar card" id="bulk-form" hidden hx-post="/exceptions/resolve-many" hx-target="#main" hx-select="#main" hx-swap="outerHTML show:none" hx-push-url="true">
+  <input type="hidden" name="org" value="{{ org.id }}"><input type="hidden" name="type" value="{{ type or '' }}"><input type="hidden" name="show" value="{{ show }}">
+  <span><b data-selected>0</b> selected</span>
+  <button class="btn btn-primary btn-sm" type="submit">{{ ico("check") }}Mark resolved</button>
+</form>
+{% endif %}
 {% endblock %}

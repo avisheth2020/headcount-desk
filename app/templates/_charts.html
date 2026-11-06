@@ -26,7 +26,7 @@
 <ul class="bars">
   {% for r in rows %}
   <li {% if current and r.key == current %}aria-current="true"{% endif %}>
-    {% if r.href %}<a class="bar-name" href="{{ r.href }}">{{ r.name }}</a>{% else %}<span class="bar-name">{{ r.name }}</span>{% endif %}
+    {% if r.href %}<a class="bar-name" href="{{ r.href }}" {% if r.tip %}data-chart-tip="{{ r.tip }}"{% endif %}>{{ r.name }}</a>{% else %}<span class="bar-name">{{ r.name }}</span>{% endif %}
     <span class="bar-track"><i class="{{ cls }}" style="width: {{ r.bar }}%"></i><b>{{ r.text }}</b></span>
   </li>
   {% endfor %}

@@ -408,13 +408,25 @@ a.tile:hover { border-color: var(--accent); text-decoration: none; }
 .group > summary h2 { flex: 1; }
 .group > summary .sub { font-size: 12.5px; color: var(--muted); font-weight: 400; display: block; margin-top: 1px; }
 .todo { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--border); }
-.todo li { display: grid; grid-template-columns: 1fr auto; gap: 4px var(--s4); padding: 10px var(--s4); border-bottom: 1px solid var(--border); align-items: center; transition: background var(--med), opacity var(--med); }
+.todo li { display: grid; grid-template-columns: 18px minmax(0, 1fr) 96px 96px; gap: 4px var(--s3); padding: 8px var(--s4); border-bottom: 1px solid var(--border); align-items: center; transition: background var(--med), opacity var(--med); }
 .todo li:last-child { border-bottom: 0; }
 .todo .what { font-weight: 500; }
 .todo .fix { font-size: 12.5px; color: var(--muted); }
 .todo li.done .what, .todo li.optimistic .what { text-decoration: line-through; color: var(--muted); font-weight: 400; }
 .todo li.done { background: var(--surface-2); }
 .todo li.optimistic { opacity: .6; }
+.todo li input[type="checkbox"] { width: 15px; height: 15px; margin: 0; accent-color: var(--accent); }
+.todo li form { justify-self: end; margin: 0; }
+.ex-age { display: grid; gap: 2px; font-size: 12px; color: var(--muted); text-align: right; }
+.ex-age i { display: block; height: 5px; background: var(--seg-committed); border-radius: 3px; justify-self: end; min-width: 2px; }
+.type-head { padding: 8px var(--s4); border-top: 1px solid var(--border); background: var(--surface-2); font-size: 12.5px; display: flex; gap: var(--s2); flex-wrap: wrap; }
+.type-head b { font-weight: 600; }
+.type-head + .todo { border-top: 0; }
+.ex-tools { display: flex; justify-content: space-between; align-items: center; gap: var(--s4); flex-wrap: wrap; }
+.check-all { display: inline-flex; align-items: center; gap: 8px; margin: 0; font-weight: 500; }
+.check-all input { width: 15px; height: 15px; margin: 0; accent-color: var(--accent); }
+.bulk-bar { position: sticky; bottom: var(--s4); z-index: 20; margin-top: var(--s4); padding: 8px var(--s4); display: flex; justify-content: space-between; align-items: center; gap: var(--s3); box-shadow: var(--e2); font-size: 13.5px; }
+.bulk-bar b { font-weight: 650; font-variant-numeric: tabular-nums; }
 .todo .meta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 2px; }
 .more > summary { list-style: none; cursor: pointer; padding: 10px var(--s4); color: var(--accent-ink); font-weight: 500; font-size: 13px; border-top: 1px solid var(--border); }
 .more > summary::-webkit-details-marker { display: none; }
@@ -630,8 +642,9 @@ tr.hot td { background: var(--warn-soft) !important; }
   .req-card .reject-form { flex-direction: column; }
   .queue-keys { display: none; }
   .tile-wide { grid-column: 1 / -1; }
-  .todo li { grid-template-columns: 1fr; }
-  .todo li .btn { justify-self: start; }
+  .todo li { grid-template-columns: 18px minmax(0, 1fr) 76px; }
+  .todo li form, .todo li > button { grid-column: 2 / -1; justify-self: end; }
+  .bulk-bar { bottom: 72px; }
   .stepper li { font-size: 11px; }
   .changes li { grid-template-columns: 44px minmax(0, 1fr); }
   .changes li .delta { display: none; }
