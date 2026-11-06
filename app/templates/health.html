@@ -13,7 +13,6 @@
 <div class="page-head">
   <div>
     <h1>Can I trust these numbers?</h1>
-    {{ m.fresh(as_of, plan) }}
   </div>
   {% if role == "rm" %}<form method="post" action="/health/run">{{ csrf_input(request) }}<button class="btn" type="submit">↻ Run checks now</button></form>{% endif %}
 </div>

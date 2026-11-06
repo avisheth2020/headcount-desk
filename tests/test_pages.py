@@ -30,7 +30,7 @@ def test_headcount_shows_the_hero_number(client, ids):
     assert page.status_code == 200
     assert "How many people can we actually hire?" in page.text
     assert f'class="hero-number"' in page.text and f">{expected}</a>" in page.text
-    assert "synthetic data" in page.text and "Try this" in page.text
+    assert "synthetic data" in page.text and "Take the tour" in page.text
 
 
 @pytest.mark.parametrize("path", [

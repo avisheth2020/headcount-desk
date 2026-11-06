@@ -7,7 +7,6 @@
 <div class="page-head">
   <div>
     {{ m.inbox_title(role, inbox | length) }}
-    <p class="fresh">{% if role in ("vp", "recruiter") %}Where is my backfill? · {% endif %}Viewing as {{ me.full_name }} ({{ role_label }}) · Data as of {{ as_of | dt }} · Plan: <a href="/plan?org=1">{{ plan.name }}</a> (locked)</p>
   </div>
   {% if can_request %}<a class="btn btn-primary" href="/backfill/new">+ Request a backfill</a>{% endif %}
 </div>

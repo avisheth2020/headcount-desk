@@ -68,29 +68,59 @@
         </div>
         {% endfor %}
       </nav>
-      <div class="sidebar-foot">
-        <a href="/about">About</a>
-        <a href="/styleguide">Styleguide</a>
-        <a href="/docs">API</a>
-      </div>
     </aside>
 
     <div>
       <header class="topbar">
         <a class="brand" href="/today" aria-label="Headcount Desk, home"><span class="brand-mark">{{ icon("M5 20V9m7 11v-7m7 7V4") }}</span><span class="wide-only">Headcount Desk</span></a>
+        {% if personas is defined %}
+        <details class="tour popover">
+          <summary><span data-tour-label>Take the tour</span></summary>
+          <div class="pop tour-pop">
+            <button class="tour-close" type="button" aria-label="Hide the tour" data-dismiss-try>{{ icon("M6 6l12 12M18 6 6 18") }}</button>
+            <p class="eyebrow">Four things to try</p>
+            <ol>
+              <li><a data-tour-step="1" href="/?org={{ personas.svp.org_id }}#math">See what Research can really hire</a></li>
+              <li><a data-tour-step="2" href="/backfill/new?as=requester">Request a backfill, then approve it as VP</a></li>
+              <li><a data-tour-step="3" href="/planning?as=vp">Change next year's plan, then lock it as SVP</a></li>
+              <li><a data-tour-step="4" href="/health">Find the overnight anomaly</a></li>
+            </ol>
+          </div>
+        </details>
+        {% endif %}
         <div class="topbar-right">
           <button class="search-btn" type="button" data-palette-open aria-label="Search or run a command">
-            {{ icon("M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14ZM20 20l-3.5-3.5") }}<span>Find a person, position or org</span><kbd>⌘K</kbd>
+            {{ icon("M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14ZM20 20l-3.5-3.5") }}<span>Find anything</span><kbd>⌘K</kbd>
           </button>
+          {% if plan is defined and as_of is defined %}
+          <details class="fresh-chip popover">
+            <summary aria-label="How fresh the data is"><i aria-hidden="true"></i><span>{{ as_of | clock }}</span><span class="wide-only">· {{ plan.name }}</span></summary>
+            <div class="pop">
+              <dl class="dl">
+                <dt>Data as of</dt><dd>{{ as_of | dt }}</dd>
+                <dt>Plan</dt><dd><a href="/plan?org=1">{{ plan.name }}</a></dd>
+                <dt>Locked</dt><dd>{{ plan.locked_at | d }}</dd>
+              </dl>
+              <a class="small" href="/health">Can I trust these numbers? ›</a>
+            </div>
+          </details>
+          {% endif %}
           <button class="icon-btn" type="button" data-theme-toggle aria-label="Switch between light and dark">
             <span class="theme-moon">{{ icon("M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z") }}</span>
             <span class="theme-sun">{{ icon("M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10ZM12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5") }}</span>
           </button>
-          <details class="role-switch">
-            <summary aria-label="Switch role. Viewing as {{ role_label }}"><span class="lbl">Viewing as:</span><span class="narrow-only" style="display:inline-flex">{{ icon("M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM4 21c0-4 4-6 8-6s8 2 8 6") }}</span><strong><span class="wide-only">{{ role_label }}</span><span class="narrow-only">{{ role_label | replace("Resource Manager", "RM") }}</span></strong> <span aria-hidden="true">▾</span></summary>
+          {% if personas is defined %}
+          <form class="role-seg" method="post" action="/role" aria-label="View the demo as">
+            {{ csrf_input(request) }}
+            {% for key, (label, _) in ROLES.items() %}
+            <button name="role" value="{{ key }}" {% if key == role %}aria-pressed="true"{% else %}aria-pressed="false" title="{{ personas[key].full_name }}, {{ personas[key].org_name }}"{% endif %}>{{ label | replace("Resource Manager", "RM") }}{% if key == role %}<span> · {{ personas[key].full_name }}</span>{% endif %}</button>
+            {% endfor %}
+          </form>
+          {% endif %}
+          {% if personas is defined %}<details class="role-switch popover">
+            <summary aria-label="Switch role. Viewing as {{ role_label }}"><span class="narrow-only" style="display:inline-flex">{{ icon("M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM4 21c0-4 4-6 8-6s8 2 8 6") }}</span><strong>{{ role_label | replace("Resource Manager", "RM") }}</strong> <span aria-hidden="true">▾</span></summary>
             <form class="role-menu" method="post" action="/role">
               {{ csrf_input(request) }}
-              <p>Roles are simulated for the demo. Each one is a named person at Meridian Labs, and the server enforces what each may do.</p>
               {% for key, (label, _) in ROLES.items() %}
               <button name="role" value="{{ key }}" {% if key == role %}aria-current="true"{% endif %}>
                 {{ label }}
@@ -98,7 +128,7 @@
               </button>
               {% endfor %}
             </form>
-          </details>
+          </details>{% endif %}
         </div>
       </header>
 
@@ -119,7 +149,6 @@
         <a class="nav-link" href="{{ item[0] }}" {% if section == item[0] %}aria-current="page"{% endif %}>{{ icon(item[2]) }}{{ item[1] }}</a>
         {% endfor %}{% endfor %}
         <a class="nav-link" href="/about">{{ icon("M12 17v-6m0-3.5v.5M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z") }}About</a>
-        <a class="nav-link" href="/styleguide">{{ icon("M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z") }}Styleguide</a>
       </div>
     </details>
   </nav>

@@ -12,6 +12,23 @@ function toggleTheme() {
   try { localStorage.setItem("theme", next); } catch (e) {}
 }
 
+// ── Tour: a small guide. Progress is remembered in this browser only. ───────
+function tourDone() { try { return JSON.parse(localStorage.getItem("tour") || "[]"); } catch (e) { return []; } }
+function drawTour() {
+  const done = tourDone(), tour = $(".tour");
+  if (!tour) return;
+  document.querySelectorAll("[data-tour-step]").forEach((a) => a.closest("li").classList.toggle("done", done.includes(a.dataset.tourStep)));
+  tour.classList.toggle("started", done.length > 0);
+  $("[data-tour-label]").textContent = done.length === 0 ? "Take the tour" : done.length < 4 ? `Tour ${done.length} of 4` : "Tour done";
+}
+function markTour(step) {
+  const done = tourDone();
+  if (!done.includes(step)) done.push(step);
+  try { localStorage.setItem("tour", JSON.stringify(done)); } catch (e) {}
+  drawTour();
+}
+drawTour();
+
 // ── Drawer: detail without losing your place. Deep-linkable through the hash. ──
 function openDrawer(href, push = true) {
   if (!href.startsWith("/") || href.startsWith("//")) return;
@@ -68,6 +85,8 @@ document.addEventListener("click", (e) => {
     try { localStorage.setItem("try-dismissed", "1"); } catch (err) {}
     return document.documentElement.classList.add("try-dismissed");
   }
+  const step = t.closest("[data-tour-step]");
+  if (step) markTour(step.dataset.tourStep);
   const toggle = t.closest("[data-toggle]");            // show or hide another element, e.g. the reject reason
   if (toggle) {
     const target = toggle.closest(toggle.dataset.within || "body").querySelector(toggle.dataset.toggle);
@@ -90,8 +109,7 @@ document.addEventListener("click", (e) => {
     return openDrawer(link.getAttribute("href"));
   }
   if (t.closest(".palette-item")) closePalette();
-  const menu = $(".role-switch[open]");
-  if (menu && !t.closest(".role-switch")) menu.removeAttribute("open");
+  document.querySelectorAll("details.popover[open]").forEach((d) => { if (!d.contains(t)) d.removeAttribute("open"); });
   const more = $(".tabbar details[open]");
   if (more && !t.closest(".tabbar details")) more.removeAttribute("open");
 }, true);
@@ -103,7 +121,7 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") {
     if (document.body.classList.contains("palette-open")) return closePalette();
     if (document.body.classList.contains("drawer-open")) return closeDrawer();
-    $(".role-switch[open]")?.removeAttribute("open");
+    document.querySelectorAll("details.popover[open]").forEach((d) => d.removeAttribute("open"));
   }
   if (document.body.classList.contains("palette-open")) {
     if (e.key === "ArrowDown") { e.preventDefault(); movePalette(1); }

@@ -73,8 +73,7 @@ def new_page(browser, base_url, role="svp", theme="light", width=1440, height=90
 
 
 def switch_role(page, role):
-    page.locator(".role-switch summary").click()
-    page.locator(f".role-menu button[value={role}]").click()
+    page.locator(f".role-seg button[value={role}]").click()
     page.wait_for_load_state("networkidle")
 
 
@@ -172,7 +171,7 @@ def test_planning_cycle_end_to_end(browser, base_url):
     page.wait_for_load_state("networkidle")
     assert "FY28 Plan was locked" in page.content() and "what was locked" in page.content()
     page.goto(base_url + "/", wait_until="networkidle")                  # this year's plan is still the current one
-    assert "FY27 Q1 Refresh" in page.locator(".fresh").first.inner_text()
+    assert "FY27 Q1 Refresh" in page.locator(".fresh-chip summary").inner_text()
     assert page.errors == []
 
 
@@ -281,3 +280,14 @@ def test_no_page_scrolls_sideways(browser, base_url, width):
             wide.append(path)
         page.context.close()
     assert wide == []
+
+
+def test_tour_remembers_progress(browser, base_url):
+    page = new_page(browser, base_url)
+    page.goto(base_url + "/health", wait_until="networkidle")
+    assert page.locator("[data-tour-label]").inner_text() == "Take the tour"
+    page.locator(".tour summary").click()
+    page.locator("[data-tour-step='1']").click()
+    page.wait_for_load_state("networkidle")
+    assert page.locator("[data-tour-label]").inner_text() == "Tour 1 of 4"
+    assert page.errors == []

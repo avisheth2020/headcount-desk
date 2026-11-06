@@ -6,7 +6,7 @@
 <div class="page-head">
   <div>
     <h1>What does each org need next year?</h1>
-    <p class="fresh">{{ cycle.name }} · {{ cycle.fiscal_year }} starts {{ cycle.starts_on | d }} · every VP starts from {{ cycle.base_plan_name }} · Data as of {{ as_of | dt }}</p>
+    <p class="fresh">{{ cycle.fiscal_year }} starts {{ cycle.starts_on | d }} · built on {{ cycle.base_plan_name }}</p>
   </div>
   <div class="row">{% if cycle.status == "locked" %}<span class="chip chip-good">🔒 Locked</span>{% else %}<span class="chip chip-accent">◐ Cycle open</span>{% endif %}
     {% if mine %}<a class="btn btn-primary" href="/planning/{{ mine.id }}">{{ "Edit your plan" if mine.status in ("draft", "sent_back") else "Open your plan" }}</a>{% endif %}</div>
