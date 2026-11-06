@@ -3,6 +3,7 @@
 from urllib.parse import quote
 
 from fastapi import Depends, FastAPI, Form, Request
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -18,6 +19,7 @@ app = FastAPI(
     dependencies=[Depends(security.csrf_protect)],      # every write must carry the CSRF token
 )
 app.middleware("http")(security.middleware)             # headers, rate limit, JSON request log
+app.add_middleware(GZipMiddleware, minimum_size=1024)   # pages and assets compress to about a fifth
 app.mount("/static", StaticFiles(directory=web.APP_DIR / "static"), name="static")
 for module in (today, overview, budget, planning, forecast, exceptions, backfill, health, api):
     app.include_router(module.router)

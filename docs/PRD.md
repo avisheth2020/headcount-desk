@@ -1,6 +1,6 @@
 # Headcount Desk: product requirements
 
-**Status:** prototype on synthetic data · **Owner:** Avi Sheth
+**Status:** working product on synthetic data (V2) · **Owner:** Avi Sheth
 
 ## Problem
 
@@ -42,24 +42,31 @@ usable open = approved (latest locked plan)
 |---|---|---|
 | Median time from backfill request to open staffing request | weeks | under 3 days |
 | Share of positions with an open exception | unknown | under 2% |
-| Daily data checks passing | not measured | 6 of 6 |
+| Daily data checks passing | not measured | 8 of 8 |
+| Orgs projected over budget, seen before quarter end | found after the fact | flagged daily |
+| Time to collect and lock the annual plan | weeks of spreadsheets | days, with a full trail |
 | Time for an SVP to get usable open | a few days of email | under 10 seconds |
 
-## Out of scope (for this prototype)
+## What V2 added
 
-- Real logins and permissions (roles are simulated with a switcher)
-- Opex and dollars beyond the approved cost on each plan line
-- Editing the plan in the app (plans are loaded, then locked)
-- Integrations with a real HR or recruiting system
-- Forecasting
+- **Dollars.** Every seat is costed from a rate card. A Budget page answers "are we on budget?" for any org, and the cost shows at the moment of decision (backfill approval, planning).
+- **Annual planning.** The second manual process: VP asks, SVP review against an envelope, lock into a new plan version.
+- **Forecast.** Projected headcount and run-rate at quarter end, as a range, with the method written on the page.
+- **A product, not a prototype.** One design system in light and dark, a home page per role, a command palette, detail drawers, sortable and exportable tables, and server-side permissions.
+
+## Out of scope
+
+- Real logins (roles are simulated with a switcher; the permission rules themselves are enforced)
+- Opex other than people cost
+- Splitting a locked annual plan down to teams
+- Integrations with a real HR, recruiting or finance system
 
 ## Roadmap
 
-| Phase | Goal | What ships |
+| Phase | Goal | Status |
 |---|---|---|
-| **1. Staff** | One trusted view while the process is still manual | Usable open by SVP and VP, exceptions list, daily checks |
-| **2. Redesign** | Fix the process before automating it | One backfill path with clear owners, a single approval step, an audit trail |
-| **3. Automate** | Remove the re-typing | Auto-assigned recruiters, staffing requests created on approval, scheduled checks and alerts |
-| **4. Predict** | Look ahead | Forecast attrition and hiring needs by org; scenario plans against the budget |
-
-This prototype covers a thin slice of phases 1 to 3.
+| **1. Staff** | One trusted view while the process is still manual: usable open by org, exceptions, daily checks | Shipped (V1) |
+| **2. Redesign** | Fix the process before automating it: one backfill path, one approval step, an audit trail; then the same for annual planning | Shipped (V1 backfills, V2 planning) |
+| **3. Automate** | Remove the re-typing: auto-assigned recruiters, staffing requests created on approval, a plan version written by the lock | Shipped (V1, V2) |
+| **4. Predict** | Look ahead: quarter-end headcount and spend as a range | First version shipped (V2) |
+| **Next** | Real sign-in and audit of reads; nightly snapshot and vacate jobs; team-level allocation after lock; scenario planning ("what if we freeze hiring in Q3") | Not started |

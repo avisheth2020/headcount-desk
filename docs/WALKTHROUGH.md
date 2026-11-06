@@ -1,130 +1,135 @@
 # Walkthrough
 
-A ten-minute guided read of how Headcount Desk works: what to click, how a request moves through the code, the schema in plain English, the main design questions, and what is still rough.
+A guided read of how Headcount Desk works: what to click, how a request moves through the code, the schema in plain English, the main design questions, and what is still rough.
 
-**Live:** https://headcount-desk-yf5labkepq-ue.a.run.app · **Read next:** [SCHEMA.md](SCHEMA.md), [DECISIONS.md](DECISIONS.md)
+**Live:** https://headcount-desk-yf5labkepq-ue.a.run.app · **Read next:** [SCHEMA.md](SCHEMA.md), [DESIGN.md](DESIGN.md), [DECISIONS.md](DECISIONS.md)
 
 ---
 
-## 1. The two-minute tour
+## 1. The five-minute tour
 
-1. Open the live site. You land on **Headcount** as the Research SVP. The big number is usable open. Click a bar in the chart, or any number in the table: you get the rows behind it.
-2. Click **Request a backfill** on the Requests page (or step 2 on the "Try this" card). Pick someone who is leaving, type a reason, submit. You land on the tracker with a stepper.
-3. Use the "Switch to VP" tip. You are now Priya Shah with an approval inbox. Click **Approve**. The card updates in place and a recruiter is assigned automatically.
-4. Switch to **Recruiter**, open the staffing request, then mark it filled. Look at the timeline: five events, each with a person and a time.
-5. Open **Exceptions** as the Resource Manager. Mark one resolved, then press Undo on the toast.
-6. Open **Data health**. One check needs a look. Follow "See the rows behind this" to the snapshot table and find the row that jumped.
+1. Open the live site. You land on **Headcount** as the Research SVP. The big number is usable open. The bar shows where the approved headcount goes; the second bar zooms into the seats nobody is in. Click a segment: you get the rows behind it.
+2. Click a position code. It opens in a **side drawer**; the list stays where it was. Press Esc.
+3. Press **⌘K** (or `/`), type a name, press Enter. That is the command palette.
+4. Open **Budget**. The answer is a percentage of budget, with run-rate and committed underneath. Two VP orgs are over on purpose.
+5. Use the role switcher (top right) to become the **Requester**, request a backfill, then switch to **VP**. You land on **Today**: an approval inbox where each card shows what the seat costs and where the org stands against its budget. Approve one.
+6. Open **Planning** as the VP. Change a number; the dollars update as you type. Submit. Switch to **SVP**, open the plan, approve fewer than asked, then lock the cycle. A new plan version appears and this year's numbers do not move.
+7. Open **Forecast**. Read the method note at the bottom, then click "Expected hires" to see each open request and its odds.
+8. Open **Data health** as the Resource Manager and follow the anomaly to its rows.
+9. Toggle dark mode (the moon), and open `/styleguide`.
 
 ## 2. How a request flows through the code
 
-### Reading a page: `GET /` (Headcount)
+### Reading a page: `GET /budget?org=2`
 
 ```
-browser ── GET /?org=2 ──► app/routes/overview.py: headcount()
-                              │  db.get_conn()            one pooled connection (app/db.py)
-                              │  web.page_context()       role, persona, "data as of" (app/web.py)
-                              │  SELECT * FROM v_usable_open WHERE org_id = 2
-                              │  SELECT * FROM v_usable_open WHERE parent_id = 2
-                              ▼
-                           templates/headcount.html  ──► HTML back to the browser
+browser ──► app/security.py: middleware          CSRF cookie, security headers, rate limit, JSON log line
+        ──► app/routes/budget.py: budget()
+              db.get_conn()                      one pooled connection (app/db.py)
+              web.page_context()                 role, persona, "data as of" (app/web.py)
+              web.sorting()                      ?sort= and ?dir= mapped through an allow-list
+              SELECT * FROM v_budget WHERE org_id = 2
+              SELECT * FROM v_budget WHERE parent_id = 2 ORDER BY ...
+        ──► templates/budget.html ──► HTML
 ```
 
-The route does no arithmetic. `v_usable_open` (in `db/views.sql`) is built from three smaller views, and you can read them top to bottom:
+The route does no arithmetic. `v_budget` (in `db/views/30_budget.sql`) is built in the same two steps as headcount: `v_budget_direct` costs the seats that sit directly in each org, then `v_budget` joins `v_org_closure` to roll every org's numbers up to its ancestors and applies the formula. `v_usable_open` works the same way in `db/views/10_core.sql`.
 
-1. `v_position_status` puts each seat in exactly one bucket: reserve, negative, filled, committed, or open with no request.
-2. `v_headcount_direct` counts buckets and approved headcount for the seats that sit directly in each org.
-3. `v_usable_open` joins that to `v_org_closure` (every org paired with each of its ancestors) and sums, so each org gets its whole subtree. Then it applies the formula.
-
-Clicking a number goes to `/positions?org=2&bucket=committed`, which lists rows from the same `v_position_status` view. That is why the list always matches the number.
+Add `&format=csv` to the same URL and the same rows come back as a file. Sorting and filters are in the URL, so what you see is what you export.
 
 ### Changing something: approving a backfill
 
 ```
-browser ── POST /requests/1042/approve ──► app/routes/backfill.py: approve()
-                                              │
-                                              ▼
-                               app/workflow.py: approve(conn, 1042, vp_id)
-                                 transition(→ vp_approved)        checks the move is legal,
-                                                                  updates status, inserts a
-                                                                  request_events row
-                                 pick recruiter from v_recruiter_load (lowest load, same job family)
-                                 transition(→ recruiter_assigned) actor = the system
-                                              │
-                                 commit (the route's `with db.get_conn()` block ends)
-                                              ▼
-                               templates/_request_card_done.html  ──► HTMX swaps just that card
+browser ── POST /requests/1042/approve (with the CSRF token) ──► security.csrf_protect
+        ──► app/routes/backfill.py: approve()
+              permissions.check_approve()        only the VP over this seat; otherwise 403
+              app/workflow.py: approve()
+                transition(→ vp_approved)        legal move? update status, insert request_events row
+                pick the recruiter from v_recruiter_load (lowest load, same job family)
+                transition(→ recruiter_assigned) actor = the system
+              commit (the `with db.get_conn()` block ends)
+        ──► templates/_request_card_done.html ──► HTMX swaps just that card
 ```
 
-Three things to notice:
+Four things to notice:
 
-- **`transition()` is the only place a status changes.** It reads the row `FOR UPDATE`, checks `ALLOWED[current]`, updates, and inserts the audit row. If the move is not allowed it raises and nothing is written.
-- **Everything in one request is one transaction.** `db.get_conn()` commits when the block ends and rolls back on an error, so you never get "approved but no recruiter".
-- **HTMX is why the page does not reload.** The button has `hx-post` and `hx-target`; the server returns a small piece of HTML and HTMX swaps it in. The page title updates through an "out of band" swap in the same response.
+- **`transition()` is the only place a status changes.** It reads the row `FOR UPDATE`, checks `ALLOWED[current]`, updates, and inserts the audit row. If the move is not allowed it raises and nothing is written. `app/planning.py` has its own `transition()` built the same way.
+- **Permission is a separate question from legality.** `app/permissions.py` decides *who* may act; the workflow decides *whether the move exists*. Both run on the server.
+- **Everything in one request is one transaction.** `db.get_conn()` commits when the block ends and rolls back on an error.
+- **HTMX is why the page does not reload.** The button has `hx-post` and `hx-target`; the server returns a small piece of HTML. There are no inline scripts anywhere: `app/static/app.js` wires everything by data attributes, which is what lets the Content Security Policy be strict.
 
-### Running the checks
+### Locking the annual plan
 
-`app/checks.py: run_checks()` is three statements: insert a `check_runs` row, `INSERT INTO check_results SELECT ... FROM v_check_all`, then count how many checks passed. Each check is its own view in `db/checks.sql` with the same six columns.
+`planning.lock_cycle()` inserts a new `plan_versions` row for FY28, writes one line per VP org and job family (this year plus the approved change), copies the lines above VP level, then sets `locked_at` and the fingerprint. From that moment the existing trigger protects it. `v_current_plan` ignores it until its `effective_from` date, so every page keeps showing this year.
+
+### Migrations
+
+`scripts/migrate.py` applies any file in `db/migrations/` that is not yet in the `schema_migrations` table, then drops and rebuilds every view from `db/views/`. Tables change once and are recorded; views are code and are simply rebuilt.
 
 ## 3. The schema in plain English
 
-- **`orgs`** is the org chart, as a tree. Each row points to its parent. Company → SVP → VP → director → team.
-- **`people`** is everyone, past and present. No `end_date` means active. A future `end_date` means they have resigned and are working their notice.
-- **`positions`** is the list of seats. A seat with a `person_id` is filled. Two special types: `reserve` (an SVP is holding it back) and `negative` (an over-hire with no approved headcount behind it).
-- **`staffing_requests`** means a recruiter is working to fill a seat. At most one active request per seat.
-- **`plan_versions` and `plan_lines`** are the approved headcount, by org and job family. A version is locked, and then never changes. A refresh is a new version.
-- **`backfill_requests`** is a manager asking to replace someone. **`request_events`** is its audit trail: one row per status change, never edited.
-- **`daily_snapshots`** is one row of totals per org per day. It exists so today can be compared with yesterday.
-- **`check_runs` and `check_results`** are what the data checks found, one row per org tested.
-- **`exception_resolutions`** records that someone has dealt with a data problem. The problems themselves are not stored; they are derived by `v_exceptions`.
+- **`orgs`** is the org chart, as a tree. Company → SVP → VP → director → team.
+- **`people`** is everyone, past and present. A future `end_date` means they have given notice.
+- **`positions`** is the list of seats, each with a job family, level and location. A seat with a `person_id` is filled. `reserve` seats are held back by an SVP; `negative` seats are over-hires.
+- **`staffing_requests`** means a recruiter is working to fill a seat. Closed ones are the history the forecast learns from.
+- **`plan_versions` and `plan_lines`** are approved headcount and cost, by org and job family. A version is locked and never changes; it has a fiscal year and a date it takes effect.
+- **`cost_rates`** is the rate card: what one seat costs a year, by job family, level and location.
+- **`fiscal_years`** is the calendar.
+- **`backfill_requests`** and **`request_events`**: a manager asking to replace someone, and the audit trail of that request.
+- **`planning_cycles`, `planning_envelopes`, `plan_submissions`, `plan_submission_lines`, `planning_events`**: one annual planning round, each SVP's limit, each VP's ask by job family, and the audit trail.
+- **`daily_snapshots`**: one row of totals per org per day, so today can be compared with yesterday.
+- **`check_runs` and `check_results`**: what the data checks found.
+- **`exception_resolutions`**: someone marking a data problem as dealt with. The problems themselves are derived by `v_exceptions`.
 
-The four ideas that hold it together:
+The ideas that hold it together:
 
 1. **Derived status.** "Open" is never stored, so it can never be stale.
-2. **Locked, versioned plans.** A trigger prevents edits; a fingerprint detects them.
-3. **One function for workflow changes.** Legal moves only, always with an audit row.
+2. **Locked, versioned plans with an effective date.** A trigger prevents edits; a fingerprint detects them; next year's plan does not disturb this year's.
+3. **One function per workflow.** Legal moves only, always with an audit row.
 4. **Snapshots.** You cannot tie out to yesterday unless you kept yesterday.
+5. **Cost is a rate, not a salary.** An empty seat has a cost, which is what makes budgeting and planning possible.
 
-## 4. Ten design questions, answered
+## 4. Design questions, answered
 
 **1. What is the shape of the schema?**
-There are three groups of tables. First the org chart, people and positions: that is the current state. Second the plan, which is versioned and locked: that is what we are allowed to have. Usable open is the plan minus the current state. Third, the things that change over time: backfill requests with an append-only event log, daily snapshots, and check results. Business rules sit in views on top, so the tables stay simple.
+Three groups of tables. The org chart, people and positions are the current state. The plan (versioned, locked, costed) is what we are allowed to have. Usable open and budget variance are the plan minus the current state. Then the things that change over time: backfills and planning asks with append-only event logs, daily snapshots, check results. Business rules sit in views on top, so the tables stay simple.
 
 **2. Why is "open" derived instead of stored?**
-A stored status is a second copy of the truth. A seat is filled if someone is in it, committed if a recruiter has an active request on it, and open otherwise. If that were a column, every hire, exit and request would have to update it, and the first missed update would make the number wrong. A view reads the facts, so it cannot drift.
+A stored status is a second copy of the truth. A seat is filled if someone is in it, committed if a recruiter has an active request on it, and open otherwise. A view reads the facts, so it cannot drift.
 
 **3. How do I know the numbers are accurate?**
-Three ways. Every number on the page opens the rows behind it, so anyone can spot-check. Six checks run every morning: a tie-out to yesterday plus hires minus exits, a roll-up check, referential checks, a ratio check for sudden swings, a fingerprint check on the locked plan, and an exception-volume check. And the formula itself is pinned by a ten-position test worked out by hand (`tests/test_usable_open.py`).
+Every number opens the rows behind it. Eight checks run every morning: a tie-out to yesterday plus hires minus exits, a roll-up check, referential checks, a ratio check for sudden swings, a fingerprint check on the locked plan, an exception-volume check, a budget check and a check that every seat can be costed. And the formulas are pinned by small fixtures worked out by hand in the tests.
 
 **4. What stops someone editing the plan?**
-Two controls. A trigger on `plan_lines` rejects any insert, update or delete once the version is locked, so a change has to be a new version. And at lock time a hash of the lines is stored; a daily check recomputes it. The trigger is prevention. The hash is detection, for the case where someone switches the trigger off.
+A trigger on `plan_lines` rejects any change once the version is locked, so a change has to be a new version. At lock time a hash of the lines is stored and a daily check recomputes it. The trigger is prevention; the hash is detection.
 
-**5. What happens in a reorg, when positions move between orgs?**
-Today `positions.org_id` is the current org, and a reorg is an update to `orgs.parent_id` or to the position. That loses history. The fix is effective dating: a `position_org_assignments` table with position, org, valid-from and valid-to. The current-state views filter to the row that is valid today, and historical reports can ask "as of" any date. Snapshots already protect past totals, because they were stored at the time.
+**5. How is "are we on budget" worked out?**
+Projected spend is run-rate plus committed. Run-rate is the annual cost of every seat with a person in it. Committed is the open seats a recruiter is working, costed only for the months left in the fiscal year, because a seat costs nothing until someone starts. That is compared with the approved cost in the plan. Reserve and open seats nobody is recruiting for are left out.
 
-**6. How would a second level of approval be added?**
-The allowed moves are a small dictionary in `workflow.py`, and the approver is one column. For two levels, add a status such as `svp_approved` and one more entry in that dictionary. If approvals needed to vary by org or by cost, move to an `approval_steps` table: request, step number, approver, decision, decided-at. The request advances when every required step is approved. The audit trail does not change.
+**6. How does the annual planning cycle work, and how would a second approval level be added?**
+Each VP's submission moves draft → submitted → approved, or back through sent-back. The allowed moves are a small dictionary in `planning.py`. A second level would be one more status and one more entry in that dictionary; if approvals needed to vary by org or by size, an `approval_steps` table (submission, step, approver, decision) would replace the single status.
 
-**7. What would an opex request flow look like?**
-The same shape as backfills. `opex_requests` with requester, cost center, vendor, amount, period and status. `opex_request_events` as the append-only log. `budget_lines` by cost center and account, versioned and locked like the headcount plan. The equivalent of usable open is budget remaining: approved budget, minus actuals, minus commitments such as approved requests and open purchase orders. Checks would tie actuals out to the ledger.
+**7. Why does the forecast show a range, and where do the numbers come from?**
+Because it is an estimate. Each open request counts for its chance of being filled by quarter end, taken from how long past requests actually took, conditional on how long this one has already been open. Exits use the attrition seen in the last 60 days. Treating hires as independent coin flips and exits as a count of rare events gives a spread, and the page shows the 25th to 75th percentile. It is all in `db/views/50_forecast.sql`, and the method is printed on the page.
 
-**8. Would this scale to 50,000 positions?**
-It is indexed on the columns the views join on: `positions.org_id`, `positions.person_id`, and the partial unique index on active staffing requests. At 50,000 positions the views are still fast. If the roll-up became slow, `v_usable_open` could become a materialized view refreshed after each load, since most people read numbers as of this morning anyway. The org closure is the piece to watch, and that can be a real table maintained on reorg.
+**8. What happens in a reorg, when positions move between orgs?**
+Today `positions.org_id` is the current org, so a reorg is an update and history is lost. The fix is effective dating: a `position_org_assignments` table with valid-from and valid-to. Snapshots already protect past totals, because they were stored at the time.
 
-**9. Why SQL views and not Python?**
-The rules are the product. Someone in finance can open `views.sql`, read the usable-open formula in one place, and disagree with it. The same view feeds the page, the API and the tests, so there is one definition. Python is left with routing and rendering.
+**9. Would this scale to 50,000 positions?**
+The hot queries are indexed (see migration 002). The first thing to change would be `v_usable_open` and `v_budget`: make them materialized views refreshed after each load, since people read numbers as of this morning anyway. Search would need a trigram index. The org closure can become a real table maintained on reorg.
 
-**10. Why does usable open differ from what the position tool shows as open?**
-The tool lists every empty seat with no request. Some of those are stale records the plan does not fund. For the Research SVP the tool shows about twice as many open seats as the plan supports, and the Exceptions page explains the gap. Related: negative headcount is an over-hire, someone in a seat the plan never approved. It is recorded as its own seat type, so it is visible and it uses up one of that org's usable seats.
+**10. What do "simulated roles" mean for security?**
+Who you are is a cookie, so it is not authentication. What each role may do is real: every write goes through `app/permissions.py` on the server, writes need a CSRF token, and the tests prove that the wrong role gets a 403 and nothing changes. Swapping the cookie for real sign-in would not change those rules.
 
 ## 5. What's rough, and what to fix next
 
-Honest list, most important first.
-
-1. **People who leave are not vacated automatically.** A seat is vacated when the recruiter opens the request, and only if the person's last day has passed. In real life a nightly job would vacate seats on the last day. Without it, a departed person shows up as a ghost fill, which the Exceptions page does catch.
-2. **"Mark resolved" is a note, not a fix.** It records who dealt with an exception. The underlying row is unchanged, so the exception still counts toward the gap on the Headcount page. A real version would offer the fix itself (vacate, recode, close).
-3. **Roles are a cookie.** There are no logins and no permissions. Anyone can switch to VP and approve. Fine for a demo; the first thing to replace in a real system.
-4. **Snapshots are generated, not captured.** The 60 days of history are built by walking backwards from today. A real system would write a snapshot every night from `v_usable_open`.
-5. **The daily refresh rebuilds everything.** On the first visit of a new day the app reseeds (about three seconds). It keeps "data as of this morning" true, but it is a demo trick.
-6. **Reserve parked on a team makes that VP look short.** The plan funds it at the SVP, so the SVP total is right, but the VP row is understated by the misplaced seats. The exception explains it; the table does not.
-7. **The waterfall's small bars are small.** Filled is about 93% of approved, so the last four bars are thin. The value labels and the math row carry the detail. A zoomed "last 150 seats" view would read better.
-8. **About-page links point at GitHub.** "Read the PRD" and "Code on GitHub" only work for people who can see the repository.
+1. **Identity is simulated.** There is no sign-in. The permission rules are enforced, but anyone can pick any role.
+2. **People who leave are not vacated automatically.** A seat is vacated when the recruiter opens the request and the last day has passed. A nightly job should do it. Until then a departed person shows up as a ghost fill, which the Exceptions page catches.
+3. **The forecast ignores what is already known.** Notice already given and offers already signed are treated like any other exit or open request. Using them directly would tighten the range.
+4. **Attrition is one rate per SVP org,** and time to fill is one distribution for the whole company. Splitting by job family and level would be more accurate and needs more history.
+5. **The locked FY28 plan stops at VP level.** Splitting it down to teams is not built.
+6. **Budget is annual run-rate against annual plan.** It does not track actual spend to date, so an org that hired late looks the same as one that hired early.
+7. **"Mark resolved" is a note, not a fix.** A real version would offer the fix itself (vacate, recode, close).
+8. **Snapshots are generated, not captured.** The 60 days of history are built by walking backwards from today.
+9. **The rate limit is per instance and in memory.** Fine for one or two instances; a shared store would be needed beyond that.
+10. **The daily refresh rebuilds everything** on the first visit of a new day (about three seconds). It keeps the demo current; a real system would load, not rebuild.

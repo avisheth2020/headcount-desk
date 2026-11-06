@@ -3,7 +3,7 @@
 - **Live URL:** https://headcount-desk-yf5labkepq-ue.a.run.app
 - **Repo:** https://github.com/avisheth2020/headcount-desk (private)
 
-Last updated: Fri Nov 6, 2:20 AM ET.
+Last updated: Fri Nov 6, 3:20 AM ET.
 
 ## Rollback point (recorded before any V2 change)
 
@@ -12,7 +12,30 @@ Last updated: Fri Nov 6, 2:20 AM ET.
   `gcloud run services update-traffic headcount-desk --region us-east1 --to-revisions=headcount-desk-00006-ht7=100`
   then rebuild the production data for that version: `git checkout v1.0 && uv run python -m scripts.migrate --prod && uv run python -m scripts.seed --prod`.
 
-## Status: all eight milestones (PRs 0 to 7) built, merged and deployed, plus one follow-up PR
+## V2: from prototype to product (Fri Nov 6, 2:15 to 4:50 AM ET)
+
+| PR | Contents | State |
+|---|---|---|
+| #10 | Foundation, Tier 1 and Tier 2: design system and full UI overhaul, cost model and Budget, security hardening | merged |
+| #11 | Tier 3 and Tier 4: FY28 annual planning cycle, quarter-end forecast | merged |
+| #12 | Docs, screenshots, compression, accessibility polish | merged |
+
+**What shipped**
+
+- **Tier 1, design.** `docs/DESIGN.md` and every page rebuilt on it: sidebar shell, designed dark mode (follows the system, with a toggle), a bridge chart in place of the waterfall, detail in a deep-linkable side drawer, sortable tables with filters in the URL, pagination and CSV export, a ⌘K command palette, a Today page per role, an org explorer, and `/styleguide` showing every component in both themes.
+- **Tier 2, dollars.** A rate card (`cost_rates`), a fiscal calendar, a Budget page (projected spend against the plan, drill-down to seats), cost and budget position on every backfill approval, and two new data checks (eight in total).
+- **Tier 3, annual planning.** The FY28 cycle: VP asks by job family with live dollar impact, SVP review against an envelope (approve, approve fewer, send back), lock into a new plan version that takes effect next fiscal year. Append-only audit trail. Seeded mid-cycle.
+- **Tier 4, forecast.** Projected people in seats and run-rate at quarter end, with a P25 to P75 range and the method written on the page. Drill-down to each open request's odds and to the exits behind the attrition rate.
+- **Hardening.** CSRF on every write, a strict Content Security Policy (no inline scripts, no CDNs), security headers, a write rate limit, JSON request logs, `/healthz` with a database check, server-side role permissions, input validation, numbered migrations tracked in `schema_migrations`, indexes for the hot queries, pagination limits on every list.
+
+**How it was verified**
+
+- 140 tests pass locally and in CI: unit tests with hand-worked fixtures (usable open, budget, forecast), workflow and permission tests, and Playwright end-to-end tests (backfill flow, planning cycle, exceptions, palette, drawer, theme, org explorer).
+- axe-core runs on every page in light and dark: zero serious or critical violations.
+- Every page was screenshot-reviewed at 1440px, 1024px and 375px in both themes; an automated test asserts no page scrolls sideways at any of the three widths.
+- Lighthouse on the Headcount page: see the numbers under "Live checks" below.
+
+## V1 Status: all eight milestones (PRs 0 to 7) built, merged and deployed, plus one follow-up PR
 
 | PR | GitHub | Contents | State |
 |---|---|---|---|
