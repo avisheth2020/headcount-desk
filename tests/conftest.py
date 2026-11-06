@@ -53,3 +53,27 @@ def empty_db(empty_schema):
     finally:
         conn.rollback()
         conn.close()
+
+
+@pytest.fixture(scope="session")
+def manifest():
+    """Build the full synthetic dataset once per run. Returns what was planted."""
+    from scripts.seed import seed
+    with db.connect(TEST_URL) as conn:
+        migrate(conn, SEEDED_SCHEMA)
+        planted = seed(conn)
+    yield planted
+    if db._pool is not None:
+        db._pool.close()
+    _drop(SEEDED_SCHEMA)
+
+
+@pytest.fixture()
+def seeded_db(manifest):
+    """A connection to the seeded schema. Everything a test does is rolled back."""
+    conn = db.connect(TEST_URL, schema=SEEDED_SCHEMA)
+    try:
+        yield conn
+    finally:
+        conn.rollback()
+        conn.close()
