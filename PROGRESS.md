@@ -3,7 +3,7 @@
 - **Live URL:** https://headcount-desk-yf5labkepq-ue.a.run.app
 - **Repo:** https://github.com/avisheth2020/headcount-desk (private)
 
-Last updated: Fri Nov 6, 3:20 AM ET.
+Last updated: Fri Nov 6, 3:40 AM ET.
 
 ## Rollback point (recorded before any V2 change)
 
@@ -19,6 +19,7 @@ Last updated: Fri Nov 6, 3:20 AM ET.
 | #10 | Foundation, Tier 1 and Tier 2: design system and full UI overhaul, cost model and Budget, security hardening | merged |
 | #11 | Tier 3 and Tier 4: FY28 annual planning cycle, quarter-end forecast | merged |
 | #12 | Docs, screenshots, compression, accessibility polish | merged |
+| #13 | Health-check alias, staged deploys in the deploy script, final notes | merged |
 
 **What shipped**
 
@@ -26,14 +27,31 @@ Last updated: Fri Nov 6, 3:20 AM ET.
 - **Tier 2, dollars.** A rate card (`cost_rates`), a fiscal calendar, a Budget page (projected spend against the plan, drill-down to seats), cost and budget position on every backfill approval, and two new data checks (eight in total).
 - **Tier 3, annual planning.** The FY28 cycle: VP asks by job family with live dollar impact, SVP review against an envelope (approve, approve fewer, send back), lock into a new plan version that takes effect next fiscal year. Append-only audit trail. Seeded mid-cycle.
 - **Tier 4, forecast.** Projected people in seats and run-rate at quarter end, with a P25 to P75 range and the method written on the page. Drill-down to each open request's odds and to the exits behind the attrition rate.
-- **Hardening.** CSRF on every write, a strict Content Security Policy (no inline scripts, no CDNs), security headers, a write rate limit, JSON request logs, `/healthz` with a database check, server-side role permissions, input validation, numbered migrations tracked in `schema_migrations`, indexes for the hot queries, pagination limits on every list.
+- **Hardening.** CSRF on every write, a strict Content Security Policy (no inline scripts, no CDNs), security headers, a write rate limit, JSON request logs, a health endpoint with a database check (`/api/health`; Cloud Run answers `/healthz` itself, so that path only works locally), server-side role permissions, input validation, numbered migrations tracked in `schema_migrations`, indexes for the hot queries, pagination limits on every list.
 
 **How it was verified**
 
-- 140 tests pass locally and in CI: unit tests with hand-worked fixtures (usable open, budget, forecast), workflow and permission tests, and Playwright end-to-end tests (backfill flow, planning cycle, exceptions, palette, drawer, theme, org explorer).
+- 141 tests pass locally and in CI: unit tests with hand-worked fixtures (usable open, budget, forecast), workflow and permission tests, and Playwright end-to-end tests (backfill flow, planning cycle, exceptions, palette, drawer, theme, org explorer).
 - axe-core runs on every page in light and dark: zero serious or critical violations.
 - Every page was screenshot-reviewed at 1440px, 1024px and 375px in both themes; an automated test asserts no page scrolls sideways at any of the three widths.
-- Lighthouse on the Headcount page: see the numbers under "Live checks" below.
+
+**Live checks (run against the Cloud Run URL at 3:32 AM ET, revision `headcount-desk-00007-t8f`)**
+
+- A browser script drove the live site end to end: every page for every role, security headers, CSRF refusal, CSV export, the backfill flow (request, approve in place with dollars shown, open, fill), the planning cycle (edit with live dollars, submit, approve fewer, lock, and this year's plan unchanged), the palette and drawer, dark mode, the bridge chart, the org explorer, the forecast, exceptions with undo, data health, Reset demo, and no sideways scroll on a phone. 24 of 25 steps passed; the one miss was `/healthz`, which Cloud Run intercepts (fixed by adding `/api/health`).
+- Lighthouse on the live Headcount page: **performance 100, accessibility 96, best practices 100**, in both mobile and desktop modes (LCP 1.0 s on mobile, 0.3 s on desktop; no layout shift).
+
+**Rollback points for V2**
+
+- Back to V1: tag `v1.0` and revision `headcount-desk-00006-ht7` (see the top of this file).
+- Last V2 revision verified end to end: `headcount-desk-00007-t8f` (main at `7d0be20`). If a later revision misbehaves:
+  `gcloud run services update-traffic headcount-desk --region us-east1 --to-revisions=headcount-desk-00007-t8f=100`. No database change is needed for that one.
+
+**What is next**
+
+- Real sign-in in place of the role switcher (the permission rules are already enforced).
+- A nightly job to write the snapshot and vacate seats on a person's last day.
+- Use what is already known in the forecast (notice given, offers signed), and split rates by job family.
+- Split the locked annual plan down to teams.
 
 ## V1 Status: all eight milestones (PRs 0 to 7) built, merged and deployed, plus one follow-up PR
 
