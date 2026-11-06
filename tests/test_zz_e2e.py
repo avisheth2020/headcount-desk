@@ -320,8 +320,8 @@ def test_in_place_changes_do_not_leave_the_page_dimmed(browser, base_url):
     page.locator(".pills a", has_text="Engineering").click()
     page.wait_for_url("**org=**")
     wait_until(lambda: page.locator("main.swapping").count() == 0)
-    page.locator("thead a", has_text="Budget").click()
-    page.wait_for_url("**sort=budget**")
+    page.locator("thead a", has_text="Run-rate").click()
+    page.wait_for_url("**sort=run_rate**")
     wait_until(lambda: page.locator("main.swapping").count() == 0)
     assert page.errors == []
 
