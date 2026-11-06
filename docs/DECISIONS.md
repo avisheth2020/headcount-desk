@@ -89,3 +89,36 @@ A running log. Each entry: the choice, the alternative, and why.
 **21. "Reset demo" reruns the whole seed in one transaction.**
 *Alternative:* undo only the visitor's changes.
 *Why:* simplest thing that is always correct. It takes a couple of seconds and is rate-limited.
+
+**22. An exception's owner is the VP over the seat.**
+*Alternative:* the team lead.
+*Why:* about 170 team leads would make 170 tiny lists. Twelve VPs gives each owner a list they can work through, and the team is still shown on every row.
+
+**23. "Mark resolved" records who dealt with it; it does not hide or change the row.**
+*Alternative:* delete or suppress the exception.
+*Why:* exceptions are derived from the data. The honest way to make one disappear is to fix the source row, and a test shows that doing so clears it.
+
+**24. A passing check still stores its rows.**
+*Alternative:* store only failures.
+*Why:* "13 orgs tested, all passed" with the numbers shown is more convincing than a green tick, and it gives every check a click-through.
+
+**25. People who can be backfilled are people with an end date who still hold a seat.**
+*Alternative:* add a "previous holder" column to positions.
+*Why:* it needs no new column, and the seat to reuse is simply the one they are sitting in. It also means a ghost fill can be turned into a backfill.
+
+**26. A new hire recorded through the workflow starts in two weeks.**
+*Why:* that is realistic, and it keeps this morning's snapshot tie-out true. The seat counts as filled from the accepted offer.
+
+**27. The waterfall runs sideways on a phone, and the whole lane of each bar is clickable.**
+*Why:* six labels do not fit under six bars at 375px, and the small bars would be hard to tap.
+
+**28. Tests run in a throwaway Postgres schema.**
+*Alternative:* a separate test database, or mocking the database.
+*Why:* the logic is SQL, so the tests need a real Postgres. A fresh schema per run isolates them from the app's data on the same database, locally and in CI.
+
+**29. The production connection string is a Cloud Run environment variable.**
+*Alternative:* Secret Manager.
+*Why:* the data is synthetic and this keeps the demo inside free tiers with no extra service to enable. A real deployment would use Secret Manager.
+
+**30. A requester can only ask for backfills in their own org.**
+*Why:* it matches how the process works, and it means the request always routes to the right VP.
