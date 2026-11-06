@@ -70,7 +70,7 @@ More in [docs/PRD.md](docs/PRD.md) (problem, users, roadmap), [docs/SCHEMA.md](d
 | Database | Postgres (Neon), `psycopg` 3, plain SQL, numbered migrations |
 | Safety | CSRF tokens, a strict Content Security Policy, rate limits, server-side role permissions, JSON request logs |
 | Tests | `pytest` unit tests plus Playwright end-to-end tests with axe-core, in GitHub Actions on every PR |
-| Hosting | Google Cloud Run |
+| Hosting | Cloud Run |
 
 There is also a small read-only JSON API over the same views, documented at [`/docs`](https://headcount-desk-yf5labkepq-ue.a.run.app/docs), and every component is shown in both themes at [`/styleguide`](https://headcount-desk-yf5labkepq-ue.a.run.app/styleguide).
 
