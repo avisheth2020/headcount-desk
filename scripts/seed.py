@@ -203,7 +203,7 @@ class Builder:
         team["leader"] = lead
         self.seat(lead)
         self.used.add(lead["id"])
-        size = rng.randint(24, 42)
+        size = rng.randint(25, 42)
         recent = rng.choice([0, 0, 1, 1, 1, 2])          # hires in the last 60 days
         for i in range(size - 1):
             family = secondary if (i == 0 or rng.random() < 0.2) else primary
