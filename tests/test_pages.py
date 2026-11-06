@@ -51,3 +51,23 @@ def test_role_switch_lands_each_role_on_its_page(client):
         response = client.post("/role", data={"role": role}, follow_redirects=False)
         assert response.status_code == 303 and response.headers["location"] == landing
     client.cookies.clear()
+
+
+@pytest.mark.parametrize("path", ["/api/usable-open", "/api/usable-open?org_id=2", "/api/exceptions?exception_type=duplicate",
+                                  "/api/requests?status=submitted", "/api/requests/1001/events", "/api/checks/latest"])
+def test_api_returns_json(client, path):
+    response = client.get(path)
+    assert response.status_code == 200 and response.headers["content-type"].startswith("application/json")
+
+
+def test_api_matches_the_page(client, ids):
+    data = client.get(f"/api/usable-open?org_id={ids['svp']}").json()
+    org = data["org"]
+    assert org["usable_open"] == org["approved"] - org["filled"] - org["committed"] - org["reserve"] - org["negative"]
+    assert sum(c["approved"] for c in data["children"]) <= org["approved"]
+
+
+def test_friendly_404(client):
+    page = client.get("/requests/999999")
+    assert page.status_code == 404 and "find that" in page.text
+    assert client.get("/api/usable-open?org_id=999999").json() == {"detail": "No such org"}

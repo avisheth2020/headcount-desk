@@ -9,6 +9,7 @@ dependencies = [
     "psycopg[binary,pool]>=3.3.8",
     "python-dotenv>=1.2.4",
     "python-multipart>=0.0.33",
+    "tzdata>=2026.6",
     "uvicorn>=0.54.0",
 ]
 

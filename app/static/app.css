@@ -452,4 +452,12 @@ tr.hot td { background: var(--warn-soft) !important; }
   .table.cards.two tr { grid-template-columns: repeat(2, 1fr); }
 }
 
+.htmx-indicator { display: none; }
+.htmx-request.htmx-indicator, .htmx-request .htmx-indicator { display: block; }
+.skeleton-rows { display: grid; gap: 12px; padding: var(--s3) 0; }
+.skeleton-rows .skeleton:nth-child(2) { width: 70%; }
+.skeleton-rows .skeleton:nth-child(3) { width: 45%; }
+.search input.htmx-request + kbd + .search-results:empty { display: block; padding: 14px; }
+.search input.htmx-request + kbd + .search-results:empty::before { content: ""; display: block; height: 14px; border-radius: 4px; background: var(--border); }
+
 [hidden] { display: none !important; }

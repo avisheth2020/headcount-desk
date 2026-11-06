@@ -22,7 +22,7 @@
     <p class="hint" style="margin:12px 0 8px">Leaving soon in {{ scope_name }}:</p>
     <div class="suggest">
       {% for k in suggestions %}
-      <button type="button" hx-get="/backfill/preview?person={{ k.person_id }}" hx-target="#form-body"
+      <button type="button" hx-get="/backfill/preview?person={{ k.person_id }}" hx-target="#form-body" hx-indicator="#form-loading"
               hx-on::after-request="document.getElementById('who').value = '{{ k.full_name | e }}'; document.getElementById('who-results').innerHTML = ''">
         {{ k.full_name }}<span>{{ FAMILY[k.job_family] }}, {{ k.level }} · last day {{ k.end_date | d }}</span>
       </button>
@@ -30,6 +30,7 @@
     </div>
     {% endif %}
   </div>
+  <div id="form-loading" class="htmx-indicator skeleton-rows" aria-hidden="true"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
   <div id="form-body">{% if selected %}{% include "_backfill_form.html" %}{% endif %}</div>
 </section>
 {% endblock %}

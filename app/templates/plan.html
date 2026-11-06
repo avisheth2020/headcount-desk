@@ -6,8 +6,8 @@
 {{ m.crumbs(crumbs, here="Approved headcount") }}
 <div class="page-head">
   <div>
-    <h1>{{ total | num }} approved positions in {{ org.name }}</h1>
-    <p class="fresh">From {{ plan.name }}, locked {{ plan.locked_at | d }}. A locked plan cannot be edited; a change means a new version. These are the plan lines behind the number.</p>
+    <h1>{{ total | num }} approved positions {{ 'held directly at' if direct else 'in' }} {{ org.name }}</h1>
+    <p class="fresh">From {{ plan.name }}, locked {{ plan.locked_at | d }}. A locked plan cannot be edited; a change means a new version. These are the plan lines behind the number. Data as of {{ as_of | dt }}.</p>
   </div>
 </div>
 

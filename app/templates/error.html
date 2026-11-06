@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title }} · Headcount Desk</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/app.css?v={{ asset_version }}">
+</head>
+<body>
+  <main style="max-width:560px;padding-top:15vh;text-align:center">
+    <p class="eyebrow">{{ code }}</p>
+    <h1 style="margin:8px 0 12px">{{ title }}</h1>
+    <p class="muted" style="margin-bottom:24px">{{ message }}</p>
+    <a class="btn btn-primary" href="/">Back to Headcount</a>
+    {% if code >= 500 %}<form method="post" action="/reset" style="display:inline"><button class="btn">Reset the demo</button></form>{% endif %}
+  </main>
+</body>
+</html>

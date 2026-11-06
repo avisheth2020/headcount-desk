@@ -3,11 +3,12 @@
 from urllib.parse import quote
 
 from fastapi import FastAPI, Form, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app import db, demo, web
-from app.routes import backfill, exceptions, health, overview
+from app.routes import api, backfill, exceptions, health, overview
 
 app = FastAPI(
     title="Headcount Desk",
@@ -19,6 +20,31 @@ app.include_router(overview.router)
 app.include_router(exceptions.router)
 app.include_router(backfill.router)
 app.include_router(health.router)
+app.include_router(api.router)
+
+
+def wants_html(request: Request) -> bool:
+    return not request.url.path.startswith("/api") and "hx-request" not in request.headers
+
+
+@app.exception_handler(StarletteHTTPException)
+async def friendly_http_error(request: Request, exc: StarletteHTTPException):
+    """A 404 that reads like a sentence, not a stack trace. The API still gets JSON."""
+    if not wants_html(request):
+        return JSONResponse({"detail": exc.detail}, status_code=exc.status_code)
+    title = "We couldn't find that" if exc.status_code == 404 else "That didn't work"
+    message = "The page, org, position or request you asked for doesn't exist. It may have been removed when the demo was reset." \
+        if exc.status_code == 404 else str(exc.detail)
+    return web.render(request, "error.html", {"code": exc.status_code, "title": title, "message": message}, exc.status_code)
+
+
+@app.exception_handler(Exception)
+async def friendly_server_error(request: Request, exc: Exception):
+    if not wants_html(request):
+        return JSONResponse({"detail": "Something went wrong"}, status_code=500)
+    return web.render(request, "error.html", {
+        "code": 500, "title": "Something went wrong on our side",
+        "message": "Nothing you did. Try again, or reset the demo to start clean."}, 500)
 
 
 @app.get("/healthz", include_in_schema=False)

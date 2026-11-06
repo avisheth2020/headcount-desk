@@ -96,12 +96,12 @@
         {% if has_direct %}
         <tr>
           <td>Held at {{ org.name }} level<span class="sub">Leadership seats and central reserve, not yet given to an org below</span></td>
-          <td class="r" data-label="Approved">{{ direct.approved | num }}</td>
+          <td class="r" data-label="Approved"><a href="/plan?org={{ org.org_id }}&direct=1">{{ direct.approved | num }}</a></td>
           <td class="r" data-label="Filled"><a href="/positions?org={{ org.org_id }}&bucket=filled&direct=1">{{ direct.filled | num }}</a></td>
           <td class="r" data-label="Committed"><a href="/positions?org={{ org.org_id }}&bucket=committed&direct=1">{{ direct.committed | num }}</a></td>
           <td class="r" data-label="Reserve"><a href="/positions?org={{ org.org_id }}&bucket=reserve&direct=1">{{ direct.reserve | num }}</a></td>
           <td class="r" data-label="Negative"><a href="/positions?org={{ org.org_id }}&bucket=negative&direct=1">{{ direct.negative | num }}</a></td>
-          <td class="r" data-label="Usable open">{{ direct.usable_open | num }}</td>
+          <td class="r" data-label="Usable open"><a href="/positions?org={{ org.org_id }}&direct=1">{{ direct.usable_open | num }}</a></td>
           <td class="r"></td>
         </tr>
         {% endif %}
@@ -109,12 +109,11 @@
       <tfoot>
         <tr>
           <td>{{ org.name }} total</td>
-          <td class="r" data-label="Approved">{{ org.approved | num }}</td>
-          <td class="r" data-label="Filled">{{ org.filled | num }}</td>
-          <td class="r" data-label="Committed">{{ org.committed | num }}</td>
-          <td class="r" data-label="Reserve">{{ org.reserve | num }}</td>
-          <td class="r" data-label="Negative">{{ org.negative | num }}</td>
-          <td class="r" data-label="Usable open"><span class="usable">{{ org.usable_open | num }}</span></td>
+          <td class="r" data-label="Approved"><a href="/plan?org={{ org.org_id }}">{{ org.approved | num }}</a></td>
+          {% for key in ["filled", "committed", "reserve", "negative"] %}
+          <td class="r" data-label="{{ BUCKETS[key][0] }}"><a href="/positions?org={{ org.org_id }}&bucket={{ key }}">{{ org[key] | num }}</a></td>
+          {% endfor %}
+          <td class="r" data-label="Usable open"><a class="usable" href="#math">{{ org.usable_open | num }}</a></td>
           <td class="r" data-label="To fix">{% if exceptions.get(org.org_id) %}<a href="/exceptions?org={{ org.org_id }}">{{ exceptions[org.org_id] }}</a>{% endif %}</td>
         </tr>
       </tfoot>
