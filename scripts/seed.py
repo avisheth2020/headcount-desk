@@ -73,7 +73,7 @@ REJECT_REASONS = [
 
 # How many of each error to plant.
 PLANT_COUNTS = {"stale_open": 150, "duplicate": 20, "ghost_fill": 15, "miscoded": 30, "reserve_misplaced": 25}
-NEGATIVE_TEAMS, NEGATIVE_PER_TEAM = 6, 2
+NEGATIVE_TEAMS_PER_SVP, NEGATIVE_PER_TEAM = 2, 2
 ANOMALY_VP, ANOMALY_POINTS = "Applied Research", 5.2
 PRE_RESOLVED = 38
 
@@ -250,12 +250,15 @@ class Builder:
     def plant_noise(self):
         rng = self.rng
         # Negative seats: a team hired over plan, so the seat has no approved headcount behind it.
-        for team in rng.sample(self.teams, NEGATIVE_TEAMS):
-            for person in self.pick(self.clean_members(team), NEGATIVE_PER_TEAM):
-                pos = person["position"]
-                pos["position_type"] = "negative"
-                self.plan[(pos["org_id"], pos["job_family"])] -= 1
-                self.negatives.append(pos)
+        # Two teams under each SVP, so every SVP's page shows the bucket.
+        for svp in [o for o in self.orgs if o["level"] == "svp"]:
+            under = [t for t in self.teams if t["parent"]["parent"]["parent"] is svp]
+            for team in rng.sample(under, NEGATIVE_TEAMS_PER_SVP):
+                for person in self.pick(self.clean_members(team), NEGATIVE_PER_TEAM):
+                    pos = person["position"]
+                    pos["position_type"] = "negative"
+                    self.plan[(pos["org_id"], pos["job_family"])] -= 1
+                    self.negatives.append(pos)
         # Ghost fills: the person left, but the seat still points to them.
         for person in self.pick(self.clean_members(), PLANT_COUNTS["ghost_fill"]):
             person["end_date"], person["ghost"] = self.days_ago(rng.randint(10, 80)), True

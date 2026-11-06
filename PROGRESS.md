@@ -3,9 +3,9 @@
 - **Live URL:** https://headcount-desk-yf5labkepq-ue.a.run.app
 - **Repo:** https://github.com/avisheth2020/headcount-desk (private)
 
-Last updated: Fri Nov 6, 2:00 AM ET.
+Last updated: Fri Nov 6, 2:10 AM ET.
 
-## Status: all eight milestones built, merged and deployed
+## Status: all eight milestones (PRs 0 to 7) built, merged and deployed, plus one follow-up PR
 
 | PR | GitHub | Contents | State |
 |---|---|---|---|
@@ -17,12 +17,13 @@ Last updated: Fri Nov 6, 2:00 AM ET.
 | 5 | #6 | Backfill workflow and audit trail | merged |
 | 6 | #7 | Data checks and Data health page | merged |
 | 7 | #8 | Polish, JSON API, deploy, README, walkthrough | merged |
+| 8 | #9 | Follow-up fixes after the full review (over-hires under every SVP, safer name handling, fresh screenshots) | merged |
 
 (GitHub numbers pull requests from 1, so "PR 0" is pull request #1.)
 
 ## What was verified
 
-- **Tests:** 76 pass locally and in CI (Postgres 17 service container). They cover the usable-open formula on a hand-worked fixture, every planted error in `seed_manifest.json`, the workflow (happy path, rejection, skipped steps, append-only audit), each data check (clean data passes, broken data fails, the planted anomaly is flagged), and every page for every role.
+- **Tests:** 77 pass locally and in CI (Postgres 17 service container). They cover the usable-open formula on a hand-worked fixture, every planted error in `seed_manifest.json`, the workflow (happy path, rejection, skipped steps, append-only audit), each data check (clean data passes, broken data fails, the planted anomaly is flagged), and every page for every role.
 - **Databases:** the Neon `dev` and `production` branches are migrated and seeded (6,155 active people, 6,814 positions, 240 planted exceptions, 41 backfill requests, 60 days of snapshots).
 - **Browser run:** a headless Chromium script drove the full flow at 1440px and at 375px, locally and against the live URL: Try-this card, chart click-through, search, submit a backfill, approve in place, reject with a reason, Enter to approve, recruiter opens and fills, resolve an exception and undo, follow the anomaly to its rows, reset the demo, friendly 404. All steps passed.
 - **Screenshots:** every page was captured at 1440px and 375px and reviewed against the UX checklist. No horizontal scroll at 375px on any page, for any role.
