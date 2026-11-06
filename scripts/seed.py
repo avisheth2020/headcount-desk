@@ -203,7 +203,7 @@ class Builder:
         team["leader"] = lead
         self.seat(lead)
         self.used.add(lead["id"])
-        size = rng.randint(27, 45)
+        size = rng.randint(24, 42)
         recent = rng.choice([0, 0, 1, 1, 1, 2])          # hires in the last 60 days
         for i in range(size - 1):
             family = secondary if (i == 0 or rng.random() < 0.2) else primary
@@ -221,7 +221,7 @@ class Builder:
             for _ in range(n):
                 family = secondary if rng.random() < 0.2 else primary
                 level = rng.choices(["L3", "L4", "L5", "L6"], [20, 35, 30, 15])[0]
-                opened = self.days_ago(rng.randint(8, 150) if kind == "committed" else rng.randint(1, 60))
+                opened = self.days_ago(rng.randint(8, 150) if kind == "committed" else rng.randint(0, 60))
                 pos = self.add_position(team, family, level, opened, source="backfill" if rng.random() < 0.6 else "plan")
                 if pos["source"] == "backfill":
                     start = opened - timedelta(days=rng.randint(200, 1800))
@@ -603,11 +603,21 @@ def load(conn, b: Builder) -> None:
     cur.executemany("INSERT INTO app_meta (key, value) VALUES (%s, %s)", list(meta.items()))
 
 
+def load_check_history(conn, as_of: date) -> None:
+    """Two weeks of earlier check runs (counts only), then this morning's run for real."""
+    from app.checks import run_checks
+    at = lambda days: datetime.combine(as_of - timedelta(days=days), time(6, 2), ET)
+    history = [(at(days), 5 if days == 9 else 6, 1 if days == 9 else 0, 0) for days in range(13, 0, -1)]
+    conn.cursor().executemany("INSERT INTO check_runs (run_at, passed, warned, failed) VALUES (%s, %s, %s, %s)", history)
+    run_checks(conn, run_at=at(0))
+
+
 def seed(conn) -> dict:
     """Build and load. Returns the manifest of what was planted."""
     as_of = db.one(conn, "SELECT today() AS d")["d"]
     builder = Builder(as_of, datetime.now(ET)).build()
     load(conn, builder)
+    load_check_history(conn, as_of)
     return builder.manifest
 
 

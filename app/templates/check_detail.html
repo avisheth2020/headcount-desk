@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} check{% endblock %}
+
+{% block content %}
+<nav class="crumbs" aria-label="Breadcrumb"><a href="/health">Data health</a><span aria-hidden="true">›</span><span class="here">{{ title }}</span></nav>
+<div class="page-head">
+  <div>
+    <h1>{{ title }}: {{ rows | length }} thing{{ "" if rows | length == 1 else "s" }} tested</h1>
+    <p class="fresh">{{ asserts }} Last run {{ run.run_at | dt }}. The rule is the SQL view <code>v_check_{{ name }}</code>.</p>
+  </div>
+</div>
+<section class="card">
+  <table class="table cards two">
+    <thead><tr><th>What was tested</th><th>Result</th><th class="r">Expected</th><th class="r">Actual</th><th class="r">Rows</th></tr></thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td>{{ r.message }}</td>
+        <td data-label="Result">{% if r.severity == "pass" %}<span class="chip chip-good">✓ Passed</span>{% elif r.severity == "warn" %}<span class="chip chip-warn">⚠ Needs a look</span>{% else %}<span class="chip chip-bad">× Failed</span>{% endif %}</td>
+        <td class="r" data-label="Expected">{{ "{:,.10g}".format(r.expected) if r.expected is not none else "–" }}</td>
+        <td class="r" data-label="Actual">{{ "{:,.10g}".format(r.actual) if r.actual is not none else "–" }}</td>
+        <td class="r" data-label="Rows"><a href="{{ r.link }}">See rows</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}
