@@ -82,7 +82,7 @@ p { margin: 0; }
 .topbar-right { margin-left: auto; display: flex; align-items: center; gap: var(--s3); }
 
 .search { position: relative; }
-.search input {
+.search input[type="search"] {
   width: 264px; height: 34px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface-2);
   padding: 0 34px 0 12px; font: inherit; font-size: 14px; color: var(--text);
 }
@@ -299,6 +299,9 @@ a.tile:hover { border-color: var(--accent); text-decoration: none; }
 .todo .fix { font-size: 13px; color: var(--muted); }
 .todo li.done .what { text-decoration: line-through; color: var(--muted); font-weight: 400; }
 .todo li.done { background: var(--surface-2); }
+.more > summary { list-style: none; cursor: pointer; padding: 12px var(--s4); color: var(--accent-text); font-weight: 500; font-size: 14px; border-top: 1px solid var(--border); }
+.more > summary::-webkit-details-marker { display: none; }
+.more[open] > summary { display: none; }
 .todo .meta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 2px; }
 
 /* ── Requests: inbox cards, stepper, timeline ────────────────────────────── */
@@ -380,7 +383,7 @@ tr.hot td { background: var(--warn-soft) !important; }
 .narrow-only { display: none; }
 
 @media (max-width: 900px) {
-  .search input { width: 200px; }
+  .search input[type="search"] { width: 200px; }
   .hero { grid-template-columns: 1fr; gap: var(--s3); }
   .checks { grid-template-columns: repeat(2, 1fr); }
 }
@@ -404,6 +407,14 @@ tr.hot td { background: var(--warn-soft) !important; }
   .tabbar a:hover { text-decoration: none; }
   .tabbar a[aria-current="page"] { color: var(--accent-text); }
   .tabbar svg { width: 22px; height: 22px; }
+  .role-switch summary .lbl { display: none; }
+  .role-switch summary { padding: 0 10px; }
+  .tiles { grid-template-columns: repeat(3, 1fr); gap: var(--s2); }
+  .tile { padding: 10px 12px; }
+  .tile b { font-size: 20px; }
+  .tile span { font-size: 12px; }
+  .tile .tip { display: none; }
+  .more > summary { padding: 12px var(--s3); }
   .card-pad { padding: var(--s3); }
   .card-head { padding: var(--s3); }
   .hero-number { font-size: 60px; }

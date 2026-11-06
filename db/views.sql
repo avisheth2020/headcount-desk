@@ -139,3 +139,105 @@ FROM orgs o
 JOIN v_org_closure c ON c.ancestor_id = o.id
 JOIN v_headcount_direct d ON d.org_id = c.org_id
 GROUP BY o.id, o.name, o.level, o.parent_id;
+
+
+-- ── Exceptions: what is wrong in the data ───────────────────────────────────
+
+CREATE FUNCTION family_label(family text) RETURNS text
+LANGUAGE sql IMMUTABLE AS $$
+    SELECT CASE family WHEN 'research' THEN 'Research' WHEN 'eng' THEN 'Engineering'
+                       WHEN 'ops' THEN 'Operations' WHEN 'g&a' THEN 'G&A' ELSE family END
+$$;
+
+-- One SELECT per rule. Adding a rule means adding a SELECT to this union.
+CREATE VIEW v_exception_rules AS
+-- 1. Stale open: empty for more than 90 days and nobody is recruiting for it.
+SELECT 'stale_open' AS exception_type,
+       ps.position_id,
+       ps.opened_at AS since,
+       format('Open for %s days with no staffing request', today() - ps.opened_at) AS detail
+FROM v_position_status ps
+WHERE ps.bucket = 'open_no_req'
+  AND ps.opened_at < today() - 90
+
+UNION ALL
+-- 2. Duplicate: the same person holds more than one seat. The lowest id is
+--    treated as the real one; every other seat is flagged.
+SELECT 'duplicate',
+       p.id,
+       p.opened_at,
+       format('%s already sits in %s', pe.full_name, first_seat.position_code)
+FROM positions p
+JOIN people pe ON pe.id = p.person_id
+JOIN LATERAL (SELECT o.id, o.position_code FROM positions o
+              WHERE o.person_id = p.person_id ORDER BY o.id LIMIT 1) first_seat ON first_seat.id <> p.id
+
+UNION ALL
+-- 3. Ghost fill: the seat still points to someone who has already left.
+SELECT 'ghost_fill',
+       p.id,
+       pe.end_date,
+       format('%s left on %s but still holds this seat', pe.full_name, to_char(pe.end_date, 'Mon FMDD'))
+FROM positions p
+JOIN people pe ON pe.id = p.person_id
+WHERE pe.end_date < today()
+
+UNION ALL
+-- 4. Mis-coded: the seat's org has no line in the current plan for its job family.
+SELECT 'miscoded',
+       p.id,
+       NULL::date,                                   -- no meaningful age: it was coded wrong from the start
+       format('Coded as %s, but the plan has no %s headcount for this team',
+              family_label(p.job_family), family_label(p.job_family))
+FROM positions p
+WHERE p.position_type = 'standard'
+  AND NOT EXISTS (SELECT 1 FROM plan_lines pl JOIN v_current_plan cp ON cp.id = pl.plan_version_id
+                  WHERE pl.org_id = p.org_id AND pl.job_family = p.job_family)
+
+UNION ALL
+-- 5. Reserve in the wrong place: reserve belongs at the SVP, not on a team.
+SELECT 'reserve_misplaced',
+       p.id,
+       p.opened_at,
+       format('Reserve seat parked on a %s instead of held by the SVP', o.level)
+FROM positions p
+JOIN orgs o ON o.id = p.org_id
+WHERE p.position_type = 'reserve'
+  AND o.level <> 'svp';
+
+-- The rules, plus everything a person needs to act: where, who owns it
+-- (the VP over the seat), how old it is, a suggested fix, and whether
+-- someone has already marked it resolved.
+CREATE VIEW v_exceptions AS
+SELECT r.exception_type,
+       t.label AS type_label,
+       r.position_id,
+       p.position_code,
+       p.org_id,
+       path.name AS org_name,
+       path.svp_id,
+       path.vp_id,
+       coalesce(path.vp_name, path.svp_name, path.name) AS owner_org_name,
+       owner.id AS owner_id,
+       owner.full_name AS owner_name,
+       r.detail,
+       t.fix AS suggested_fix,
+       r.since,
+       today() - r.since AS age_days,
+       res.id IS NOT NULL AS is_resolved,
+       res.resolved_at,
+       res.resolved_by
+FROM v_exception_rules r
+JOIN positions p ON p.id = r.position_id
+JOIN v_org_path path ON path.org_id = p.org_id
+JOIN orgs owner_org ON owner_org.id = coalesce(path.vp_id, path.svp_id, p.org_id)
+JOIN people owner ON owner.id = owner_org.leader_person_id
+JOIN (VALUES
+        ('stale_open',        'Stale open',                 'Open a staffing request, or close the position.'),
+        ('duplicate',         'Duplicate seat',             'Keep one seat for this person and vacate the other. That frees a seat.'),
+        ('ghost_fill',        'Ghost fill',                 'Vacate the seat, then backfill it or close it.'),
+        ('miscoded',          'Mis-coded',                  'Recode the seat to a job family this team is funded for.'),
+        ('reserve_misplaced', 'Misplaced reserve',          'Move it to the SVP''s reserve, or convert it to a standard position.')
+     ) AS t (exception_type, label, fix) ON t.exception_type = r.exception_type
+LEFT JOIN exception_resolutions res
+       ON res.exception_type = r.exception_type AND res.position_id = r.position_id;

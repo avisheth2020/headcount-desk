@@ -1,0 +1,23 @@
+<li id="exc-{{ e.exception_type }}-{{ e.position_id }}" class="{{ 'done' if e.is_resolved }}">
+  <div>
+    <div class="meta">
+      <span class="chip {{ 'chip-good' if e.is_resolved else 'chip-warn' }}">{{ "✓ Resolved" if e.is_resolved else "⚠ " ~ e.type_label }}</span>
+      <a class="num" href="/positions/{{ e.position_id }}">{{ e.position_code }}</a>
+      <span class="muted small">{{ e.org_name }}{% if e.age_days is not none %} · {{ e.age_days | num }} days{% endif %}</span>
+    </div>
+    <div class="what">{{ e.detail }}</div>
+    <div class="fix">{% if e.is_resolved %}Resolved {{ e.resolved_at | ago }} ago{% else %}Fix: {{ e.suggested_fix }}{% endif %}</div>
+  </div>
+  {% if e.is_resolved %}
+  <button class="btn btn-sm btn-quiet" hx-post="/exceptions/unresolve?exception_type={{ e.exception_type }}&position_id={{ e.position_id }}&org={{ org.id }}"
+          hx-target="closest li" hx-swap="outerHTML">Undo</button>
+  {% else %}
+  <form hx-post="/exceptions/resolve" hx-target="closest li" hx-swap="outerHTML">
+    <input type="hidden" name="exception_type" value="{{ e.exception_type }}">
+    <input type="hidden" name="position_id" value="{{ e.position_id }}">
+    <input type="hidden" name="org" value="{{ org.id }}">
+    <button class="btn btn-sm" type="submit" aria-label="Mark {{ e.position_code }} resolved">✓ Mark resolved</button>
+  </form>
+  {% endif %}
+</li>
+{% if oob %}{% include "_exceptions_progress.html" %}{% endif %}

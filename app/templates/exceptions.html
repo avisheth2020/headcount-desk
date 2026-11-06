@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m %}
+{% block title %}Exceptions{% endblock %}
+
+{% block content %}
+{% set q_org = "org=" ~ org.id %}
+{% set q_type = ("&type=" ~ type) if type else "" %}
+{% set q_show = "&show=all" if show == "all" else "" %}
+<div class="page-head">
+  <div>
+    <h1>What's wrong in the data, and who fixes it?</h1>
+    {{ m.fresh(as_of, plan) }}
+  </div>
+  <nav class="pills" aria-label="Filter by org">
+    {% for s in svps %}
+    <a class="pill" href="/exceptions?org={{ s.id }}{{ q_type }}{{ q_show }}" {% if s.id == org.id %}aria-current="true"{% endif %}>{{ "All orgs" if s.id == 1 else s.name }}</a>
+    {% endfor %}
+    {% if org.level not in ("company", "svp") %}<a class="pill" href="/exceptions?{{ q_org }}" aria-current="true">{{ org.name }}</a>{% endif %}
+  </nav>
+</div>
+
+<div class="stack">
+  {% include "_exceptions_progress.html" %}
+
+  <nav class="tiles" aria-label="Filter by type">
+    <a class="card tile" href="/exceptions?{{ q_org }}{{ q_show }}" {% if not type %}aria-current="true"{% endif %}>
+      <span>All types</span><b>{{ by_type.values() | sum | num }}</b>
+    </a>
+    {% for key, (label, definition) in TYPES.items() %}
+    <a class="card tile" href="/exceptions?{{ q_org }}&type={{ key }}{{ q_show }}" {% if type == key %}aria-current="true"{% endif %}>
+      <span>{{ label }}<span class="tip" tabindex="0" role="note" aria-label="{{ definition }}" data-tip="{{ definition }}">i</span></span>
+      <b>{{ by_type.get(key, 0) | num }}</b>
+    </a>
+    {% endfor %}
+  </nav>
+
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap">
+    <p class="muted small">Grouped by the VP who owns the seats. Marking one resolved records who cleared it; it does not hide the row.</p>
+    <a class="small" href="/exceptions?{{ q_org }}{{ q_type }}{{ '' if show == 'all' else '&show=all' }}">{{ "Hide resolved" if show == "all" else "Show resolved too" }}</a>
+  </div>
+
+  {% for g in groups %}
+  <details class="card group" {% if loop.first %}open{% endif %}>
+    <summary>
+      <h2>{{ g.owner_name }}<span class="sub">{{ g.owner_org_name }}</span></h2>
+      <span class="chip {{ 'chip-warn' if g.open else 'chip-good' }}">{{ g.open ~ " to fix" if g.open else "✓ All clear" }}</span>
+    </summary>
+    <ul class="todo">
+      {% for e in g.rows[:6] %}{% include "_exception_row.html" %}{% endfor %}
+    </ul>
+    {% if g.rows | length > 6 %}
+    <details class="more">
+      <summary>Show {{ g.rows | length - 6 }} more for {{ g.owner_name }}</summary>
+      <ul class="todo">
+        {% for e in g.rows[6:] %}{% include "_exception_row.html" %}{% endfor %}
+      </ul>
+    </details>
+    {% endif %}
+  </details>
+  {% else %}
+  <div class="card empty-state"><b>Nothing to fix here 🎉</b>No open exceptions match this filter.</div>
+  {% endfor %}
+</div>
+{% endblock %}
