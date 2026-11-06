@@ -127,6 +127,4 @@ Honest list, most important first.
 5. **The daily refresh rebuilds everything.** On the first visit of a new day the app reseeds (about three seconds). It keeps "data as of this morning" true, but it is a demo trick.
 6. **Reserve parked on a team makes that VP look short.** The plan funds it at the SVP, so the SVP total is right, but the VP row is understated by the misplaced seats. The exception explains it; the table does not.
 7. **The waterfall's small bars are small.** Filled is about 93% of approved, so the last four bars are thin. The value labels and the math row carry the detail. A zoomed "last 150 seats" view would read better.
-8. **No header search on phones.** It is hidden under 720px to keep the top bar clean.
-9. **Keyboard focus after an inline action.** After Approve or Mark resolved, focus falls back to the page. It should move to the next card.
-10. **About-page links point at GitHub.** "Read the PRD" and "Code on GitHub" only work for people who can see the repository.
+8. **About-page links point at GitHub.** "Read the PRD" and "Code on GitHub" only work for people who can see the repository.

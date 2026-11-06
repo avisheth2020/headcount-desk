@@ -6,10 +6,19 @@ document.addEventListener("click", (e) => {
     try { localStorage.setItem("try-dismissed", "1"); } catch (err) {}
     document.documentElement.classList.add("try-dismissed");
   }
+  // Phones: the magnifier opens a search row under the top bar.
+  if (e.target.closest("[data-search-toggle]")) {
+    const open = document.body.classList.toggle("search-open");
+    if (open) document.getElementById("q").focus();
+    return;
+  }
   // Close the role menu and search results when clicking elsewhere.
   const menu = document.querySelector(".role-switch[open]");
   if (menu && !e.target.closest(".role-switch")) menu.removeAttribute("open");
-  if (!e.target.closest(".search")) { const r = document.getElementById("search-results"); if (r) r.innerHTML = ""; }
+  if (!e.target.closest(".search")) {
+    const r = document.getElementById("search-results"); if (r) r.innerHTML = "";
+    document.body.classList.remove("search-open");
+  }
 });
 
 // Keyboard: "/" focuses search, Escape closes menus, Enter approves a focused request card.
