@@ -32,13 +32,16 @@ jobs:
           enable-cache: true
       - run: uv sync --frozen
       # A real browser for the end-to-end and accessibility tests. The system
-      # packages come from a mirror that occasionally stalls, so give each try
-      # four minutes and try up to three times.
+      # packages come from a mirror that sometimes stalls or refuses, so try
+      # three times, then fall back to the browser alone (the runner image
+      # already has the libraries Chromium needs).
       - name: Install the test browser
         run: |
           for attempt in 1 2 3; do
             timeout 240 uv run playwright install --with-deps chromium && exit 0
-            echo "attempt $attempt stalled or failed; retrying"
+            echo "attempt $attempt stalled or failed; retrying in 15 seconds"
+            sleep 15
           done
-          exit 1
+          echo "system packages unavailable; installing the browser only"
+          uv run playwright install chromium
       - run: uv run pytest -q
