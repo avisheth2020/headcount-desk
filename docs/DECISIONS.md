@@ -122,3 +122,99 @@ A running log. Each entry: the choice, the alternative, and why.
 
 **30. A requester can only ask for backfills in their own org.**
 *Why:* it matches how the process works, and it means the request always routes to the right VP.
+
+## V2: from prototype to product
+
+### Design
+
+**31. One accent (teal) on a cool neutral scale; green, amber and red are reserved for status.**
+*Alternative:* the usual indigo, or a brighter multi-color palette.
+*Why:* a planning tool is read all day, so it should be calm. One accent makes "what can I act on" obvious, and status colors keep their meaning because nothing else uses them.
+
+**32. The waterfall became a bridge: one full-width segmented bar, plus a zoom on the unfilled seats.**
+*Alternative:* keep the waterfall, or cut the axis so the small bars look bigger.
+*Why:* filled is about 93% of approved, so four of six bars were slivers. Cutting the axis would misstate the proportions. The bridge shows the true proportion first, then zooms into the 7% where the decision is. It is plain HTML, so every segment is a link and there is no chart library to load.
+
+**33. Detail opens in a side drawer, and the drawer's address lives in the URL hash.**
+*Alternative:* navigate to a detail page.
+*Why:* you keep your place in a long list, and the link is still shareable. The same template renders the full page and the drawer; a query parameter picks the layout.
+
+**34. Sorting and filters are query parameters, handled on the server.**
+*Alternative:* sort in the browser.
+*Why:* the URL is the state, so a view can be bookmarked, shared and exported to CSV exactly as shown. The sort key is looked up in an allow-list, never placed into SQL.
+
+**35. Dark mode is a second set of tokens, switched by one attribute.**
+*Alternative:* invert colors with a filter.
+*Why:* dark surfaces need to get lighter as they rise and the accent needs less saturation. Because the attribute can sit on any element, the styleguide shows both themes side by side.
+
+**36. No CDNs and no inline scripts; the font and HTMX are served from this origin.**
+*Alternative:* load them from public CDNs as V1 did.
+*Why:* it allows a strict Content Security Policy (`script-src 'self'`), removes third-party requests, and makes the first load faster.
+
+### Dollars
+
+**37. A seat's cost comes from a rate card by job family, level and location.**
+*Alternative:* store a salary on each person.
+*Why:* planning happens before the person exists, so an empty seat needs a cost too. A rate card is how finance budgets headcount, and it keeps individual pay out of the tool.
+
+**38. Projected spend = run-rate + committed seats for the months left in the fiscal year.**
+*Alternative:* count every approved seat for the full year.
+*Why:* a seat costs nothing until someone starts. Run-rate is what is being spent now; a committed seat will only cost money for the rest of the year. Reserve and open seats with no request are left out because nothing says they will be filled.
+
+**39. The fiscal calendar is a table, not code.**
+*Why:* "months left" and "quarter end" drive the budget and the forecast. Keeping the calendar as data means the rules do not hide a hard-coded date.
+
+**40. A plan version has an effective date, and "the current plan" means the latest one already in effect.**
+*Alternative:* the latest locked plan, as in V1.
+*Why:* next year's plan is locked months before the year starts. Without an effective date, locking FY28 would have changed this year's numbers.
+
+### Planning
+
+**41. A VP's ask is a change by job family against this year's plan, not a new number.**
+*Why:* people argue about the change, and the reason sits next to it. The base is copied when the cycle opens, so everyone starts from the same locked numbers.
+
+**42. The SVP's adjustment is a separate column from the VP's request.**
+*Alternative:* overwrite the request.
+*Why:* the audit trail should show both what was asked and what was approved.
+
+**43. The envelope counts asks that are submitted or approved, not drafts.**
+*Why:* a draft is not on the table yet. Drafts and sent-back plans are shown as pending so the SVP can still see what is coming.
+
+**44. The plan can be locked before every VP is approved, but only by ticking a box, and those orgs carry this year's numbers.**
+*Alternative:* block the lock until all twelve are approved.
+*Why:* deadlines are real. The rule is explicit, it needs a deliberate action, and the audit trail records which orgs were carried over.
+
+**45. The locked FY28 plan is at VP level.**
+*Why:* that is the level the asks were made and approved at. Splitting it down to teams is a separate step after the lock, and pretending otherwise would invent precision.
+
+### Forecast
+
+**46. The forecast is arithmetic on observed rates, with a range, and the method is printed on the page.**
+*Alternative:* a trained model.
+*Why:* a number nobody can check is worse than a rough one they can. Each open request counts for its chance of being filled in time, taken from how long past requests took; exits use the attrition actually seen in the last 60 days.
+
+**47. The chance of filling is conditional on the request's age.**
+*Alternative:* the plain share of past requests filled within N days.
+*Why:* a request that has already been open 60 days is not a fresh request. Only past requests that lasted at least that long are a fair comparison.
+
+**48. Attrition is measured at SVP level and applied to the orgs inside it.**
+*Why:* one team losing one person in 60 days is not a rate. An SVP org has enough people for the number to mean something.
+
+### Hardening
+
+**49. Tables change through numbered migrations; views are rebuilt on every migrate.**
+*Alternative:* one schema file that drops and recreates everything, as in V1.
+*Why:* a migration runs once and is recorded in `schema_migrations`, which is what lets a live database be upgraded in place. Views hold no data, so rebuilding them keeps each rule readable in one file instead of scattered across patches.
+
+**50. Permissions are checked on the server for every write, in one module.**
+*Alternative:* hide the buttons.
+*Why:* a hidden button is not a control. `app/permissions.py` says who may approve, recruit, resolve, edit a plan or lock it, and tests prove a wrong role gets a 403 and nothing changes. Identities are still simulated; the rules are real.
+
+**51. CSRF uses a token in a cookie that every write must echo back.**
+*Why:* it needs no server-side session, works for both plain forms and HTMX, and is enforced for the whole app by one dependency.
+
+**52. Indexes were added for the queries the pages run most, and checked with EXPLAIN.**
+*Why:* approval inboxes filter by approver and status; recruiter views by recruiter and status; snapshots by org and date; check results by run and check. At this size Postgres would cope without them, but they are what keeps the pages fast at ten times the data. Search still scans (`ILIKE '%text%'`), which is fine for thousands of rows and would need a trigram index for millions.
+
+**53. End-to-end tests drive a real browser against a real server, and include axe-core.**
+*Why:* the bugs V2 could introduce are in the wiring (the drawer, the palette, HTMX swaps, the CSP), which unit tests cannot see. Accessibility is checked the same way so it cannot quietly regress.

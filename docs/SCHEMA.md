@@ -1,6 +1,6 @@
 # Schema
 
-Plain Postgres. Tables are in [`db/schema.sql`](../db/schema.sql); the business logic lives in views in [`db/views.sql`](../db/views.sql) and [`db/checks.sql`](../db/checks.sql).
+Plain Postgres. Tables are created by numbered migrations in [`db/migrations/`](../db/migrations); the business logic lives in views in [`db/views/`](../db/views).
 
 ## Diagram
 
@@ -23,6 +23,14 @@ erDiagram
     check_runs ||--|{ check_results : "produces"
     positions ||--o{ exception_resolutions : "resolved"
     people ||--o| recruiter_coverage : "covers a job family"
+    fiscal_years ||--o{ plan_versions : "plans for"
+    fiscal_years ||--o{ planning_cycles : "being planned"
+    plan_versions ||--o{ planning_cycles : "starting point"
+    planning_cycles ||--|{ planning_envelopes : "limits"
+    planning_cycles ||--|{ plan_submissions : "collects"
+    orgs ||--o{ plan_submissions : "one per VP org"
+    plan_submissions ||--|{ plan_submission_lines : "asks"
+    plan_submissions ||--o{ planning_events : "audit trail"
 
     orgs {
         int id PK
@@ -53,6 +61,7 @@ erDiagram
         int person_id FK "null = open"
         date opened_at
         text source "plan, backfill, transfer"
+        text location
     }
     staffing_requests {
         int id PK
@@ -69,6 +78,8 @@ erDiagram
         timestamptz locked_at
         int locked_by FK
         text content_hash
+        text fiscal_year FK
+        date effective_from
     }
     plan_lines {
         int plan_version_id PK
@@ -136,6 +147,58 @@ erDiagram
         text key PK
         text value
     }
+    cost_rates {
+        text job_family PK
+        text level PK
+        text location PK
+        numeric annual_loaded_cost_usd
+    }
+    fiscal_years {
+        text name PK
+        date starts_on
+        date ends_on
+    }
+    planning_cycles {
+        int id PK
+        text name
+        text fiscal_year FK
+        int base_plan_version_id FK
+        text status "open, locked"
+        int locked_plan_version_id FK
+    }
+    planning_envelopes {
+        int cycle_id PK
+        int svp_org_id PK
+        int headcount_envelope
+        numeric cost_envelope_usd
+    }
+    plan_submissions {
+        int id PK
+        int cycle_id FK
+        int vp_org_id FK
+        text status "draft, submitted, sent_back, approved"
+    }
+    plan_submission_lines {
+        int submission_id PK
+        text job_family PK
+        int base_headcount
+        int requested_change
+        int approved_change "null = as requested"
+        text justification
+    }
+    planning_events {
+        int id PK
+        int cycle_id FK
+        int submission_id FK "null = the lock"
+        text from_status
+        text to_status
+        int actor_id FK
+        text note
+    }
+    schema_migrations {
+        text version PK
+        timestamptz applied_at
+    }
     recruiter_coverage {
         int person_id PK
         text job_family
@@ -158,6 +221,13 @@ erDiagram
 | `exception_resolutions` | Someone marking a data problem as dealt with | Keeps the to-do list honest without hiding the underlying row. |
 | `recruiter_coverage` | Which job family a recruiter hires for | Used for auto-assignment. |
 | `app_meta` | A key and a value | Demo bookkeeping: the date the data was built for, and which person each demo role maps to. |
+| `cost_rates` | The annual loaded cost of one seat | By job family, level and location. Synthetic numbers. |
+| `fiscal_years` | A fiscal year and its dates | "Months left" and "quarter end" come from here. |
+| `planning_cycles` | One annual planning round | Points at the plan every VP starts from, and at the plan it produced once locked. |
+| `planning_envelopes` | The top-down limit for one SVP | Headcount and dollars. |
+| `plan_submissions` / `plan_submission_lines` | One VP's ask, and its lines by job family | A line holds this year's number, the change requested, the change approved and the reason. |
+| `planning_events` | One status change in the planning cycle | Append-only, like `request_events`. |
+| `schema_migrations` | A migration that has been applied | How the database knows which numbered files it has already run. |
 
 ## The views
 
@@ -177,12 +247,22 @@ erDiagram
 | `v_backfill_cycle_time` | Days from submitted to an open staffing request, read from the audit trail. |
 | `v_snapshot_days` | The two most recent snapshot dates ("today" and "yesterday"). |
 | `v_check_tieout`, `v_check_rollup`, `v_check_referential`, `v_check_ratio`, `v_check_plan_integrity`, `v_check_open_share` | One view per data check, all with the same six columns. |
-| `v_check_all` | The six checks unioned. Running the checks is one `INSERT ... SELECT` from this. |
+| `v_check_budget`, `v_check_cost_rates` | Two more checks added with the cost model. |
+| `v_check_all` | Every check unioned. Running the checks is one `INSERT ... SELECT` from this. |
+| `v_fiscal_now` | Where we are in the fiscal year: months left, the quarter, when it ends. |
+| `v_position_cost` | Each seat with its annual cost from the rate card. |
+| `v_budget_direct`, `v_budget` | Budget, run-rate, committed and projected spend: first for the seats directly in each org, then rolled up, with an over / watch / under state. |
+| `v_plan_submission_lines`, `v_plan_submissions` | Planning asks with the change that counts and its cost, by line and by VP. |
+| `v_planning_envelopes` | Each SVP's envelope against what their VPs have asked for. |
+| `v_time_to_fill`, `v_fill_probability` | How long past requests took, and each open request's chance of being filled by quarter end. |
+| `v_attrition` | Observed monthly attrition over the last 60 days, by SVP org. |
+| `v_forecast` | Projected people in seats and run-rate at quarter end, with a P25 to P75 range. |
 
 Two small things worth knowing:
 
 - `positions.opened_at` means "when the seat was created or last vacated", so a seat's age as an open seat restarts when someone leaves it.
 - `today()` is a SQL function that returns the business date in US Eastern time. Every rule that depends on the date uses it.
+- `v_current_plan` is the latest locked plan that is already in effect (`effective_from` on or before today). Next year's plan can be locked without touching this year's numbers.
 
 ## Four design decisions
 
