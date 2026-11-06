@@ -70,14 +70,6 @@
   {% else %}<span class="chip chip-good">{{ ico("check") }}Under budget</span>{% endif %}
 {% endmacro %}
 
-{# Spend against budget. The tick marks 100%; the scale runs to 110% so "over" is visible. #}
-{% macro meter(pct, state, small=False) %}
-{% set p = pct | float %}
-<div class="meter {{ 'meter-sm' if small }}" style="--mark: {{ (100 / 1.1) | round(2) }}%" role="img" aria-label="{{ pct }}% of budget">
-  <i class="{{ state }}" style="width: {{ [p / 1.1, 100] | min | round(2) }}%"></i>
-</div>
-{% endmacro %}
-
 {% macro inbox_title(role, n, oob=False) %}
 <h1 id="inbox-title" {% if oob %}hx-swap-oob="true"{% endif %}>
   {%- if role == "vp" -%}

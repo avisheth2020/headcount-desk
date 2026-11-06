@@ -13,7 +13,7 @@ A guided read of how Headcount Desk works: what to click, how a request moves th
 3. Press **⌘K** (or `/`), type a name, press Enter. That is the command palette.
 4. Open **Budget**. The answer is a percentage of budget, with run-rate and committed underneath. Two VP orgs are over on purpose.
 5. Use the role switcher (top right) to become the **Requester**, request a backfill, then switch to **VP**. You land on **Today**: an approval inbox where each card shows what the seat costs and where the org stands against its budget. Approve one.
-6. Open **Planning** as the VP. Change a number; the dollars update as you type. Submit. Switch to **SVP**, open the plan, approve fewer than asked, then lock the cycle. A new plan version appears and this year's numbers do not move.
+6. Open **Planning** as the VP. Press + or −; the dollars and the room left update at once. Submit. Switch to **SVP**, open the plan, approve fewer than asked, then lock the cycle. A new plan version appears and this year's numbers do not move.
 7. Open **Forecast**. Read the method note at the bottom, then click "Expected hires" to see each open request and its odds.
 8. Open **Data health** as the Resource Manager and follow the anomaly to its rows.
 9. Toggle dark mode (the moon), and open `/styleguide`.

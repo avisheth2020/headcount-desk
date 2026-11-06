@@ -3,7 +3,19 @@
 - **Live URL:** https://headcount-desk-yf5labkepq-ue.a.run.app
 - **Repo:** https://github.com/avisheth2020/headcount-desk
 
-Last updated: Fri Nov 6, 4:30 AM ET.
+Last updated: Fri Nov 6, evening ET.
+
+## V3: fewer words, more visuals, work in place (Fri Nov 6)
+
+13 front-end PRs in three waves, plus this docs PR. No schema change; the seed now stores each check's result for the last 13 mornings.
+
+| Wave | PRs | Contents |
+|---|---|---|
+| Clear the noise | 1 to 3 | Seven visible defects fixed. One freshness chip, a visible role switcher, a small tour. Explanatory text cut, one SVG icon set, one vocabulary (Over-hired, Exceptions, Req). |
+| Show the numbers | 4 to 8 | Chart kit. Headcount seat map. Budget variance centered on 100%. Forecast chart with what-if sliders. Today as a compact queue with keyboard keys. |
+| Work in place | 9 to 13 | Requests pipeline. Planning room gauges and steppers. Exceptions bulk resolve with undo. Data health grid. Org treemap. |
+
+Undoing an approval is not offered: the workflow log is append-only, so a mistaken approval is corrected by a new action, not erased. A one-click "open a req" fix on an exception is also left for later because it needs a new backend action.
 
 ## Rollback point (recorded before any V2 change)
 
