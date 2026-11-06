@@ -9,7 +9,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app import db, demo, permissions, security, web
 from app.checks import CHECKS
-from app.routes import api, backfill, budget, exceptions, health, overview, today
+from app.routes import api, backfill, budget, exceptions, forecast, health, overview, planning, today
 
 app = FastAPI(
     title="Headcount Desk",
@@ -19,9 +19,9 @@ app = FastAPI(
 )
 app.middleware("http")(security.middleware)             # headers, rate limit, JSON request log
 app.mount("/static", StaticFiles(directory=web.APP_DIR / "static"), name="static")
-for module in (today, overview, budget, exceptions, backfill, health, api):
+for module in (today, overview, budget, planning, forecast, exceptions, backfill, health, api):
     app.include_router(module.router)
-web.FEATURES["budget"] = True
+web.FEATURES.update(budget=True, planning=True, forecast=True)
 
 
 def wants_html(request: Request) -> bool:

@@ -37,7 +37,7 @@ def test_headcount_shows_the_hero_number(client, ids):
     "/?org=1", "/?org={team}", "/positions?org={svp}", "/positions?org={svp}&bucket=committed",
     "/positions?org={svp}&bucket=reserve&direct=1", "/positions/{position}", "/plan?org={svp}", "/about",
     "/palette?q=priya", "/palette", "/healthz", "/docs", "/budget", "/budget?org={svp}", "/org", "/org/children?parent={svp}&depth=1",
-    "/styleguide", "/positions/{position}?partial=1", "/people/1", "/positions?org={svp}&sort=cost&dir=desc&page=2",
+    "/styleguide", "/planning", "/forecast", "/positions/{position}?partial=1", "/people/1", "/positions?org={svp}&sort=cost&dir=desc&page=2",
     "/positions?org={svp}&format=csv", "/budget?org={svp}&format=csv", "/plan?org={svp}&format=csv",
 ])
 def test_page_renders(client, ids, path):

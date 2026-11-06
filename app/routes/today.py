@@ -57,12 +57,28 @@ def org_summary(conn, org_id: int) -> dict:
         FROM v_usable_open u JOIN v_budget b ON b.org_id = u.org_id WHERE u.org_id = %s""", (org_id,))
 
 
+def planning_status(conn, role: str, me: dict) -> dict | None:
+    """Where next year's planning stands for this person."""
+    cycle = db.one(conn, "SELECT id, name, fiscal_year, status FROM planning_cycles ORDER BY id DESC LIMIT 1")
+    if cycle is None:
+        return None
+    counts = db.one(conn, """
+        SELECT count(*) AS total, count(*) FILTER (WHERE status = 'approved') AS approved,
+               count(*) FILTER (WHERE status = 'submitted' AND svp_org_id = %(org)s) AS to_review,
+               count(*) FILTER (WHERE status = 'submitted') AS submitted
+        FROM v_plan_submissions WHERE cycle_id = %(cycle)s""", {"org": me["org_id"], "cycle": cycle["id"]})
+    mine = db.one(conn, "SELECT id, status FROM v_plan_submissions WHERE cycle_id = %s AND vp_org_id = %s",
+                  (cycle["id"], me["org_id"])) if role == "vp" else None
+    return {**cycle, **counts, "mine": mine}
+
+
 @router.get("/today", response_class=HTMLResponse, include_in_schema=False)
 def today(request: Request):
     with db.get_conn() as conn:
         ctx = web.page_context(request, conn)
         role, me = ctx["role"], ctx["me"]
         ctx["check"] = latest_check(conn)
+        ctx["plans"] = planning_status(conn, role, me) if web.FEATURES["planning"] else None
         if role == "svp":
             ctx.update(summary=org_summary(conn, me["org_id"]), changes=since_yesterday(conn, me["org_id"]),
                        vps=db.query(conn, """

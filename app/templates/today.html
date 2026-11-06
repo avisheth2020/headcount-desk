@@ -6,6 +6,15 @@
 <a class="card tile" href="/health"><span>Data checks</span><b>{{ check.passed }} of {{ check.total }}</b>
   <small>{% if check.failed %}<span class="chip chip-bad">× {{ check.failed }} failed</span>{% elif check.warned %}<span class="chip chip-warn">⚠ {{ check.warned }} need a look</span>{% else %}<span class="chip chip-good">✓ All passed</span>{% endif %}</small></a>
 {% endmacro %}
+{% macro plan_tile(plans, role) %}
+{% if plans %}
+<a class="card tile" href="{{ '/planning/' ~ plans.mine.id if plans.mine else '/planning' }}"><span>{{ plans.name }}</span>
+  {% if plans.status == "locked" %}<b>Locked</b><small><span class="chip chip-good">🔒 New plan version</span></small>
+  {% elif plans.mine %}<b>{{ {"draft": "Draft", "sent_back": "Sent back", "submitted": "Submitted", "approved": "Approved"}[plans.mine.status] }}</b><small>{{ "Yours to finish and submit" if plans.mine.status in ("draft", "sent_back") else "Your plan for next year" }}</small>
+  {% elif role == "svp" %}<b>{{ plans.to_review }} to review</b><small>{{ plans.approved }} of {{ plans.total }} VP plans approved</small>
+  {% else %}<b>{{ plans.approved }} of {{ plans.total }}</b><small>VP plans approved</small>{% endif %}</a>
+{% endif %}
+{% endmacro %}
 {% macro delta(n) %}<b class="num">{{ "+" if n > 0 }}{{ n | num }}</b>{% endmacro %}
 
 {% block content %}
@@ -25,6 +34,7 @@
     <a class="card tile" href="/budget?org={{ summary.org_id }}"><span>Projected spend</span><b>{{ summary.pct_of_budget }}%</b><small>{{ m.budget_chip(summary.state) }}</small></a>
     <a class="card tile" href="/requests?scope=all&status=submitted"><span>Backfills waiting on a VP</span><b>{{ pending | num }}</b><small>in {{ summary.name }}</small></a>
     <a class="card tile" href="/exceptions?org={{ summary.org_id }}"><span>Data problems to fix</span><b>{{ summary.exceptions | num }}</b><small>open exceptions</small></a>
+    {{ plan_tile(plans, role) }}
     {{ check_tile(check) }}
   </nav>
   <div class="grid-2">
@@ -71,7 +81,7 @@
       <a class="card tile" href="/?org={{ summary.org_id }}"><span>Usable open</span><b>{{ summary.usable_open | num }}</b><small>of {{ summary.approved | num }} approved</small></a>
       <a class="card tile" href="/exceptions?org={{ summary.org_id }}"><span>Data problems you own</span><b>{{ summary.exceptions | num }}</b><small>open exceptions</small></a>
       <a class="card tile" href="/backfill/new"><span>People leaving soon</span><b>{{ leaving | num }}</b><small>with no backfill yet</small></a>
-      {{ check_tile(check) }}
+      {{ plan_tile(plans, role) }}
     </nav>
   </div>
 
@@ -108,6 +118,7 @@
     {{ check_tile(check) }}
     <a class="card tile" href="/budget?org=1"><span>Projected spend</span><b>{{ summary.pct_of_budget }}%</b><small>{{ m.budget_chip(summary.state) }}</small></a>
     <a class="card tile" href="/?org=1"><span>Usable open</span><b>{{ summary.usable_open | num }}</b><small>vs {{ summary.open_no_req | num }} the tool shows</small></a>
+    {{ plan_tile(plans, role) }}
   </nav>
   <div class="grid-2">
     <section class="card">

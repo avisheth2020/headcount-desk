@@ -133,6 +133,49 @@ def test_backfill_flow_end_to_end(browser, base_url):
     assert page.errors == []
 
 
+def test_planning_cycle_end_to_end(browser, base_url):
+    """VP finishes a draft and submits; the SVP trims and approves it, sends one back, then locks the plan."""
+    page = new_page(browser, base_url, role="vp")
+    page.goto(base_url + "/planning", wait_until="networkidle")
+    page.locator("a", has_text="Edit your plan").click()
+    page.wait_for_load_state("networkidle")
+    plan_url = page.url.split("?")[0]
+    before = page.locator("#plan-form tfoot").inner_text()
+    page.fill("#change_research", "20")
+    page.locator("#why_research").click()                      # leaving the field saves it
+    wait_until(lambda: page.locator("#plan-form tfoot").inner_text() != before)      # totals and dollars update in place
+    assert "+24" in page.locator("#plan-form tfoot").inner_text()
+    page.locator("button", has_text="Submit to").click()
+    page.wait_for_load_state("networkidle")
+    assert "Submitted" in page.content() and page.locator("#change_research").count() == 0     # no longer editable
+
+    switch_role(page, "svp")
+    page.goto(plan_url, wait_until="networkidle")
+    page.fill("#approved_research", "15")                      # approve fewer than asked
+    page.locator("#approved_eng").click()
+    wait_until(lambda: "+19" in page.locator("#plan-form tfoot").inner_text())
+    page.locator("button", has_text="Approve").click()
+    page.wait_for_load_state("networkidle")
+    assert "Approved +19 of the +24 requested" in page.content()
+
+    page.goto(base_url + "/planning", wait_until="networkidle")
+    page.locator("tr", has_text="Foundations Research").locator("a.rowlink").click()
+    page.wait_for_load_state("networkidle")
+    page.fill("#comment", "End-to-end test: trim the engineering ask")
+    page.locator("button", has_text="Send back").click()
+    page.wait_for_load_state("networkidle")
+    assert "Sent back by" in page.content()
+
+    page.goto(base_url + "/planning", wait_until="networkidle")          # lock, carrying over what is not approved
+    page.locator("#lock input[name=carry_over]").check()
+    page.locator("#lock button").click()
+    page.wait_for_load_state("networkidle")
+    assert "FY28 Plan was locked" in page.content() and "what was locked" in page.content()
+    page.goto(base_url + "/", wait_until="networkidle")                  # this year's plan is still the current one
+    assert "FY27 Q1 Refresh" in page.locator(".fresh").first.inner_text()
+    assert page.errors == []
+
+
 def test_exceptions_resolve_and_undo(browser, base_url):
     page = new_page(browser, base_url, role="rm")
     page.goto(base_url + "/exceptions", wait_until="networkidle")
@@ -208,16 +251,16 @@ PAGES = [("/today", "svp"), ("/today", "vp"), ("/today", "recruiter"), ("/today"
          ("/", "svp"), ("/budget", "svp"), ("/org", "svp"), ("/positions?org=2&bucket=committed", "svp"),
          ("/positions/12", "svp"), ("/plan?org=3", "svp"), ("/requests", "vp"), ("/requests/1001", "requester"),
          ("/backfill/new", "requester"), ("/exceptions", "rm"), ("/health", "rm"), ("/health/check/ratio", "rm"),
-         ("/health/snapshots?org=3", "rm"), ("/about", "svp"), ("/styleguide", "svp")]
+         ("/health/snapshots?org=3", "rm"), ("/about", "svp"), ("/styleguide", "svp"),
+         ("/planning", "svp"), ("/planning", "vp"), ("/planning/1", "vp"), ("/planning/2", "svp"),
+         ("/forecast", "svp"), ("/forecast/requests?org=2", "svp"), ("/forecast/exits?org=2", "svp")]
 
 
 @pytest.mark.parametrize("theme", ["light", "dark"])
 def test_no_serious_accessibility_violations(browser, base_url, theme):
     """axe-core on every page, in both themes: zero serious or critical violations."""
-    from app import web
-    extra = [(f"/{name}", "svp") for name in ("planning", "forecast") if web.FEATURES.get(name)]
     problems = []
-    for path, role in PAGES + extra:
+    for path, role in PAGES:
         page = new_page(browser, base_url, role=role, theme=theme)
         page.goto(base_url + path, wait_until="networkidle")
         results = axe_module.Axe().run(page)
