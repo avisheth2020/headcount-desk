@@ -3,7 +3,14 @@
 - **Live URL:** https://headcount-desk-yf5labkepq-ue.a.run.app
 - **Repo:** https://github.com/avisheth2020/headcount-desk (private)
 
-Last updated: Fri Nov 6, 2:10 AM ET.
+Last updated: Fri Nov 6, 2:20 AM ET.
+
+## Rollback point (recorded before any V2 change)
+
+- **Code:** git tag `v1.0` (main at the end of V1: PRs #1 to #9, 77 tests).
+- **Live site:** Cloud Run revision `headcount-desk-00006-ht7`. To roll back:
+  `gcloud run services update-traffic headcount-desk --region us-east1 --to-revisions=headcount-desk-00006-ht7=100`
+  then rebuild the production data for that version: `git checkout v1.0 && uv run python -m scripts.migrate --prod && uv run python -m scripts.seed --prod`.
 
 ## Status: all eight milestones (PRs 0 to 7) built, merged and deployed, plus one follow-up PR
 
