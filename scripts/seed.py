@@ -487,7 +487,7 @@ class Builder:
                 continue
             if not self.days_ago(240) <= p["start_date"] <= self.as_of:
                 continue
-            days_to_fill = min(max(int(r.lognormvariate(3.75, 0.45)), 12), 150)
+            days_to_fill = min(max(int(r.lognormvariate(4.2, 0.5)), 12), 200)
             closed = p["start_date"] - timedelta(days=r.randint(5, 14))
             self.staffing.append({"position_id": pos["id"], "recruiter_id": r.choice(pool[pos["job_family"]] or pool["eng"]),
                                   "status": "filled", "backfill_request_id": None,

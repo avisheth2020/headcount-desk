@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m %}
+{% block title %}Forecast · exits{% endblock %}
+
+{% block content %}
+{{ m.crumbs(crumbs, here="Exits in the last 60 days", base="/forecast?org=") }}
+<div class="page-head"><div>
+  <h1>{{ rows | length | num }} people left {{ org.name }} in the last 60 days</h1>
+  <p class="fresh">{% if attrition %}Out of {{ attrition.headcount | num }} people, that is {{ "%.2f" | format(attrition.monthly_rate * 100) }}% a month. The forecast applies that rate to the rest of the quarter. {% endif %}These are the rows behind the rate.</p>
+</div></div>
+<section class="card">
+  {% if rows %}
+  <table class="table cards two">
+    <thead><tr><th>Person</th><th>Team</th><th>Role</th><th class="r">Last day</th></tr></thead>
+    <tbody>{% for r in rows %}<tr><td><a class="rowlink" data-drawer href="/people/{{ r.id }}">{{ r.full_name }}</a></td><td data-label="Team">{{ r.org_name }}</td><td data-label="Role">{{ FAMILY[r.job_family] }}, {{ r.level }}</td><td class="r" data-label="Last day">{{ r.end_date | d }}</td></tr>{% endfor %}</tbody>
+  </table>
+  {% else %}<div class="empty-state"><b>Nobody left</b>No exits in the last 60 days.</div>{% endif %}
+</section>
+{% endblock %}

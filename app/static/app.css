@@ -472,6 +472,7 @@ tr.hot td { background: var(--warn-soft) !important; }
 }
 @container (max-width: 1000px) {
   .checks { grid-template-columns: 1fr 1fr; }
+  .hero { grid-template-columns: 1fr; gap: var(--s4); }
   /* A table wider than its card scrolls sideways inside the card instead of pushing the page. */
   .card:has(> .table) { overflow-x: auto; }
   .table th { position: static; }
