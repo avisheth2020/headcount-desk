@@ -1,0 +1,19 @@
+[project]
+name = "headcount-desk"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "faker>=40.44.0",
+    "fastapi>=0.162.0",
+    "jinja2>=3.1.6",
+    "psycopg[binary,pool]>=3.3.8",
+    "python-dotenv>=1.2.4",
+    "python-multipart>=0.0.33",
+    "uvicorn>=0.54.0",
+]
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "pytest>=9.2.0",
+]
