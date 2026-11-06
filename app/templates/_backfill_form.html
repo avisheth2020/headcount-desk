@@ -1,0 +1,28 @@
+<form method="post" action="/backfill" style="margin-top:24px">
+  <input type="hidden" name="person" value="{{ selected.person_id }}">
+  <div class="summary-card">
+    <h3 style="margin-bottom:12px">{{ selected.full_name }} <span class="chip">Filled in for you</span></h3>
+    <dl class="dl">
+      <dt>Role</dt><dd>{{ FAMILY[selected.job_family] }}, {{ selected.level }}</dd>
+      <dt>Team</dt><dd>{{ selected.team_name }} <span class="muted">· {{ selected.vp_name }}</span></dd>
+      <dt>Seat</dt><dd class="num">{{ selected.position_code }}</dd>
+      <dt>Last day</dt><dd>{{ selected.end_date | d }}</dd>
+      <dt>Approver</dt><dd>{{ selected.vp_approver_name }} (VP)</dd>
+      {% if selected.cost and selected.cost.per_head %}<dt>Budgeted cost</dt><dd>{{ selected.cost.per_head | money }} a year, already in the plan</dd>{% endif %}
+    </dl>
+  </div>
+  <div class="field" style="margin-top:24px">
+    <label for="why">2. Why does this role need to be backfilled?</label>
+    <textarea id="why" name="justification" required placeholder="One or two sentences for {{ selected.vp_approver_name }}"></textarea>
+  </div>
+  <div class="field">
+    <span style="font-weight:500;font-size:14px;display:block;margin-bottom:6px" id="urgency-label">How urgent is it?</span>
+    <div class="seg" role="radiogroup" aria-labelledby="urgency-label">
+      <label><input type="radio" name="urgency" value="low"> Low</label>
+      <label><input type="radio" name="urgency" value="normal" checked> Normal</label>
+      <label><input type="radio" name="urgency" value="urgent"> Urgent</label>
+    </div>
+  </div>
+  <p class="impact" style="margin:24px 0 16px">This reuses an existing position ({{ selected.position_code }}), so it adds no headcount. Usable open for {{ selected.vp_name }} stays at {{ selected.vp_usable_open }}.</p>
+  <button class="btn btn-primary" type="submit">Send to {{ selected.vp_approver_name }} for approval</button>
+</form>

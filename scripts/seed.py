@@ -419,7 +419,7 @@ class Builder:
                                   "backfill_request_id": bf["id"], "opened_at": open_at.date(), "closed_at": fill_at.date()})
 
         # Every other committed seat gets an ordinary staffing request.
-        marcus_quota = 3
+        marcus_quota = 1
         for req in self.pending_reqs:
             pos = req["position"]
             recruiter = req.get("recruiter")

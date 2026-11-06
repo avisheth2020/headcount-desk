@@ -7,7 +7,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from app import db, demo, web
-from app.routes import exceptions, overview
+from app.routes import backfill, exceptions, overview
 
 app = FastAPI(
     title="Headcount Desk",
@@ -17,6 +17,7 @@ app = FastAPI(
 app.mount("/static", StaticFiles(directory=web.APP_DIR / "static"), name="static")
 app.include_router(overview.router)
 app.include_router(exceptions.router)
+app.include_router(backfill.router)
 
 
 @app.get("/healthz", include_in_schema=False)
