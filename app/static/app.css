@@ -567,6 +567,11 @@ tr.hot td { background: var(--warn-soft) !important; }
 .saved { display: inline-flex; align-items: center; gap: 4px; font-size: 12.5px; font-weight: 600; color: var(--good); animation: rise var(--med) var(--ease); }
 .plan-foot { position: sticky; bottom: 0; font-size: 13.5px; color: var(--text); }
 
+@media (max-width: 479px) { .topbar .brand { display: none; } .fresh-chip summary span { display: none; } .fresh-chip summary { padding: 0 9px; } .topbar-right { gap: 4px; } }
+
+.fc { grid-template-columns: minmax(0, 1fr); }
+.fc-math a:last-child .tip::after, .fc-math a:nth-last-child(2) .tip::after { left: auto; right: -8px; transform: none; }
+
 /* ── Drawer and command palette ──────────────────────────────────────────── */
 
 .scrim { position: fixed; inset: 0; background: var(--scrim); z-index: 60; opacity: 0; pointer-events: none; transition: opacity var(--med) var(--ease); }
