@@ -21,27 +21,34 @@
 </div>
 
 <div class="stack">
-  <section class="card card-pad">
-    <div class="hero">
+  <section class="card card-pad fc" id="forecast" data-chart-live
+           data-history="{{ trend | map(attribute='in_seats') | join(',') }}" data-start="{{ trend[0].day if trend else '' }}" data-end="{{ org.quarter_ends_on }}"
+           data-seats="{{ org.in_seats }}" data-hires="{{ org.expected_hires }}" data-exits="{{ org.expected_exits }}"
+           data-projected="{{ org.projected }}" data-low="{{ org.projected_low }}" data-high="{{ org.projected_high }}" data-approved="{{ org.approved }}">
+    <div class="fc-top">
       <div>
-        <p class="eyebrow">Projected people in seats · {{ org.name }}</p>
-        <a class="hero-number" href="#breakdown">{{ org.projected | num }}</a>
-        <p class="hero-caption">on {{ org.quarter_ends_on | d }}. Likely range <strong class="num">{{ org.projected_low | num }} to {{ org.projected_high | num }}</strong>, against {{ org.approved | num }} approved.</p>
-        <p style="margin-top:12px">{{ flag(org) }}</p>
+        <p class="eyebrow">People in seats on {{ org.quarter_ends_on | d }} · {{ org.name }}</p>
+        <a class="hero-number" href="#breakdown" data-fc="projected">{{ org.projected | num }}</a>
+        <p class="hero-caption">Likely <strong class="num" data-fc="range">{{ org.projected_low | num }} to {{ org.projected_high | num }}</strong> · <span data-fc="gap">{{ (org.approved - org.projected) | abs | num }} {{ "over" if org.projected > org.approved else "under" }}</span> the {{ org.approved | num }} approved</p>
+        <p class="fc-flag">{{ flag(org) }}<span class="chip chip-accent" data-fc="whatif" hidden>What-if, not saved</span></p>
       </div>
-      <div class="bridge">
-        <div class="bridge-title"><span>How the number is built</span><span></span></div>
-        <div class="legend" style="margin-top:0">
-          <a href="/positions?org={{ org.org_id }}&bucket=filled"><i class="seg-filled"></i><b>{{ org.in_seats | num }}</b><span>In seats today</span></a>
-          <a href="/forecast/requests?org={{ org.org_id }}"><i class="seg-usable"></i><b>+{{ org.expected_hires | round | int }}</b><span>Expected hires{{ m.hint("Each open req counts for its chance of being filled by quarter end.") }}</span></a>
-          <a href="/forecast/exits?org={{ attrition.org_id }}"><i class="seg-negative"></i><b>−{{ org.expected_exits | round | int }}</b><span>Expected exits{{ m.hint("People in seats × the monthly attrition seen over the last 60 days × the months left in the quarter.") }}</span></a>
-          <a class="result" href="#breakdown"><i class="seg-usable"></i><b>{{ org.projected | num }}</b><span>Projected</span></a>
-        </div>
-        <div class="hero-facts">
-          <a href="/budget?org={{ org.org_id }}"><span>Run-rate at quarter end</span><strong class="num">{{ org.projected_run_rate | money }} <span class="muted" style="font-weight:400">({{ org.projected_run_rate_low | money }} to {{ org.projected_run_rate_high | money }})</span></strong></a>
-          <a href="/budget?org={{ org.org_id }}"><span>Budget for the year</span><strong class="num">{{ org.budget | money }}</strong></a>
-        </div>
+      <div class="legend fc-math">
+        <a href="/positions?org={{ org.org_id }}&bucket=filled"><i class="seg-filled"></i><b>{{ org.in_seats | num }}</b><span>In seats today{{ m.hint("On plan plus over-hired.") }}</span></a>
+        <a href="/forecast/requests?org={{ org.org_id }}"><i class="seg-usable"></i><b data-fc="hires">+{{ org.expected_hires | round | int }}</b><span>Expected hires{{ m.hint("Each open req counts for its chance of being filled by quarter end.") }}</span></a>
+        <a href="/forecast/exits?org={{ attrition.org_id }}"><i class="seg-negative"></i><b data-fc="exits">−{{ org.expected_exits | round | int }}</b><span>Expected exits{{ m.hint("People in seats × the monthly attrition seen over the last 60 days × the months left in the quarter.") }}</span></a>
       </div>
+    </div>
+    {% if trend %}
+    <svg class="fan" id="fan" role="img" aria-label="People in seats in {{ org.name }} over the last 60 days, then the likely range to {{ org.quarter_ends_on | d }}: {{ org.projected_low | num }} to {{ org.projected_high | num }}."></svg>
+    <div class="fc-sliders" data-fc="sliders" hidden>
+      <label for="fc-hires"><span><span>Hiring pace</span><b data-fc="hires-pct">100%</b></span><input id="fc-hires" type="range" min="70" max="130" step="5" value="100"></label>
+      <label for="fc-exits"><span><span>Attrition</span><b data-fc="exits-pct">100%</b></span><input id="fc-exits" type="range" min="70" max="130" step="5" value="100"></label>
+      <button class="btn btn-sm" type="button" data-fc="reset" hidden>Reset</button>
+    </div>
+    {% endif %}
+    <div class="hero-facts" data-fc="facts">
+      <a href="/budget?org={{ org.org_id }}"><span>Run-rate at quarter end</span><strong class="num">{{ org.projected_run_rate | money }} <span class="muted" style="font-weight:400">({{ org.projected_run_rate_low | money }} to {{ org.projected_run_rate_high | money }})</span></strong></a>
+      <a href="/budget?org={{ org.org_id }}"><span>Budget for the year</span><strong class="num">{{ org.budget | money }}</strong></a>
     </div>
   </section>
 
@@ -88,7 +95,7 @@
     <ol>
       <li><b>Expected hires.</b> {{ org.open_requests | num }} reqs are open. Each counts for its odds of filling by {{ org.quarter_ends_on | d }}, taken from the {{ history.n | num }} reqs filled in the last year. Half fill within {{ history.median | round | int }} days.</li>
       <li><b>Expected exits.</b> {{ attrition.exits_60d | num }} of {{ attrition.headcount | num }} people left {{ attrition.name }} in the last 60 days: {{ "%.2f" | format(attrition.monthly_rate * 100) }}% a month, applied to the {{ org.days_left }} days left.</li>
-      <li><b>Likely range.</b> The 25th to 75th percentile. It does not know about reorgs, freezes, signed offers or notice already given.</li>
+      <li><b>Likely range.</b> The 25th to 75th percentile at quarter end, drawn as a straight line from today. It does not know about reorgs, freezes, signed offers or notice already given.</li>
     </ol>
   </details>
 </div>
