@@ -119,3 +119,22 @@ def test_the_form_skeleton_is_hidden_until_something_loads():
     from pathlib import Path
     css = Path("app/static/app.css").read_text()
     assert css.index(".skeleton-rows {") < css.index(".htmx-indicator { display: none; }")
+
+
+def test_headcount_seat_map_adds_up(client):
+    """One square per unfilled seat, and the focus changes what is highlighted, not the count."""
+    import re
+    page = client.get("/?focus=committed").text
+    seats = re.search(r'<div class="seats".*?</div>', page, re.S).group(0)
+    match = re.search(r'Of (\d+) unfilled seats: (\d+) committed, (\d+) reserve, (\d+) over-hired, (-?\d+) usable open', seats)
+    total, committed, reserve, over, usable = map(int, match.groups())
+    assert total == committed + reserve + over + usable
+    assert seats.count("<i ") == total and seats.count(" on\"") == committed
+
+
+def test_seat_history_ends_near_today(seeded_db):
+    from app import trends
+    history = trends.seat_history(seeded_db, 1)
+    assert len(history) == 60 and history[0]["day"] < history[-1]["day"]
+    now = seeded_db.execute("SELECT usable_open FROM v_usable_open WHERE org_id = 1").fetchone()
+    assert abs(history[-1]["usable_open"] - (now["usable_open"] if isinstance(now, dict) else now[0])) < 25

@@ -3,12 +3,14 @@
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse
 
-from app import db, web
+from app import charts, db, trends, web
 
 router = APIRouter()
 PAGE_SIZE = 50
 CHILD_LABEL = {"company": "By SVP", "svp": "By VP org", "vp": "By director", "director": "By team"}
 SEGMENTS = ["filled", "committed", "reserve", "negative"]
+SEAT_KINDS = ["committed", "reserve", "negative", "usable_open"]       # the unfilled seats, in the order they are drawn
+FOCUS = {"committed": "committed", "reserve": "reserve", "negative": "negative", "usable": "usable_open"}
 
 
 def breadcrumbs(conn, org_id: int) -> list[dict]:
@@ -26,7 +28,8 @@ def get_org(conn, org_id: int) -> dict:
 
 
 @router.get("/", response_class=HTMLResponse, include_in_schema=False)
-def headcount(request: Request, org: int | None = None, flash: str | None = None):
+def headcount(request: Request, org: int | None = None, flash: str | None = None, focus: str = "usable"):
+    focus = focus if focus in FOCUS else "usable"
     with db.get_conn() as conn:
         ctx = web.page_context(request, conn)
         org_id = org or ctx["personas"]["svp"]["org_id"]      # default: the Research SVP
@@ -51,8 +54,14 @@ def headcount(request: Request, org: int | None = None, flash: str | None = None
             SELECT c.ancestor_id AS org_id, count(*) AS n
             FROM v_exceptions e JOIN v_org_closure c ON c.org_id = e.org_id
             WHERE NOT e.is_resolved GROUP BY c.ancestor_id""")}
+        key = FOCUS[focus]
+        ranked = [{"name": c["name"], key: c[key], "href": f"/?org={c['org_id']}"} for c in children]
+        if direct and children and any(direct[k] for k in FOCUS.values()):
+            ranked.append({"name": f"Held at {me['name']}", key: direct[key], "href": None})
         ctx.update(
             org=me, children=children, direct=direct, exceptions=exceptions, flash=flash, sort=sort, dir=direction,
+            focus=focus, focus_key=key, seat_kinds=SEAT_KINDS, trend=trends.seat_history(conn, org_id),
+            ranked=[{**r, "key": r["name"], "text": f"{r[key]:,}".replace("-", "−")} for r in charts.share_bars(ranked, key)],
             budget=db.one(conn, "SELECT * FROM v_budget WHERE org_id = %s", (org_id,)),
             unfilled=me["approved"] - me["filled"], segments=SEGMENTS,
             crumbs=breadcrumbs(conn, org_id),
