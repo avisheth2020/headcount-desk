@@ -631,14 +631,19 @@ tr.hot td { background: var(--warn-soft) !important; }
   /* A compact table keeps the name and the two numbers people came for. Tap a row for the rest. */
   .table.cards.compact tr { grid-template-columns: minmax(0, 1fr) 76px 64px; align-items: center; }
   .table.cards.compact td[data-label]::before { white-space: nowrap; }
-  .table.cards.compact td:first-child { grid-column: auto; }
+  .table.cards.compact td:first-child, .table.cards.compact td.wide { grid-column: auto; }
   .table.cards.compact td:not(:first-child):not(.keep) { display: none; }
   .table.cards.compact td.keep { text-align: right !important; }
   .table.cards.compact.one tr { grid-template-columns: minmax(0, 1fr) 76px; }
+  .table.cards.compact.vwide tr { grid-template-columns: minmax(0, 1fr) 172px; }
+  .table.cards.compact.vwide td.keep::before { display: none; }
+  .vflag { display: none; }
   .buckets { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .fc-sliders { grid-template-columns: minmax(0, 1fr); }
   .envelopes { grid-template-columns: minmax(0, 1fr); }
   .hm { padding: var(--s2); }
+  .hm-day { font-size: 9.5px; }
+  .hm-name { font-size: 12px; }
   .tm { height: 480px; }
   .tm-tile { padding: 3px 5px; font-size: 11.5px; }
   .tm-tile span, .tm-title span { display: none; }

@@ -8,9 +8,9 @@
     <a class="rowlink" href="/?org={{ r.org_id }}">{{ r.name }}</a> <span class="muted small">{{ LEVELS[r.level] | replace(" org", "") }}</span>
   </td>
   <td data-label="Leader" class="muted">{{ r.leader_name or "–" }}</td>
-  <td class="r" data-label="Approved"><a href="/plan?org={{ r.org_id }}">{{ r.approved | num }}</a></td>
+  <td class="r keep" data-label="Approved"><a href="/plan?org={{ r.org_id }}">{{ r.approved | num }}</a></td>
   <td class="r" data-label="Filled"><a href="/positions?org={{ r.org_id }}&bucket=filled">{{ r.filled | num }}</a></td>
-  <td class="r" data-label="Usable open"><a class="usable" href="/?org={{ r.org_id }}">{{ r.usable_open | num }}</a></td>
+  <td class="r keep" data-label="Usable open"><a class="usable" href="/?org={{ r.org_id }}">{{ r.usable_open | num }}</a></td>
   <td class="r" data-label="Budget"><a href="/budget?org={{ r.org_id }}">{{ r.budget | money }}</a></td>
   <td class="r" data-label="Projected"><a href="/budget?org={{ r.org_id }}">{{ r.projected | money }}</a></td>
   <td data-label="Of budget"><div class="vcell">{{ ch.variance(r.pct_of_budget, r.state) }}<span class="num small {{ '' if r.state == 'under' else 'strong' }}">{{ r.pct_of_budget if r.pct_of_budget is not none else "–" }}%</span></div></td>
