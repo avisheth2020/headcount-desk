@@ -471,9 +471,9 @@ tr.hot td { background: var(--warn-soft) !important; }
   .changes li { grid-template-columns: 56px 1fr; }
   .changes li > :last-child { grid-column: 2; }
 }
+@container (min-width: 701px) and (max-width: 1000px) { .try ol { grid-template-columns: 1fr 1fr; } }
 @container (max-width: 1000px) {
   .checks { grid-template-columns: 1fr 1fr; }
-  .try ol { grid-template-columns: 1fr 1fr; }
   .hero { grid-template-columns: 1fr; gap: var(--s4); }
   /* A table wider than its card scrolls sideways inside the card instead of pushing the page. */
   .card:has(> .table) { overflow-x: auto; }
