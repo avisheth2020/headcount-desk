@@ -149,7 +149,7 @@ html.try-dismissed .tour { display: none; }
 .role-menu button[aria-current="true"] { background: var(--accent-soft); }
 .role-menu button span { font-size: 12px; color: var(--muted); }
 
-.swapping main { opacity: .6; transition: opacity var(--fast) var(--ease) 80ms; }
+main.swapping { opacity: .6; transition: opacity var(--fast) var(--ease) 80ms; }
 main { max-width: 1180px; margin: 0 auto; padding: var(--s5) var(--s5) var(--s7); container-type: inline-size; }
 .tabbar { display: none; }
 

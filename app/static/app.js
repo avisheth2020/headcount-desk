@@ -148,13 +148,12 @@ document.body.addEventListener("htmx:configRequest", (e) => { e.detail.headers["
 // Optimistic update: show the result at once, then let the server confirm it.
 document.body.addEventListener("htmx:beforeRequest", (e) => {
   e.detail.elt.closest?.("[data-optimistic]")?.classList.add("optimistic");
-  if (e.detail.target?.id === "main") document.documentElement.classList.add("swapping");   // show that a click landed
+  if (e.detail.target?.id === "main") e.detail.target.classList.add("swapping");   // the new content arrives without this class
 });
-document.body.addEventListener("htmx:afterSettle", () => document.documentElement.classList.remove("swapping"));
-document.body.addEventListener("htmx:sendError", () => document.documentElement.classList.remove("swapping"));
+document.body.addEventListener("htmx:sendError", () => $("#main")?.classList.remove("swapping"));
 document.body.addEventListener("htmx:responseError", (e) => {
   e.detail.elt.closest?.("[data-optimistic]")?.classList.remove("optimistic");
-  document.documentElement.classList.remove("swapping");
+  $("#main")?.classList.remove("swapping");
   let message = "That didn't work. Try again.";
   try { message = JSON.parse(e.detail.xhr.responseText).detail || message; } catch (err) {}
   showToast({ message });

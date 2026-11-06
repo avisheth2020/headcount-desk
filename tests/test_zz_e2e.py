@@ -314,6 +314,18 @@ def test_org_explorer_expands_and_collapses(browser, base_url):
     assert page.errors == []
 
 
+def test_in_place_changes_do_not_leave_the_page_dimmed(browser, base_url):
+    page = new_page(browser, base_url)
+    page.goto(base_url + "/budget", wait_until="networkidle")
+    page.locator(".pills a", has_text="Engineering").click()
+    page.wait_for_url("**org=**")
+    wait_until(lambda: page.locator("main.swapping").count() == 0)
+    page.locator("thead a", has_text="Budget").click()
+    page.wait_for_url("**sort=budget**")
+    wait_until(lambda: page.locator("main.swapping").count() == 0)
+    assert page.errors == []
+
+
 def test_org_map_zooms_in_place(browser, base_url):
     page = new_page(browser, base_url)
     page.goto(base_url + "/org", wait_until="networkidle")
