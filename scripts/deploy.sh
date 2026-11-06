@@ -3,7 +3,14 @@
 # service as DATABASE_URL through a temporary env file, so the value never
 # appears on the command line or in the shell history.
 #
-#   ./scripts/deploy.sh
+#   ./scripts/deploy.sh                 build and send all traffic to the new revision
+#   ./scripts/deploy.sh --no-traffic    build and stage it; nothing changes for visitors
+#
+# The safe order for a release that changes the database:
+#   1. ./scripts/deploy.sh --no-traffic                     (while CI runs on main)
+#   2. uv run python -m scripts.migrate --prod && uv run python -m scripts.seed --prod
+#   3. gcloud run services update-traffic headcount-desk --region us-east1 --to-latest
+# To roll back, point traffic at the previous revision with --to-revisions=NAME=100.
 #
 # First time only: rebuild and load the production database.
 #   uv run python -m scripts.migrate --prod && uv run python -m scripts.seed --prod
@@ -31,6 +38,6 @@ gcloud run deploy "$SERVICE" \
   --project "$PROJECT" --region "$REGION" --source . \
   --allow-unauthenticated --min-instances=0 --max-instances=2 \
   --memory=512Mi --cpu=1 --cpu-boost --concurrency=40 --timeout=60 \
-  --env-vars-file "$ENV_FILE" --quiet
+  --env-vars-file "$ENV_FILE" --quiet "$@"
 
 gcloud run services describe "$SERVICE" --project "$PROJECT" --region "$REGION" --format 'value(status.url)'
