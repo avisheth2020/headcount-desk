@@ -40,7 +40,8 @@ def exceptions(request: Request, org: int = 1, type: str | None = None, show: st
             WHERE c.ancestor_id = %(org)s
               AND (%(type)s::text IS NULL OR e.exception_type = %(type)s)
               AND (%(all)s OR NOT e.is_resolved)
-            ORDER BY e.is_resolved, e.age_days DESC NULLS LAST, e.position_code""",
+            ORDER BY e.is_resolved, e.age_days DESC NULLS LAST, e.position_code
+            LIMIT 2000""",
             {"org": org, "type": type, "all": show == "all"})
         by_type = {r["exception_type"]: r["n"] for r in db.query(conn, """
             SELECT e.exception_type, count(*) AS n

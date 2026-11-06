@@ -129,6 +129,14 @@ def test_planning_audit_trail_cannot_be_edited(seeded_db):
         seeded_db.execute("UPDATE planning_events SET note = 'rewritten' WHERE id = (SELECT min(id) FROM planning_events)")
 
 
+def test_try_this_link_switches_role(manifest):
+    from app.main import app
+    with Client(app) as client:
+        arrive = client.get("/planning?as=vp", follow_redirects=False)
+        assert arrive.status_code == 303 and arrive.headers["location"] == "/planning" and "role=vp" in arrive.headers["set-cookie"]
+        assert "Edit your plan" in client.get("/planning").text
+
+
 def test_planning_pages_and_permissions(manifest):
     from app.main import app
     with db.get_conn() as conn:

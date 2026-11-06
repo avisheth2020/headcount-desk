@@ -22,6 +22,7 @@ Last updated: Fri Nov 6, 3:50 AM ET.
 | #12 | Docs, screenshots, compression, accessibility polish | merged |
 | #13 | Health-check alias, staged deploys in the deploy script, final notes | merged |
 | #14 | This file: final state after the last deploy (docs only, no deploy needed) | merged |
+| #15 | A "Try this" step for the planning flow, a row limit on the exceptions list, position codes that do not wrap | see "Final state" below |
 
 **Final state: main at `1418ac8` (CI green) is live as Cloud Run revision `headcount-desk-00008-9nf`, verified end to end at 3:48 AM ET (25 of 25 live checks; Lighthouse 100 / 96 / 100).**
 
