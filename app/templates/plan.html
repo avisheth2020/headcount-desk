@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m %}
+{% block title %}Plan · {{ org.name }}{% endblock %}
+
+{% block content %}
+{{ m.crumbs(crumbs, here="Approved headcount") }}
+<div class="page-head">
+  <div>
+    <h1>{{ total | num }} approved positions in {{ org.name }}</h1>
+    <p class="fresh">From {{ plan.name }}, locked {{ plan.locked_at | d }}. A locked plan cannot be edited; a change means a new version. These are the plan lines behind the number.</p>
+  </div>
+</div>
+
+<section class="card">
+  <table class="table cards">
+    <thead>
+      <tr><th>Org</th><th>Job family</th><th class="r">{{ versions[0].name if versions | length > 1 else "Previous" }}</th><th class="r">{{ plan.name }}</th><th class="r">Change</th><th class="r">Approved cost</th></tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      {% set change = r.approved_headcount - (r.previous_headcount or 0) %}
+      <tr>
+        <td><a class="rowlink" href="/?org={{ r.org_id }}">{{ r.org_name }}</a></td>
+        <td data-label="Job family">{{ FAMILY[r.job_family] }}</td>
+        <td class="r muted" data-label="{{ versions[0].name }}">{{ r.previous_headcount | num }}</td>
+        <td class="r strong" data-label="{{ plan.name }}">{{ r.approved_headcount | num }}</td>
+        <td class="r" data-label="Change">{% if change %}<span class="chip chip-accent">+{{ change }}</span>{% else %}<span class="muted">–</span>{% endif %}</td>
+        <td class="r" data-label="Approved cost">{{ r.approved_cost_usd | money }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr><td>Total</td><td></td><td class="r" data-label="{{ versions[0].name }}">{{ total_previous | num }}</td><td class="r" data-label="{{ plan.name }}">{{ total | num }}</td><td class="r" data-label="Change">+{{ total - total_previous }}</td><td class="r" data-label="Approved cost">{{ total_cost | money }}</td></tr>
+    </tfoot>
+  </table>
+</section>
+{% endblock %}

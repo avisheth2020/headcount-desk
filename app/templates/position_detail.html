@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m %}
+{% block title %}{{ pos.position_code }}{% endblock %}
+
+{% block content %}
+{{ m.crumbs(crumbs, here=pos.position_code) }}
+<div class="page-head">
+  <div>
+    <h1>{{ pos.position_code }} · {{ pos.full_name or "Empty seat" }}</h1>
+    <p class="fresh">{{ FAMILY[pos.job_family] }} · {{ pos.level }} · <a href="/?org={{ pos.org_id }}">{{ pos.org_name }}</a></p>
+  </div>
+  <div>{{ m.bucket_chip(pos.bucket) }}</div>
+</div>
+
+<div class="stack">
+  <section class="card card-pad">
+    <dl class="dl">
+      <dt>Status</dt><dd>{{ BUCKETS[pos.bucket][0] }}<span class="muted"> · {{ BUCKETS[pos.bucket][1] }}</span></dd>
+      <dt>Person</dt><dd>{% if pos.full_name %}{{ pos.full_name }} <span class="muted">· {{ pos.email }} · started {{ pos.start_date | d }}{% if pos.end_date %} · {{ "left" if pos.end_date < as_of.date() else "last day" }} {{ pos.end_date | d }}{% endif %}</span>{% else %}<span class="muted">Nobody in this seat</span>{% endif %}</dd>
+      <dt>Recruiting</dt><dd>{% if pos.staffing_request_id %}{{ "Offer out" if pos.request_status == "offer_out" else "Request open" }} since {{ pos.request_opened_at | d }} · {{ pos.recruiter_name }}{% else %}<span class="muted">No active staffing request</span>{% endif %}</dd>
+      <dt>Seat type</dt><dd>{{ pos.position_type | capitalize }}</dd>
+      <dt>Created from</dt><dd>{{ {"plan": "The plan", "backfill": "A backfill", "transfer": "A transfer"}[pos.source] }}</dd>
+      <dt>{{ "Open since" if not pos.person_id else "Seat opened" }}</dt><dd>{{ pos.opened_at | d }}</dd>
+    </dl>
+  </section>
+
+  {% if exceptions %}
+  <section class="card">
+    <div class="card-head"><h2>Data problems on this seat</h2><a class="small" href="/exceptions">All exceptions</a></div>
+    <ul class="todo">
+      {% for e in exceptions %}
+      <li class="{{ 'done' if e.is_resolved }}">
+        <div><div class="meta"><span class="chip chip-warn">⚠ {{ e.type_label }}</span>{% if e.is_resolved %}<span class="chip chip-good">✓ Resolved</span>{% endif %}</div>
+          <div class="what">{{ e.detail }}</div><div class="fix">{{ e.suggested_fix }}</div></div>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+
+  {% if backfills %}
+  <section class="card">
+    <div class="card-head"><h2>Backfill requests for this seat</h2></div>
+    <table class="table">
+      <tbody>
+        {% for b in backfills %}
+        <tr><td><a class="rowlink" href="/requests/{{ b.id }}">Backfill #{{ b.id }} for {{ b.departing_name }}</a></td><td>{{ m.status_chip(b.status) }}</td><td class="r muted">{{ b.created_at | d }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

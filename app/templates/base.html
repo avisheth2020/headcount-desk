@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>{% block title %}Headcount Desk{% endblock %} · Headcount Desk</title>
+  <meta name="description" content="How many people can we actually hire? A working prototype on synthetic data for a fictional AI lab.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%234338ca'/%3E%3Cpath d='M9 22V10m7 12v-8m7 8V7' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/app.css?v={{ asset_version }}">
+  <script>try { if (localStorage.getItem("try-dismissed")) document.documentElement.classList.add("try-dismissed"); } catch (e) {}</script>
+  <script src="https://unpkg.com/htmx.org@2.0.4" defer></script>
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <div class="demo-banner" role="note">
+    <span><strong>Prototype</strong> · synthetic data<span class="wide-only"> for a fictional 6,000-person AI lab · roles are simulated</span></span>
+    <span class="sep">·</span>
+    <form method="post" action="/reset"><button type="submit" title="Rebuild the demo data so you start clean">Reset demo</button></form>
+    <span class="sep">·</span>
+    <a href="/about">About</a>
+  </div>
+
+  {% set nav = [
+    ("/", "Headcount", "M4 20V10m8 10V4m8 16v-7"),
+    ("/exceptions", "Exceptions", "M12 8v5m0 3.5v.5M10.3 3.9 2.6 17.3A2 2 0 0 0 4.3 20h15.4a2 2 0 0 0 1.7-2.7L13.7 3.9a2 2 0 0 0-3.4 0Z"),
+    ("/requests", "Requests", "M4 6h16M4 12h16M4 18h10"),
+    ("/health", "Data health", "M3 12h4l3-8 4 16 3-8h4"),
+  ] %}
+  {% set section = "/" if path == "/" or path.startswith("/positions") or path.startswith("/plan")
+       else "/requests" if path.startswith("/requests") or path.startswith("/backfill")
+       else "/exceptions" if path.startswith("/exceptions")
+       else "/health" if path.startswith("/health") else "" %}
+
+  <header class="topbar">
+    <a class="brand" href="/">
+      <span class="brand-mark"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"><path d="M5 20V9m7 11v-7m7 7V4"/></svg></span>
+      Headcount Desk
+    </a>
+    <nav class="nav" aria-label="Main">
+      {% for href, label, _ in nav %}
+      <a href="{{ href }}" {% if section == href %}aria-current="page"{% endif %}>{{ label }}</a>
+      {% endfor %}
+    </nav>
+    <div class="topbar-right">
+      <div class="search" role="search">
+        <label class="sr-only" for="q">Find a person or position</label>
+        <input id="q" type="search" name="q" placeholder="Find a person or position" autocomplete="off"
+               hx-get="/search" hx-trigger="input changed delay:200ms, search" hx-target="#search-results">
+        <kbd aria-hidden="true">/</kbd>
+        <div id="search-results" class="search-results"></div>
+      </div>
+      <details class="role-switch">
+        <summary aria-label="Switch role. Viewing as {{ role_label }}"><span class="lbl">Viewing as<span class="wide-only">:</span></span> <strong>{{ role_label }}</strong> <span aria-hidden="true">▾</span></summary>
+        <form class="role-menu" method="post" action="/role">
+          <p>Roles are simulated for the demo. Each one is a named person at Meridian Labs.</p>
+          {% for key, (label, _) in ROLES.items() %}
+          <button name="role" value="{{ key }}" {% if key == role %}aria-current="true"{% endif %}>
+            {{ label }}
+            <span>{{ personas[key].full_name }} · {{ personas[key].org_name }}</span>
+          </button>
+          {% endfor %}
+        </form>
+      </details>
+    </div>
+  </header>
+
+  <main id="main">
+    {% block content %}{% endblock %}
+  </main>
+
+  <nav class="tabbar" aria-label="Main">
+    {% for href, label, icon in nav %}
+    <a href="{{ href }}" {% if section == href %}aria-current="page"{% endif %}>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ icon }}"/></svg>
+      {{ label }}
+    </a>
+    {% endfor %}
+  </nav>
+
+  <div id="toasts" aria-live="polite"></div>
+  <script src="/static/app.js?v={{ asset_version }}" defer></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>
