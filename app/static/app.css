@@ -642,6 +642,9 @@ tr.hot td { background: var(--warn-soft) !important; }
   .table.cards.compact.vwide td.keep::before { display: none; }
   .vflag { display: none; }
   .buckets { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  /* The table below repeats the ranking, and Budget is a tab away. On a phone the seats and the table are enough. */
+  .seat-view .bars, #math .hero-facts { display: none; }
+  .table.cards.compact tr { padding-top: 6px; padding-bottom: 6px; }
   .fc-sliders { grid-template-columns: minmax(0, 1fr); }
   .envelopes { grid-template-columns: minmax(0, 1fr); }
   .hm { padding: var(--s2); }
