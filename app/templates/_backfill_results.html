@@ -1,6 +1,7 @@
 {% for k in results %}
 <button type="button" hx-get="/backfill/preview?person={{ k.person_id }}" hx-target="#form-body" hx-indicator="#form-loading"
-        hx-on::after-request="document.getElementById('who').value = '{{ k.full_name | e }}'; document.getElementById('who-results').innerHTML = ''">
+        data-name="{{ k.full_name }}"
+        hx-on::after-request="document.getElementById('who').value = this.dataset.name; document.getElementById('who-results').innerHTML = ''">
   {{ k.full_name }} <span>· {{ FAMILY[k.job_family] }}, {{ k.level }} · {{ k.team_name }} · last day {{ k.end_date | d }}</span>
 </button>
 {% else %}

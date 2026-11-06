@@ -20,7 +20,7 @@ document.addEventListener("DOMContentLoaded", () => {
       ctx.fillStyle = ink;
       ctx.textAlign = narrow ? "left" : "center";
       chart.getDatasetMeta(0).data.forEach((bar, i) => {
-        const s = steps[i], text = (s.kind === "minus" ? "−" : "") + fmt(s.value);
+        const s = steps[i], text = (s.kind === "minus" && s.value ? "−" : "") + fmt(s.value);
         if (narrow) ctx.fillText(text, Math.max(bar.x, bar.base) + 6, bar.y + 4);
         else ctx.fillText(text, bar.x, Math.min(bar.y, bar.base) - 6);
       });

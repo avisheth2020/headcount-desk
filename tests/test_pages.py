@@ -71,3 +71,17 @@ def test_friendly_404(client):
     page = client.get("/requests/999999")
     assert page.status_code == 404 and "find that" in page.text
     assert client.get("/api/usable-open?org_id=999999").json() == {"detail": "No such org"}
+
+
+def test_names_with_apostrophes_are_safe_in_the_backfill_form(client):
+    """A name like O'Connor must not end up inside an inline script."""
+    with db.get_conn() as conn:
+        person = db.one(conn, "SELECT person_id, full_name FROM v_backfill_candidates ORDER BY person_id LIMIT 1")
+        conn.execute("UPDATE people SET full_name = %s WHERE id = %s", ("Siobhan O'Connor", person["person_id"]))
+    try:
+        html = client.get("/backfill/search?q=O'Conn").text
+        assert 'data-name="Siobhan O&#39;Connor"' in html
+        assert "value = '" not in html
+    finally:
+        with db.get_conn() as conn:
+            conn.execute("UPDATE people SET full_name = %s WHERE id = %s", (person["full_name"], person["person_id"]))
