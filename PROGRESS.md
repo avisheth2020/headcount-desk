@@ -3,11 +3,12 @@
 - **Live URL:** https://headcount-desk-yf5labkepq-ue.a.run.app
 - **Repo:** https://github.com/avisheth2020/headcount-desk (private)
 
-Last updated: Fri Nov 6, 3:40 AM ET.
+Last updated: Fri Nov 6, 3:50 AM ET.
 
 ## Rollback point (recorded before any V2 change)
 
 - **Code:** git tag `v1.0` (main at the end of V1: PRs #1 to #9, 77 tests).
+- **Note:** V2 added tables and columns to the production database. Rolling the site back to V1 therefore also needs the V1 data rebuilt, as shown below.
 - **Live site:** Cloud Run revision `headcount-desk-00006-ht7`. To roll back:
   `gcloud run services update-traffic headcount-desk --region us-east1 --to-revisions=headcount-desk-00006-ht7=100`
   then rebuild the production data for that version: `git checkout v1.0 && uv run python -m scripts.migrate --prod && uv run python -m scripts.seed --prod`.
@@ -20,6 +21,9 @@ Last updated: Fri Nov 6, 3:40 AM ET.
 | #11 | Tier 3 and Tier 4: FY28 annual planning cycle, quarter-end forecast | merged |
 | #12 | Docs, screenshots, compression, accessibility polish | merged |
 | #13 | Health-check alias, staged deploys in the deploy script, final notes | merged |
+| #14 | This file: final state after the last deploy (docs only, no deploy needed) | merged |
+
+**Final state: main at `1418ac8` (CI green) is live as Cloud Run revision `headcount-desk-00008-9nf`, verified end to end at 3:48 AM ET (25 of 25 live checks; Lighthouse 100 / 96 / 100).**
 
 **What shipped**
 
@@ -35,16 +39,16 @@ Last updated: Fri Nov 6, 3:40 AM ET.
 - axe-core runs on every page in light and dark: zero serious or critical violations.
 - Every page was screenshot-reviewed at 1440px, 1024px and 375px in both themes; an automated test asserts no page scrolls sideways at any of the three widths.
 
-**Live checks (run against the Cloud Run URL at 3:32 AM ET, revision `headcount-desk-00007-t8f`)**
+**Live checks (first run at 3:32 AM ET on revision `headcount-desk-00007-t8f`, repeated at 3:48 AM on `headcount-desk-00008-9nf`)**
 
-- A browser script drove the live site end to end: every page for every role, security headers, CSRF refusal, CSV export, the backfill flow (request, approve in place with dollars shown, open, fill), the planning cycle (edit with live dollars, submit, approve fewer, lock, and this year's plan unchanged), the palette and drawer, dark mode, the bridge chart, the org explorer, the forecast, exceptions with undo, data health, Reset demo, and no sideways scroll on a phone. 24 of 25 steps passed; the one miss was `/healthz`, which Cloud Run intercepts (fixed by adding `/api/health`).
+- A browser script drove the live site end to end: every page for every role, security headers, CSRF refusal, CSV export, the backfill flow (request, approve in place with dollars shown, open, fill), the planning cycle (edit with live dollars, submit, approve fewer, lock, and this year's plan unchanged), the palette and drawer, dark mode, the bridge chart, the org explorer, the forecast, exceptions with undo, data health, Reset demo, and no sideways scroll on a phone. On the first run 24 of 25 steps passed; the one miss was `/healthz`, which Cloud Run intercepts. `/api/health` was added, and the second run passed 25 of 25.
 - Lighthouse on the live Headcount page: **performance 100, accessibility 96, best practices 100**, in both mobile and desktop modes (LCP 1.0 s on mobile, 0.3 s on desktop; no layout shift).
 
 **Rollback points for V2**
 
 - Back to V1: tag `v1.0` and revision `headcount-desk-00006-ht7` (see the top of this file).
-- Last V2 revision verified end to end: `headcount-desk-00007-t8f` (main at `7d0be20`). If a later revision misbehaves:
-  `gcloud run services update-traffic headcount-desk --region us-east1 --to-revisions=headcount-desk-00007-t8f=100`. No database change is needed for that one.
+- Within V2: `headcount-desk-00007-t8f` (main at `7d0be20`) was also verified end to end and uses the same database schema as the current revision, so it is a one-command fallback:
+  `gcloud run services update-traffic headcount-desk --region us-east1 --to-revisions=headcount-desk-00007-t8f=100`
 
 **What is next**
 
