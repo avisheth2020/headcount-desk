@@ -214,7 +214,7 @@ A running log. Each entry: the choice, the alternative, and why.
 *Why:* it needs no server-side session, works for both plain forms and HTMX, and is enforced for the whole app by one dependency.
 
 **52. Indexes were added for the queries the pages run most, and checked with EXPLAIN.**
-*Why:* approval inboxes filter by approver and status; recruiter views by recruiter and status; snapshots by org and date; check results by run and check. At this size Postgres would cope without them, but they are what keeps the pages fast at ten times the data. Search still scans (`ILIKE '%text%'`), which is fine for thousands of rows and would need a trigram index for millions.
+*Why:* EXPLAIN shows an index scan for the approval inbox (`backfill_approver_idx`), the recruiter queue (`backfill_recruiter_idx`), an org's snapshots (the primary key, read backwards), seats by org and by person, people by org, the active request for a seat (the partial unique index) and the latest check run. Two tables are small enough that Postgres chooses to scan them anyway (244 orgs, about a hundred check results per run), and name search scans on purpose (`ILIKE '%text%'`), which is fine for thousands of rows and would need a trigram index for millions.
 
 **53. End-to-end tests drive a real browser against a real server, and include axe-core.**
 *Why:* the bugs V2 could introduce are in the wiring (the drawer, the palette, HTMX swaps, the CSP), which unit tests cannot see. Accessibility is checked the same way so it cannot quietly regress.

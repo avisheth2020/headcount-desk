@@ -43,8 +43,9 @@ def test_pages_have_no_inline_scripts_or_handlers(client):
         assert "onclick=" not in html and "hx-on" not in html and "<script>" not in html, path
 
 
-def test_healthz_reports_the_database(client):
-    body = client.get("/healthz").json()
+@pytest.mark.parametrize("path", ["/healthz", "/api/health"])
+def test_health_endpoint_reports_the_database(client, path):
+    body = client.get(path).json()
     assert body["ok"] is True and body["database"] == "ok" and body["data_as_of"]
 
 

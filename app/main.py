@@ -52,8 +52,10 @@ async def friendly_server_error(request: Request, exc: Exception):
 
 
 @app.get("/healthz", include_in_schema=False)
+@app.get("/api/health", tags=["API"], summary="Is the app up, and can it reach the database?")
 def healthz():
-    """Liveness and readiness: the app is up and the database answers."""
+    """Liveness and readiness. Served at /api/health as well, because Cloud Run
+    answers /healthz itself and the request never reaches the app there."""
     try:
         with db.get_conn() as conn:
             as_of = db.one(conn, "SELECT value FROM app_meta WHERE key = 'seed_as_of'")
