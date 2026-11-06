@@ -5,7 +5,7 @@ from urllib.parse import quote
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 
-from app import db, web
+from app import db, permissions, web
 from app.checks import CHECKS, run_checks
 
 router = APIRouter()
@@ -16,6 +16,10 @@ def rows_link(check_name: str, org_id: int | None) -> str:
     """Where to see the rows behind one finding."""
     if check_name == "open_share":
         return f"/positions?org={org_id}&bucket=open_no_req"
+    if check_name == "budget":
+        return f"/budget?org={org_id}"
+    if check_name == "cost_rates":
+        return "/positions?org=1&sort=cost"
     if check_name == "plan_integrity":
         return "/plan?org=1"
     if check_name == "referential":
@@ -51,8 +55,9 @@ def health(request: Request, flash: str | None = None):
 
 
 @router.post("/health/run", include_in_schema=False)
-def run_now():
+def run_now(request: Request):
     with db.get_conn() as conn:
+        permissions.check_run_checks(web.page_context(request, conn))
         run = db.one(conn, "SELECT * FROM check_runs WHERE id = %s", (run_checks(conn),))
     message = f"Checks ran just now: {run['passed']} of {len(CHECKS)} passed."
     return RedirectResponse(f"/health?flash={quote(message)}", status_code=303)

@@ -1,7 +1,7 @@
 """Every planted error is caught, and nothing else is flagged."""
 
 import pytest
-from fastapi.testclient import TestClient
+from tests.conftest import Client as TestClient
 
 from app import db
 
@@ -41,6 +41,7 @@ def test_mark_resolved_and_undo(manifest):
         e = db.one(conn, "SELECT exception_type, position_id FROM v_exceptions WHERE NOT is_resolved ORDER BY position_id LIMIT 1")
         before = db.one(conn, "SELECT count(*) AS n FROM exception_resolutions")["n"]
     with TestClient(app) as client:
+        client.cookies.set("role", "rm")
         assert client.get("/exceptions").status_code == 200
         assert client.get("/exceptions?type=duplicate&show=all&org=2").status_code == 200
         done = client.post("/exceptions/resolve", data=e)

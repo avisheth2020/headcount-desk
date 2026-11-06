@@ -6,8 +6,11 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
+from urllib.parse import urlencode
+
 from fastapi import Request
 from fastapi.templating import Jinja2Templates
+from markupsafe import Markup
 
 from app import db, demo
 
@@ -17,12 +20,14 @@ templates = Jinja2Templates(directory=APP_DIR / "templates")
 
 # role key -> (label, landing page). Each role is one named demo person (see app_meta).
 ROLES = {
-    "svp": ("SVP", "/"),
-    "vp": ("VP", "/requests"),
-    "requester": ("Requester", "/requests"),
-    "recruiter": ("Recruiter", "/requests"),
-    "rm": ("Resource Manager", "/exceptions"),
+    "svp": ("SVP", "/today"),
+    "vp": ("VP", "/today"),
+    "requester": ("Requester", "/today"),
+    "recruiter": ("Recruiter", "/today"),
+    "rm": ("Resource Manager", "/today"),
 }
+# Which optional areas are switched on. A tier only appears in the nav once it is finished.
+FEATURES = {"budget": False, "planning": False, "forecast": False}
 DEFAULT_ROLE = "svp"
 
 # Plain-language definitions, used for the ⓘ tooltips and the row drill-downs.
@@ -46,12 +51,18 @@ def fmt_num(value) -> str:
 
 
 def fmt_money(value) -> str:
-    value = float(value or 0)
+    """Compact dollars: $1.86B, $187.8M, $412K."""
+    if value is None:
+        return "–"
+    value = float(value)
+    sign, value = ("−" if value < 0 else ""), abs(value)
     if value >= 1e9:
-        return f"${value / 1e9:.2f}B"
+        return f"{sign}${value / 1e9:.2f}B"
     if value >= 1e6:
-        return f"${value / 1e6:.1f}M"
-    return f"${value:,.0f}"
+        return f"{sign}${value / 1e6:.1f}M"
+    if value >= 1e3:
+        return f"{sign}${value / 1e3:,.0f}K"
+    return f"{sign}${value:,.0f}"
 
 
 def fmt_date(value) -> str:
@@ -88,8 +99,52 @@ def fmt_ago(value) -> str:
     return f"{days} day{'s' if days != 1 else ''}"
 
 
+# ── tables: sorting, filters in the URL, CSV ─────────────────────────────────
+
+def url_with(request: Request, **changes) -> str:
+    """The current URL with some query parameters changed (None removes one)."""
+    params = dict(request.query_params)
+    for key, value in changes.items():
+        if value is None:
+            params.pop(key, None)
+        else:
+            params[key] = value
+    return request.url.path + ("?" + urlencode(params) if params else "")
+
+
+def sorting(request: Request, columns: dict[str, str], default: str, default_dir: str = "asc") -> tuple[str, str, str]:
+    """Read ?sort= and ?dir= safely. `columns` maps a public name to a SQL
+    expression, so nothing from the URL is ever placed into SQL directly."""
+    key = request.query_params.get("sort", default)
+    if key not in columns:
+        key = default
+    direction = request.query_params.get("dir", default_dir if key == default else "asc")
+    direction = "desc" if direction == "desc" else "asc"
+    return f"{columns[key]} {direction.upper()} NULLS LAST", key, direction
+
+
+def csv_response(filename: str, columns: list[tuple[str, str]], rows: list[dict]):
+    """Rows as a CSV download. `columns` is (header, row key)."""
+    import csv
+    import io
+
+    from fastapi.responses import Response
+    out = io.StringIO()
+    writer = csv.writer(out)
+    writer.writerow([header for header, _ in columns])
+    for row in rows:
+        writer.writerow(["" if row.get(key) is None else row[key] for _, key in columns])
+    return Response(out.getvalue(), media_type="text/csv",
+                    headers={"Content-Disposition": f'attachment; filename="{filename}"'})
+
+
+def csrf_input(request: Request) -> Markup:
+    return Markup(f'<input type="hidden" name="csrf_token" value="{request.state.csrf}">')
+
+
 templates.env.filters.update(num=fmt_num, money=fmt_money, d=fmt_date, dt=fmt_datetime, ago=fmt_ago)
-templates.env.globals.update(asset_version=int(time.time()), BUCKETS=BUCKETS, FAMILY=FAMILY_LABELS, LEVELS=LEVEL_LABELS, ROLES=ROLES)
+templates.env.globals.update(asset_version=int(time.time()), BUCKETS=BUCKETS, FAMILY=FAMILY_LABELS, LEVELS=LEVEL_LABELS,
+                             ROLES=ROLES, FEATURES=FEATURES, url_with=url_with, csrf_input=csrf_input)
 
 
 # ── what every page needs ────────────────────────────────────────────────────
@@ -121,6 +176,8 @@ def page_context(request: Request, conn) -> dict:
         "as_of": as_of,
         "plan": plan,
         "path": request.url.path,
+        # Detail pages render inside the side drawer when asked for a partial.
+        "layout": "_drawer.html" if request.query_params.get("partial") else "base.html",
     }
 
 

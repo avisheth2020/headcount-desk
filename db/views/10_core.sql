@@ -71,11 +71,13 @@ LEFT JOIN staffing_requests sr
 
 -- ── The plan ────────────────────────────────────────────────────────────────
 
--- "The plan" always means the most recently locked version.
+-- "The plan" means the most recently locked version that is already in effect.
+-- A plan for next fiscal year can be locked today without changing today's numbers.
 CREATE VIEW v_current_plan AS
-SELECT id, name, locked_at, locked_by, content_hash
+SELECT id, name, locked_at, locked_by, content_hash, fiscal_year, effective_from
 FROM plan_versions
 WHERE locked_at IS NOT NULL
+  AND coalesce(effective_from, locked_at::date) <= today()
 ORDER BY locked_at DESC
 LIMIT 1;
 
@@ -143,7 +145,7 @@ GROUP BY o.id, o.name, o.level, o.parent_id;
 
 -- ── Exceptions: what is wrong in the data ───────────────────────────────────
 
-CREATE FUNCTION family_label(family text) RETURNS text
+CREATE OR REPLACE FUNCTION family_label(family text) RETURNS text
 LANGUAGE sql IMMUTABLE AS $$
     SELECT CASE family WHEN 'research' THEN 'Research' WHEN 'eng' THEN 'Engineering'
                        WHEN 'ops' THEN 'Operations' WHEN 'g&a' THEN 'G&A' ELSE family END

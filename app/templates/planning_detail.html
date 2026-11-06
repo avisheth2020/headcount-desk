@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m %}
+{% block title %}{{ cycle.name }} · {{ sub.vp_name }}{% endblock %}
+
+{% block content %}
+<nav class="crumbs" aria-label="Breadcrumb"><a href="/planning">Planning</a><span aria-hidden="true">›</span><span class="here">{{ sub.vp_name }}</span></nav>
+<div class="page-head">
+  <div>
+    <h1>{{ cycle.fiscal_year }} plan for {{ sub.vp_name }}</h1>
+    <p class="fresh">{{ cycle.name }} · starts from {{ cycle.base_plan_name }} · owned by {{ sub.vp_leader_name }} (VP), reviewed by {{ sub.svp_leader_name }} (SVP)</p>
+  </div>
+  <div>{{ m.plan_chip(sub.status) }}</div>
+</div>
+
+<div class="stack">
+  {% if flash %}<p class="flash" role="status">{{ flash }}</p>{% endif %}
+  {% if error %}<p class="flash flash-bad" role="alert">{{ error }}</p>{% endif %}
+  {% if cycle.status == "locked" %}<div class="banner banner-good"><span class="icon" aria-hidden="true">🔒</span><span>This cycle is locked.<span class="sub">The numbers below are what went into {{ cycle.locked_plan_name }}. A change now needs a new plan version.</span></span></div>{% endif %}
+
+  <section class="card card-pad">
+    <ol class="stepper" aria-label="Progress">
+      {% for label in steps %}
+      {% set i = loop.index0 %}
+      <li class="{{ 'done' if i < done else ('now' if i == done else '') }}" {% if i == done %}aria-current="step"{% endif %}>{{ label }}</li>
+      {% endfor %}
+    </ol>
+    <p style="margin-top:16px;text-align:center;font-size:15px">
+      {% if sub.status == "draft" %}<strong>Draft.</strong> <span class="muted">Waiting on {{ sub.vp_leader_name }} (VP) to submit.</span>
+      {% elif sub.status == "sent_back" %}<strong>Sent back by {{ sub.svp_leader_name }}.</strong> <span class="muted">“{{ events[-1].note }}”</span>
+      {% elif sub.status == "submitted" %}Waiting on <strong>{{ sub.svp_leader_name }} (SVP)</strong> · {{ sub.time_in_status | ago }}
+      {% else %}<strong>Approved.</strong> <span class="muted">{{ m.signed(sub.final_change) }} positions go into the {{ cycle.fiscal_year }} plan when it is locked.</span>{% endif %}
+    </p>
+  </section>
+
+  {% include "_planning_form.html" %}
+
+  {% if can_edit %}
+  <section class="card card-pad row spread">
+    <div><h2>Ready?</h2><p class="muted small">Submitting sends this to {{ sub.svp_leader_name }}. You can edit again only if it is sent back.</p></div>
+    <form method="post" action="/planning/{{ sub.id }}/submit">{{ csrf_input(request) }}<button class="btn btn-primary" type="submit">Submit to {{ sub.svp_leader_name }}</button></form>
+  </section>
+  {% elif can_review %}
+  <section class="card card-pad">
+    <h2 style="margin-bottom:4px">Your decision</h2>
+    <p class="muted small" style="margin-bottom:16px">Approving uses the "change approved" numbers above. Sending it back returns it to {{ sub.vp_leader_name }} with your comment.</p>
+    <div class="row" style="align-items:flex-start">
+      <form method="post" action="/planning/{{ sub.id }}/approve">{{ csrf_input(request) }}<button class="btn btn-primary" type="submit">Approve ✓</button></form>
+      <form method="post" action="/planning/{{ sub.id }}/send-back" class="row" style="flex:1;min-width:260px;flex-wrap:nowrap">{{ csrf_input(request) }}
+        <label class="sr-only" for="comment">What needs to change</label>
+        <input type="text" id="comment" name="comment" required maxlength="500" placeholder="What needs to change (required to send back)">
+        <button class="btn" type="submit">Send back</button>
+      </form>
+    </div>
+  </section>
+  {% elif cycle.status == "open" and sub.status in ("draft", "sent_back") and role != "vp" and sub.vp_leader_id == personas.vp.id %}
+  {{ m.switch_tip(request, "vp", "This plan is with " ~ sub.vp_leader_name ~ ". Switch to VP to edit and submit it.") }}
+  {% elif cycle.status == "open" and sub.status == "submitted" and role != "svp" and sub.svp_leader_id == personas.svp.id %}
+  {{ m.switch_tip(request, "svp", "This plan is waiting on " ~ sub.svp_leader_name ~ ". Switch to SVP to review it.") }}
+  {% endif %}
+
+  <section class="card">
+    <div class="card-head"><h2>Timeline</h2><span class="muted small">Every change of status, who made it and when. This log cannot be edited.</span></div>
+    <div class="card-pad">
+      <ol class="timeline">
+        {% for e in events %}
+        <li><time datetime="{{ e.at.isoformat() }}">{{ e.at | dt }}</time>
+          <strong>{{ {"draft": "Draft started by", "submitted": "Submitted by", "sent_back": "Sent back by", "approved": "Approved by"}[e.to_status] }} {{ e.actor_name }}</strong>
+          {% if e.note %}<div class="note">{% if e.to_status == "sent_back" %}“{{ e.note }}”{% else %}{{ e.note }}{% endif %}</div>{% endif %}</li>
+        {% endfor %}
+      </ol>
+    </div>
+  </section>
+</div>
+{% endblock %}

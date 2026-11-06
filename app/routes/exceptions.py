@@ -5,7 +5,7 @@ import json
 from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse
 
-from app import db, web
+from app import db, permissions, web
 
 router = APIRouter()
 
@@ -46,6 +46,10 @@ def exceptions(request: Request, org: int = 1, type: str | None = None, show: st
             SELECT e.exception_type, count(*) AS n
             FROM v_exceptions e JOIN v_org_closure c ON c.org_id = e.org_id
             WHERE c.ancestor_id = %s AND NOT e.is_resolved GROUP BY 1""", (org,))}
+        if request.query_params.get("format") == "csv":
+            return web.csv_response("exceptions.csv", [
+                ("Type", "type_label"), ("Position", "position_code"), ("Team", "org_name"), ("Owner", "owner_name"),
+                ("Detail", "detail"), ("Suggested fix", "suggested_fix"), ("Age in days", "age_days"), ("Resolved", "is_resolved")], rows)
         groups: dict[int, dict] = {}
         for r in rows:
             g = groups.setdefault(r["owner_id"], {"owner_id": r["owner_id"], "owner_name": r["owner_name"],
@@ -53,7 +57,7 @@ def exceptions(request: Request, org: int = 1, type: str | None = None, show: st
             g["rows"].append(r)
             g["open"] += not r["is_resolved"]
         ctx.update(
-            org=org_row, type=type, show=show, TYPES=TYPES, by_type=by_type, progress=progress(conn, org),
+            org=org_row, type=type, show=show, TYPES=TYPES, can_resolve=permissions.can_resolve_exceptions(ctx["role"]), by_type=by_type, progress=progress(conn, org),
             groups=sorted(groups.values(), key=lambda g: -g["open"]),
             svps=db.query(conn, "SELECT id, name FROM orgs WHERE level IN ('company', 'svp') ORDER BY id"),
         )
@@ -65,6 +69,10 @@ def _toggle(request: Request, exception_type: str, position_id: int, org: int, r
         raise HTTPException(404, "No such exception type")
     with db.get_conn() as conn:
         ctx = web.page_context(request, conn)
+        seat = db.one(conn, "SELECT org_id FROM positions WHERE id = %s", (position_id,))
+        if seat is None:
+            raise HTTPException(404, "No such position")
+        permissions.check_resolve_exception(conn, ctx, seat["org_id"])
         if resolve:
             conn.execute("""
                 INSERT INTO exception_resolutions (exception_type, position_id, resolved_by) VALUES (%s, %s, %s)
@@ -76,7 +84,7 @@ def _toggle(request: Request, exception_type: str, position_id: int, org: int, r
                      (exception_type, position_id))
         if row is None:
             raise HTTPException(404, "That exception no longer exists")
-        ctx.update(e=row, org={"id": org}, progress=progress(conn, org), oob=True)
+        ctx.update(e=row, org={"id": org}, progress=progress(conn, org), oob=True, can_resolve=True)
     response = web.render(request, "_exception_row.html", ctx)
     if resolve:   # tell the page to show a toast with an Undo button
         response.headers["HX-Trigger"] = json.dumps({"toast": {

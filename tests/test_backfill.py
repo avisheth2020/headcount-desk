@@ -2,7 +2,7 @@
 
 import psycopg
 import pytest
-from fastapi.testclient import TestClient
+from tests.conftest import Client as TestClient
 
 from app import db, workflow
 

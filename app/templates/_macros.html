@@ -1,6 +1,7 @@
-{# Small pieces shared by several pages. #}
+{# Small pieces shared by several pages. The spec for each is in docs/DESIGN.md. #}
 
 {% macro tip(key) %}<span class="tip" tabindex="0" role="note" aria-label="{{ BUCKETS[key][1] }}" data-tip="{{ BUCKETS[key][1] }}">i</span>{% endmacro %}
+{% macro hint(text) %}<span class="tip" tabindex="0" role="note" aria-label="{{ text }}" data-tip="{{ text }}">i</span>{% endmacro %}
 
 {% macro fresh(as_of, plan) %}
 <p class="fresh">Data as of {{ as_of | dt }} · Plan: <a href="/plan?org=1">{{ plan.name }}</a> (locked {{ plan.locked_at | d }})</p>
@@ -14,6 +15,24 @@
   {% endfor %}
   {% if here %}<span class="here">{{ here }}</span>{% endif %}
 </nav>
+{% endmacro %}
+
+{# A sortable column header. The sort lives in the URL, so it can be shared and survives a reload. #}
+{% macro th(request, label, key, sort, dir, cls="", tip_key=None) %}
+<th class="{{ cls }}" {% if sort == key %}aria-sort="{{ 'descending' if dir == 'desc' else 'ascending' }}"{% endif %}>
+  <a href="{{ url_with(request, sort=key, dir=('desc' if sort == key and dir == 'asc' else 'asc'), page=None) }}" title="Sort by {{ label | lower }}">{{ label }}{% if sort == key %}<span class="dir" aria-hidden="true">{{ "▼" if dir == "desc" else "▲" }}</span>{% endif %}</a>{% if tip_key %}{{ tip(tip_key) }}{% endif %}
+</th>
+{% endmacro %}
+
+{% macro pager(request, page, pages, total, shown, size) %}
+<div class="pager">
+  <span>{% if total %}{{ ((page - 1) * size + 1) | num }}–{{ ((page - 1) * size + shown) | num }} of {{ total | num }}{% else %}0 rows{% endif %}</span>
+  <span class="row">
+    <a class="btn btn-sm" href="{{ url_with(request, format='csv', page=None) }}" title="Download every row that matches as CSV">↓ CSV</a>
+    {% if page > 1 %}<a class="btn btn-sm" href="{{ url_with(request, page=page - 1) }}">← Previous</a>{% endif %}
+    {% if page < pages %}<a class="btn btn-sm" href="{{ url_with(request, page=page + 1) }}">Next →</a>{% endif %}
+  </span>
+</div>
 {% endmacro %}
 
 {% macro bucket_chip(bucket) %}
@@ -41,6 +60,20 @@
   {% else %}<span class="chip">Normal urgency</span>{% endif %}
 {% endmacro %}
 
+{% macro budget_chip(state) %}
+  {% if state == "over" %}<span class="chip chip-bad">▲ Over budget</span>
+  {% elif state == "watch" %}<span class="chip chip-warn">◔ Close to budget</span>
+  {% else %}<span class="chip chip-good">✓ Under budget</span>{% endif %}
+{% endmacro %}
+
+{# Spend against budget. The tick marks 100%; the scale runs to 110% so "over" is visible. #}
+{% macro meter(pct, state, small=False) %}
+{% set p = pct | float %}
+<div class="meter {{ 'meter-sm' if small }}" style="--mark: {{ (100 / 1.1) | round(2) }}%" role="img" aria-label="{{ pct }}% of budget">
+  <i class="{{ state }}" style="width: {{ [p / 1.1, 100] | min | round(2) }}%"></i>
+</div>
+{% endmacro %}
+
 {% macro inbox_title(role, n, oob=False) %}
 <h1 id="inbox-title" {% if oob %}hx-swap-oob="true"{% endif %}>
   {%- if role == "vp" -%}
@@ -51,10 +84,21 @@
 </h1>
 {% endmacro %}
 
-{% macro switch_tip(role, text) %}
-<form class="banner" method="post" action="/role" style="font-size:14px;align-items:center">
+{% macro switch_tip(request, role, text) %}
+<form class="banner" method="post" action="/role" style="font-size:13.5px;align-items:center">
+  {{ csrf_input(request) }}
   <span class="icon" aria-hidden="true">💡</span>
   <span style="flex:1"><strong>Demo tip.</strong> {{ text }}</span>
   <button class="btn btn-sm" name="role" value="{{ role }}">Switch to {{ ROLES[role][0] }}</button>
 </form>
 {% endmacro %}
+
+{% macro plan_chip(status) %}
+  {% if status == "draft" %}<span class="chip">○ Draft</span>
+  {% elif status == "submitted" %}<span class="chip chip-accent">◐ Submitted</span>
+  {% elif status == "sent_back" %}<span class="chip chip-warn">↩ Sent back</span>
+  {% elif status == "approved" %}<span class="chip chip-good">✓ Approved</span>
+  {% endif %}
+{% endmacro %}
+
+{% macro signed(n) %}{{ "+" if n > 0 }}{{ n | num }}{% endmacro %}
