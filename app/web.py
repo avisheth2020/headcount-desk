@@ -12,7 +12,7 @@ from fastapi import Request
 from fastapi.templating import Jinja2Templates
 from markupsafe import Markup
 
-from app import db, demo
+from app import charts, db, demo
 
 APP_DIR = Path(__file__).resolve().parent
 ET = ZoneInfo("America/New_York")
@@ -173,7 +173,8 @@ def csrf_input(request: Request) -> Markup:
 
 templates.env.filters.update(num=fmt_num, money=fmt_money, d=fmt_date, dt=fmt_datetime, ago=fmt_ago, clock=fmt_clock)
 templates.env.globals.update(asset_version=int(time.time()), BUCKETS=BUCKETS, FAMILY=FAMILY_LABELS, LEVELS=LEVEL_LABELS,
-                             ROLES=ROLES, FEATURES=FEATURES, url_with=url_with, csrf_input=csrf_input, ico=ico)
+                             ROLES=ROLES, FEATURES=FEATURES, url_with=url_with, csrf_input=csrf_input, ico=ico,
+                             sparkline=charts.sparkline, variance_bar=charts.variance)
 
 
 # ── what every page needs ────────────────────────────────────────────────────

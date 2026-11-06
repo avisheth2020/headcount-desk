@@ -193,6 +193,29 @@ function showToast({ message, undo, target }) {
 }
 document.body.addEventListener("toast", (e) => showToast(e.detail));
 
+// ── One tooltip for every chart. It adds detail and never holds the only copy of a value. ──
+const chartTip = document.createElement("div");
+chartTip.id = "chart-tip";
+chartTip.hidden = true;
+document.body.append(chartTip);
+function placeTip(text, x, y) {
+  chartTip.textContent = text;
+  chartTip.hidden = false;
+  const box = chartTip.getBoundingClientRect();
+  chartTip.style.left = Math.max(8, Math.min(innerWidth - box.width - 8, x + 12)) + "px";
+  chartTip.style.top = Math.max(8, y - box.height - 10) + "px";
+}
+document.addEventListener("pointermove", (e) => {
+  const hit = e.target.closest?.("[data-chart-tip]");
+  if (hit) placeTip(hit.dataset.chartTip, e.clientX, e.clientY);
+  else if (!e.target.closest?.("[data-chart-live]")) chartTip.hidden = true;
+});
+document.addEventListener("focusin", (e) => {
+  const hit = e.target.closest?.("[data-chart-tip]");
+  if (hit) { const box = hit.getBoundingClientRect(); placeTip(hit.dataset.chartTip, box.left, box.top); }
+});
+document.addEventListener("focusout", () => { chartTip.hidden = true; });
+
 // ── Deep link: /requests#d=/positions/12 opens that position in the drawer. ──
 const openFromHash = () => {
   if (location.hash.startsWith("#d=/")) openDrawer(decodeURIComponent(location.hash.slice(3)), false);

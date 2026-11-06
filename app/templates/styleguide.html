@@ -1,12 +1,13 @@
 {% extends "base.html" %}
 {% import "_macros.html" as m %}
+{% import "_charts.html" as c %}
 {% block title %}Styleguide{% endblock %}
 
 {% macro pane(theme) %}
 <div class="sg-pane themed" data-theme="{{ theme }}">
   <div><p class="eyebrow">{{ theme }} theme</p><h2 style="margin-top:4px">Color</h2></div>
   <div class="swatches">
-    {% for t in ["bg", "surface", "surface-2", "surface-3", "border", "border-strong", "text", "muted", "accent", "accent-soft", "good", "good-soft", "warn", "warn-soft", "bad", "bad-soft", "seg-filled", "seg-committed", "seg-reserve", "seg-negative"] %}
+    {% for t in ["bg", "surface", "surface-2", "surface-3", "border", "border-strong", "text", "muted", "accent", "accent-soft", "good", "good-soft", "warn", "warn-soft", "bad", "bad-soft", "seg-filled", "seg-committed", "seg-reserve", "seg-negative", "seg-usable"] %}
     <div class="swatch"><i style="background: var(--{{ t }})"></i>{{ t }}</div>
     {% endfor %}
   </div>
@@ -25,6 +26,16 @@
   <div class="row"><button class="btn btn-primary" type="button">Primary</button><button class="btn" type="button">Default</button><button class="btn btn-quiet" type="button">Quiet</button><button class="btn btn-sm" type="button">Small</button><button class="btn" type="button" disabled>Disabled</button></div>
   <div class="row"><span class="chip">{{ ico("circle") }}Neutral</span><span class="chip chip-accent">{{ ico("progress") }}Committed</span><span class="chip chip-good">{{ ico("check") }}Passed</span><span class="chip chip-warn">{{ ico("alert") }}Needs a look</span><span class="chip chip-bad">{{ ico("x") }}Failed</span></div>
   <div class="pills"><span class="pill" aria-current="true">Selected</span><span class="pill">Pill</span><span class="pill">Filter <span class="count">12</span></span></div>
+
+  <h2>Charts</h2>
+  <div style="display:grid;gap:12px">
+    <div class="row">{{ c.spark([2016, 2018, 2012, 2010, 2008, 2009, 2013, 2012], "People in seats") }}<span class="small muted">Sparkline: trend with the latest point marked</span></div>
+    <div class="row" style="flex-wrap:nowrap">{{ c.variance(96.8, "under") }}<span class="num small">96.8%</span></div>
+    <div class="row" style="flex-wrap:nowrap">{{ c.variance(99.3, "watch") }}<span class="num small">99.3%</span></div>
+    <div class="row" style="flex-wrap:nowrap">{{ c.variance(102.4, "over") }}<span class="num small">102.4%</span></div>
+    {{ c.stack([("seg-filled", 731, "Run-rate"), ("seg-committed", 23, "Committed"), ("seg-rest", 25, "Left")], 779, "Spend by part") }}
+    {{ c.bars([{"name": "Applied Research", "text": "22", "bar": 100}, {"name": "Foundations Research", "text": "11", "bar": 50}, {"name": "Research Platforms", "text": "10", "bar": 45}], "seg-usable") }}
+  </div>
 
   <h2>Bridge and meter</h2>
   <div class="bridge">
