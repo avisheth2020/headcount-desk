@@ -538,6 +538,11 @@ tr.hot td { background: var(--warn-soft) !important; }
 .stepper-input { display: inline-flex; align-items: center; }
 .stepper-input input { width: 76px; text-align: right; padding: 5px 8px; font-variant-numeric: tabular-nums; }
 
+@media (max-width: 479px) { .topbar .brand { display: none; } .fresh-chip summary span { display: none; } .fresh-chip summary { padding: 0 9px; } .topbar-right { gap: 4px; } }
+
+.fc { grid-template-columns: minmax(0, 1fr); }
+.fc-math a:last-child .tip::after, .fc-math a:nth-last-child(2) .tip::after { left: auto; right: -8px; transform: none; }
+
 /* ── Drawer and command palette ──────────────────────────────────────────── */
 
 .scrim { position: fixed; inset: 0; background: var(--scrim); z-index: 60; opacity: 0; pointer-events: none; transition: opacity var(--med) var(--ease); }
