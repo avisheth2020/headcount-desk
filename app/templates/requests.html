@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m %}
+{% block title %}Requests{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    {{ m.inbox_title(role, inbox | length) }}
+    <p class="fresh">{% if role in ("vp", "recruiter") %}Where is my backfill? · {% endif %}Viewing as {{ me.full_name }} ({{ role_label }}) · every step is logged</p>
+  </div>
+  <a class="btn btn-primary" href="/backfill/new">+ Request a backfill</a>
+</div>
+
+<div class="stack">
+  {% if role in ("vp", "recruiter") %}
+  <section class="inbox" aria-label="Waiting on you">
+    {% for r in inbox %}{% include "_request_card.html" %}{% else %}
+    <div class="card empty-state"><b>{{ "No requests waiting on you 🎉" if role == "vp" else "Nothing new to open 🎉" }}</b>
+      {{ "Approved and rejected requests are in the list below." if role == "vp" else "Requests you are already working are in the list below." }}</div>
+    {% endfor %}
+  </section>
+  {% endif %}
+
+  <nav class="tiles" aria-label="Request pipeline">
+    <div class="card tile"><span>Median time, request to open req</span><b>{{ "%.1f" | format(stats.median_days or 0) }} days</b></div>
+    <a class="card tile" href="/requests?scope=all&status=submitted" {% if status == "submitted" %}aria-current="true"{% endif %}><span>Waiting on a VP</span><b>{{ stats.waiting_vp | num }}</b></a>
+    <a class="card tile" href="/requests?scope=all&status=recruiter_assigned" {% if status == "recruiter_assigned" %}aria-current="true"{% endif %}><span>Waiting on a recruiter</span><b>{{ stats.waiting_recruiter | num }}</b></a>
+    <a class="card tile" href="/requests?scope=all&status=req_open" {% if status == "req_open" %}aria-current="true"{% endif %}><span>Request open</span><b>{{ stats.req_open | num }}</b></a>
+    <a class="card tile" href="/requests?scope=all&status=filled" {% if status == "filled" %}aria-current="true"{% endif %}><span>Filled</span><b>{{ stats.filled | num }}</b></a>
+  </nav>
+
+  <section class="card">
+    <div class="card-head">
+      <h2>{{ "My requests" if scope == "mine" else "All requests" }}{% if status %} · {{ STATUS_LABELS[status] }}{% endif %} <span class="count">{{ rows | length }}</span></h2>
+      <nav class="pills" aria-label="Whose requests">
+        {% if has_mine %}<a class="pill" href="/requests?scope=mine" {% if scope == "mine" and not status %}aria-current="true"{% endif %}>Mine</a>{% endif %}
+        <a class="pill" href="/requests?scope=all" {% if scope == "all" and not status %}aria-current="true"{% endif %}>Everyone's</a>
+      </nav>
+    </div>
+    {% if rows %}
+    <table class="table cards two">
+      <thead><tr><th>Request</th><th>Team</th><th>Status</th><th>Waiting on</th><th class="r">In this status</th><th class="r">Submitted</th></tr></thead>
+      <tbody>
+        {% for r in rows %}
+        <tr>
+          <td><a class="rowlink" href="/requests/{{ r.id }}">#{{ r.id }} · {{ r.departing_name }}</a><span class="sub">{{ FAMILY[r.job_family] }}, {{ r.level }}{% if r.urgency == "urgent" %} · ▲ Urgent{% endif %}</span></td>
+          <td data-label="Team">{{ r.team_name }}</td>
+          <td data-label="Status">{{ m.status_chip(r.status) }}</td>
+          <td data-label="Waiting on">{{ r.waiting_on or "–" }}</td>
+          <td class="r" data-label="In this status">{{ r.time_in_status | ago }}</td>
+          <td class="r" data-label="Submitted">{{ r.created_at | d }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state"><b>No requests here yet</b>{% if scope == "mine" %}Requests you make or need to act on will show up here. <a href="/requests?scope=all">See everyone's</a>{% else %}Nothing matches this filter.{% endif %}</div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

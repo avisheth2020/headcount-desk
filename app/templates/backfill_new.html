@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Request a backfill{% endblock %}
+
+{% block content %}
+<nav class="crumbs" aria-label="Breadcrumb"><a href="/requests">Requests</a><span aria-hidden="true">›</span><span class="here">New backfill</span></nav>
+<div class="page-head">
+  <div>
+    <h1>Request a backfill</h1>
+    <p class="fresh">Two questions. The seat, team, level and approver are filled in for you. · Requesting as {{ me.full_name }}</p>
+  </div>
+</div>
+
+{% if request.query_params.get("flash") %}<p class="flash flash-bad" role="alert" style="margin-bottom:16px;max-width:720px">{{ request.query_params.get("flash") }}</p>{% endif %}
+
+<section class="card card-pad" style="max-width:720px">
+  <div class="field">
+    <label for="who">1. Who is leaving?</label>
+    <input type="search" id="who" name="q" placeholder="Start typing a name" autocomplete="off" value="{{ selected.full_name if selected else '' }}"
+           hx-get="/backfill/search" hx-trigger="input changed delay:200ms" hx-target="#who-results">
+    <div id="who-results" class="typeahead" aria-live="polite"></div>
+    {% if suggestions %}
+    <p class="hint" style="margin:12px 0 8px">Leaving soon in {{ scope_name }}:</p>
+    <div class="suggest">
+      {% for k in suggestions %}
+      <button type="button" hx-get="/backfill/preview?person={{ k.person_id }}" hx-target="#form-body"
+              hx-on::after-request="document.getElementById('who').value = '{{ k.full_name | e }}'; document.getElementById('who-results').innerHTML = ''">
+        {{ k.full_name }}<span>{{ FAMILY[k.job_family] }}, {{ k.level }} · last day {{ k.end_date | d }}</span>
+      </button>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+  <div id="form-body">{% if selected %}{% include "_backfill_form.html" %}{% endif %}</div>
+</section>
+{% endblock %}

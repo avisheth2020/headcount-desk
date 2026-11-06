@@ -34,3 +34,27 @@
   {% elif status == "rejected" %}<span class="chip chip-bad">× Rejected</span>
   {% endif %}
 {% endmacro %}
+
+{% macro urgency_chip(urgency) %}
+  {% if urgency == "urgent" %}<span class="chip chip-bad">▲ Urgent</span>
+  {% elif urgency == "low" %}<span class="chip">▽ Low urgency</span>
+  {% else %}<span class="chip">Normal urgency</span>{% endif %}
+{% endmacro %}
+
+{% macro inbox_title(role, n, oob=False) %}
+<h1 id="inbox-title" {% if oob %}hx-swap-oob="true"{% endif %}>
+  {%- if role == "vp" -%}
+    {%- if n %}{{ n }} request{{ "" if n == 1 else "s" }} need{{ "s" if n == 1 else "" }} your approval{% else %}No requests waiting on you 🎉{% endif -%}
+  {%- elif role == "recruiter" -%}
+    {%- if n %}{{ n }} new request{{ "" if n == 1 else "s" }} assigned to you{% else %}Your open requests{% endif -%}
+  {%- else -%}Where is my backfill?{%- endif -%}
+</h1>
+{% endmacro %}
+
+{% macro switch_tip(role, text) %}
+<form class="banner" method="post" action="/role" style="font-size:14px;align-items:center">
+  <span class="icon" aria-hidden="true">💡</span>
+  <span style="flex:1"><strong>Demo tip.</strong> {{ text }}</span>
+  <button class="btn btn-sm" name="role" value="{{ role }}">Switch to {{ ROLES[role][0] }}</button>
+</form>
+{% endmacro %}

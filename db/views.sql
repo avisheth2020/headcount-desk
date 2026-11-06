@@ -241,3 +241,98 @@ JOIN (VALUES
      ) AS t (exception_type, label, fix) ON t.exception_type = r.exception_type
 LEFT JOIN exception_resolutions res
        ON res.exception_type = r.exception_type AND res.position_id = r.position_id;
+
+
+-- ── Backfill workflow ───────────────────────────────────────────────────────
+
+-- How busy each recruiter is: active staffing requests, plus backfills that
+-- have been assigned to them but not opened yet. Auto-assignment picks the
+-- lowest load within the job family.
+CREATE VIEW v_recruiter_load AS
+SELECT rc.person_id,
+       p.full_name,
+       rc.job_family,
+       (SELECT count(*) FROM staffing_requests s
+         WHERE s.recruiter_id = rc.person_id AND s.status IN ('open', 'offer_out'))
+     + (SELECT count(*) FROM backfill_requests b
+         WHERE b.recruiter_id = rc.person_id AND b.status = 'recruiter_assigned') AS load
+FROM recruiter_coverage rc
+JOIN people p ON p.id = rc.person_id;
+
+-- Who can be backfilled: someone with an end date who still holds a seat,
+-- and whose seat does not already have a live backfill request.
+CREATE VIEW v_backfill_candidates AS
+SELECT DISTINCT ON (pe.id)
+       pe.id AS person_id,
+       pe.full_name,
+       pe.level,
+       pe.job_family,
+       pe.end_date,
+       pos.id AS position_id,
+       pos.position_code,
+       pos.org_id,
+       path.name AS team_name,
+       path.vp_id,
+       path.vp_name,
+       vp_org.leader_person_id AS vp_approver_id,
+       approver.full_name AS vp_approver_name
+FROM people pe
+JOIN positions pos ON pos.person_id = pe.id AND pos.position_type = 'standard'
+JOIN v_org_path path ON path.org_id = pos.org_id
+JOIN orgs vp_org ON vp_org.id = path.vp_id
+JOIN people approver ON approver.id = vp_org.leader_person_id
+WHERE pe.end_date IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM backfill_requests b
+                  WHERE b.position_id = pos.id AND b.status NOT IN ('rejected', 'filled'))
+ORDER BY pe.id, pos.id;
+
+-- Each request with the names a person needs to read it, who it is waiting
+-- on, and how long it has been in its current status.
+CREATE VIEW v_backfill_requests AS
+SELECT b.id,
+       b.status,
+       b.urgency,
+       b.justification,
+       b.created_at,
+       b.updated_at,
+       now() - b.updated_at AS time_in_status,
+       b.departing_person_id,
+       d.full_name AS departing_name,
+       d.end_date AS departing_end_date,
+       b.position_id,
+       pos.position_code,
+       pos.job_family,
+       pos.level,
+       pos.org_id,
+       path.name AS team_name,
+       path.vp_id,
+       path.vp_name,
+       b.requested_by,
+       rq.full_name AS requester_name,
+       b.vp_approver_id,
+       vp.full_name AS approver_name,
+       b.recruiter_id,
+       rec.full_name AS recruiter_name,
+       CASE b.status
+           WHEN 'submitted'          THEN vp.full_name || ' (VP)'
+           WHEN 'vp_approved'        THEN 'recruiter assignment'
+           WHEN 'recruiter_assigned' THEN rec.full_name || ' (Recruiter)'
+           WHEN 'req_open'           THEN rec.full_name || ' (Recruiter)'
+       END AS waiting_on
+FROM backfill_requests b
+JOIN people d ON d.id = b.departing_person_id
+JOIN positions pos ON pos.id = b.position_id
+JOIN v_org_path path ON path.org_id = pos.org_id
+JOIN people rq ON rq.id = b.requested_by
+LEFT JOIN people vp ON vp.id = b.vp_approver_id
+LEFT JOIN people rec ON rec.id = b.recruiter_id;
+
+-- The headline metric: days from a request being submitted to its staffing
+-- request being open. Read straight from the audit trail.
+CREATE VIEW v_backfill_cycle_time AS
+SELECT b.id AS backfill_request_id,
+       b.created_at AS submitted_at,
+       e.at AS req_open_at,
+       extract(epoch FROM e.at - b.created_at) / 86400.0 AS days_to_open
+FROM backfill_requests b
+JOIN request_events e ON e.backfill_request_id = b.id AND e.to_status = 'req_open';

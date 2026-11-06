@@ -1,0 +1,8 @@
+{% for k in results %}
+<button type="button" hx-get="/backfill/preview?person={{ k.person_id }}" hx-target="#form-body"
+        hx-on::after-request="document.getElementById('who').value = '{{ k.full_name | e }}'; document.getElementById('who-results').innerHTML = ''">
+  {{ k.full_name }} <span>· {{ FAMILY[k.job_family] }}, {{ k.level }} · {{ k.team_name }} · last day {{ k.end_date | d }}</span>
+</button>
+{% else %}
+{% if q | length >= 2 %}<p class="empty">Nobody matching “{{ q }}” is leaving{{ " in your org" if role == "requester" else "" }}. Only people with an end date and no backfill in progress show up here.</p>{% endif %}
+{% endfor %}
