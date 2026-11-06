@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m %}
+{% block title %}Positions · {{ org.name }}{% endblock %}
+
+{% block content %}
+{{ m.crumbs(crumbs, here=(BUCKETS[bucket][0] if bucket else "All positions")) }}
+<div class="page-head">
+  <div>
+    <h1>{{ total | num }} {{ BUCKETS[bucket][0] | lower if bucket else "" }} position{{ "" if total == 1 else "s" }} {{ "held directly at" if direct else "in" }} {{ org.name }}</h1>
+    <p class="fresh">{% if bucket %}{{ BUCKETS[bucket][1] }} {% endif %}These are the rows behind the number.</p>
+  </div>
+  <nav class="pills" aria-label="Filter by bucket">
+    <a class="pill" href="/positions?org={{ org.id }}{{ '&direct=1' if direct }}" {% if not bucket %}aria-current="true"{% endif %}>All</a>
+    {% for b in ["filled", "committed", "open_no_req", "reserve", "negative"] %}
+    <a class="pill" href="/positions?org={{ org.id }}&bucket={{ b }}{{ '&direct=1' if direct }}" {% if bucket == b %}aria-current="true"{% endif %}>{{ BUCKETS[b][0] }}</a>
+    {% endfor %}
+  </nav>
+</div>
+
+<section class="card">
+  {% if rows %}
+  <table class="table cards">
+    <thead>
+      <tr><th>Position</th><th>Team</th><th>Job family</th><th>Level</th><th>Status</th><th>Who</th><th class="r">Open since</th></tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td><a class="rowlink num" href="/positions/{{ r.position_id }}">{{ r.position_code }}</a></td>
+        <td data-label="Team"><a href="/?org={{ r.org_id }}">{{ r.org_name }}</a></td>
+        <td data-label="Job family">{{ FAMILY[r.job_family] }}</td>
+        <td data-label="Level">{{ r.level }}</td>
+        <td data-label="Status">{{ m.bucket_chip(r.bucket) }}</td>
+        <td data-label="Who">
+          {% if r.full_name %}{{ r.full_name }}{% if r.end_date %}<span class="sub">{{ "left" if r.end_date < as_of.date() else "leaving" }} {{ r.end_date | d }}</span>{% endif %}
+          {% elif r.recruiter_name %}<span class="muted">Recruiter:</span> {{ r.recruiter_name }}<span class="sub">{{ "Offer out" if r.request_status == "offer_out" else "Request open" }}</span>
+          {% else %}<span class="muted">Nobody</span>{% endif %}
+        </td>
+        <td class="r" data-label="Open since">{% if not r.person_id %}{{ r.opened_at | d }}{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <div class="pager">
+    <span>Showing {{ ((page - 1) * 50 + 1) | num }}–{{ ((page - 1) * 50 + rows | length) | num }} of {{ total | num }}</span>
+    <span>
+      {% set base = "/positions?org=" ~ org.id ~ ("&bucket=" ~ bucket if bucket else "") ~ ("&direct=1" if direct else "") %}
+      {% if page > 1 %}<a class="btn btn-sm" href="{{ base }}&page={{ page - 1 }}">← Previous</a>{% endif %}
+      {% if page < pages %}<a class="btn btn-sm" href="{{ base }}&page={{ page + 1 }}">Next →</a>{% endif %}
+    </span>
+  </div>
+  {% else %}
+  <div class="empty-state"><b>No positions here</b>Nothing in {{ org.name }} matches this filter.</div>
+  {% endif %}
+</section>
+{% endblock %}

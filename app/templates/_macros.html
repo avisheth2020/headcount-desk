@@ -1,0 +1,36 @@
+{# Small pieces shared by several pages. #}
+
+{% macro tip(key) %}<span class="tip" tabindex="0" role="note" aria-label="{{ BUCKETS[key][1] }}" data-tip="{{ BUCKETS[key][1] }}">i</span>{% endmacro %}
+
+{% macro fresh(as_of, plan) %}
+<p class="fresh">Data as of {{ as_of | dt }} · Plan: <a href="/plan?org=1">{{ plan.name }}</a> (locked {{ plan.locked_at | d }})</p>
+{% endmacro %}
+
+{% macro crumbs(items, here=None, base="/?org=") %}
+<nav class="crumbs" aria-label="Breadcrumb">
+  {% for c in items %}
+    {% if loop.last and not here %}<span class="here">{{ c.name }}</span>
+    {% else %}<a href="{{ base }}{{ c.id }}">{{ c.name }}</a><span aria-hidden="true">›</span>{% endif %}
+  {% endfor %}
+  {% if here %}<span class="here">{{ here }}</span>{% endif %}
+</nav>
+{% endmacro %}
+
+{% macro bucket_chip(bucket) %}
+  {% if bucket == "filled" %}<span class="chip chip-good">● Filled</span>
+  {% elif bucket == "committed" %}<span class="chip chip-accent">◐ Committed</span>
+  {% elif bucket == "open_no_req" %}<span class="chip">○ Open, no request</span>
+  {% elif bucket == "reserve" %}<span class="chip">◇ Reserve</span>
+  {% elif bucket == "negative" %}<span class="chip chip-warn">▲ Negative</span>
+  {% endif %}
+{% endmacro %}
+
+{% macro status_chip(status) %}
+  {% if status == "submitted" %}<span class="chip chip-warn">◔ Waiting on VP</span>
+  {% elif status == "vp_approved" %}<span class="chip chip-accent">✓ VP approved</span>
+  {% elif status == "recruiter_assigned" %}<span class="chip chip-accent">◑ Recruiter assigned</span>
+  {% elif status == "req_open" %}<span class="chip chip-accent">◕ Request open</span>
+  {% elif status == "filled" %}<span class="chip chip-good">✓ Filled</span>
+  {% elif status == "rejected" %}<span class="chip chip-bad">× Rejected</span>
+  {% endif %}
+{% endmacro %}

@@ -1,0 +1,8 @@
+{% for r in results %}
+<a href="/positions/{{ r.position_id }}">
+  <strong>{{ r.full_name or "Empty seat" }}</strong>
+  <span class="muted small" style="display:block">{{ r.position_code }} · {{ r.org_name }} · {{ BUCKETS[r.bucket][0] }}</span>
+</a>
+{% else %}
+{% if q | length >= 2 %}<p class="empty">Nobody and no position matches “{{ q }}”.</p>{% endif %}
+{% endfor %}

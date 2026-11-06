@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 930 530" role="img" aria-label="Entity relationship diagram of the main tables" style="min-width:760px;font-family:Inter,system-ui,sans-serif">
+<line x1="220" y1="88.0" x2="250" y2="88.0" stroke="var(--border-strong)" stroke-width="2"/>
+<circle cx="250" cy="88.0" r="4" fill="var(--accent)"/>
+<line x1="450" y1="88.0" x2="480" y2="88.0" stroke="var(--border-strong)" stroke-width="2"/>
+<circle cx="480" cy="88.0" r="4" fill="var(--accent)"/>
+<line x1="680" y1="88.0" x2="710" y2="88.0" stroke="var(--border-strong)" stroke-width="2"/>
+<circle cx="710" cy="88.0" r="4" fill="var(--accent)"/>
+<line x1="580.0" y1="156" x2="580.0" y2="210" stroke="var(--border-strong)" stroke-width="2"/>
+<circle cx="580.0" cy="210" r="4" fill="var(--accent)"/>
+<line x1="680" y1="278.0" x2="710" y2="268.0" stroke="var(--border-strong)" stroke-width="2"/>
+<circle cx="710" cy="268.0" r="4" fill="var(--accent)"/>
+<line x1="120.0" y1="326" x2="120.0" y2="370" stroke="var(--border-strong)" stroke-width="2"/>
+<circle cx="120.0" cy="370" r="4" fill="var(--accent)"/>
+<line x1="450" y1="418.0" x2="480" y2="458.0" stroke="var(--border-strong)" stroke-width="2"/>
+<circle cx="480" cy="458.0" r="4" fill="var(--accent)"/>
+<rect x="20" y="20" width="200" height="136" rx="8" fill="var(--surface)" stroke="var(--border-strong)"/>
+<path d="M20 28a8 8 0 0 1 8-8h184a8 8 0 0 1 8 8v20h-200z" fill="var(--accent-soft)"/>
+<text x="32" y="39" font-size="13" font-weight="600" fill="var(--accent-text)">orgs</text>
+<text x="32" y="64" font-size="12" fill="var(--text)">id</text>
+<text x="32" y="84" font-size="12" fill="var(--text)">name</text>
+<text x="32" y="104" font-size="12" fill="var(--text)">parent_id → orgs</text>
+<text x="32" y="124" font-size="12" fill="var(--text)">level</text>
+<text x="32" y="144" font-size="12" fill="var(--text)">leader_person_id</text>
+<rect x="250" y="20" width="200" height="136" rx="8" fill="var(--surface)" stroke="var(--border-strong)"/>
+<path d="M250 28a8 8 0 0 1 8-8h184a8 8 0 0 1 8 8v20h-200z" fill="var(--accent-soft)"/>
+<text x="262" y="39" font-size="13" font-weight="600" fill="var(--accent-text)">people</text>
+<text x="262" y="64" font-size="12" fill="var(--text)">id</text>
+<text x="262" y="84" font-size="12" fill="var(--text)">full_name</text>
+<text x="262" y="104" font-size="12" fill="var(--text)">org_id → orgs</text>
+<text x="262" y="124" font-size="12" fill="var(--text)">start_date, end_date</text>
+<text x="262" y="144" font-size="12" fill="var(--text)">manager_id → people</text>
+<rect x="480" y="20" width="200" height="136" rx="8" fill="var(--surface)" stroke="var(--border-strong)"/>
+<path d="M480 28a8 8 0 0 1 8-8h184a8 8 0 0 1 8 8v20h-200z" fill="var(--accent-soft)"/>
+<text x="492" y="39" font-size="13" font-weight="600" fill="var(--accent-text)">positions</text>
+<text x="492" y="64" font-size="12" fill="var(--text)">id</text>
+<text x="492" y="84" font-size="12" fill="var(--text)">position_code</text>
+<text x="492" y="104" font-size="12" fill="var(--text)">org_id → orgs</text>
+<text x="492" y="124" font-size="12" fill="var(--text)">position_type</text>
+<text x="492" y="144" font-size="12" fill="var(--text)">person_id → people</text>
+<rect x="710" y="20" width="200" height="136" rx="8" fill="var(--surface)" stroke="var(--border-strong)"/>
+<path d="M710 28a8 8 0 0 1 8-8h184a8 8 0 0 1 8 8v20h-200z" fill="var(--accent-soft)"/>
+<text x="722" y="39" font-size="13" font-weight="600" fill="var(--accent-text)">staffing_requests</text>
+<text x="722" y="64" font-size="12" fill="var(--text)">id</text>
+<text x="722" y="84" font-size="12" fill="var(--text)">position_id → positions</text>
+<text x="722" y="104" font-size="12" fill="var(--text)">recruiter_id → people</text>
+<text x="722" y="124" font-size="12" fill="var(--text)">status</text>
+<text x="722" y="144" font-size="12" fill="var(--text)">backfill_request_id</text>
+<rect x="20" y="210" width="200" height="116" rx="8" fill="var(--surface)" stroke="var(--border-strong)"/>
+<path d="M20 218a8 8 0 0 1 8-8h184a8 8 0 0 1 8 8v20h-200z" fill="var(--accent-soft)"/>
+<text x="32" y="229" font-size="13" font-weight="600" fill="var(--accent-text)">plan_versions</text>
+<text x="32" y="254" font-size="12" fill="var(--text)">id</text>
+<text x="32" y="274" font-size="12" fill="var(--text)">name</text>
+<text x="32" y="294" font-size="12" fill="var(--text)">locked_at</text>
+<text x="32" y="314" font-size="12" fill="var(--text)">content_hash</text>
+<rect x="20" y="370" width="200" height="116" rx="8" fill="var(--surface)" stroke="var(--border-strong)"/>
+<path d="M20 378a8 8 0 0 1 8-8h184a8 8 0 0 1 8 8v20h-200z" fill="var(--accent-soft)"/>
+<text x="32" y="389" font-size="13" font-weight="600" fill="var(--accent-text)">plan_lines</text>
+<text x="32" y="414" font-size="12" fill="var(--text)">plan_version_id</text>
+<text x="32" y="434" font-size="12" fill="var(--text)">org_id → orgs</text>
+<text x="32" y="454" font-size="12" fill="var(--text)">job_family</text>
+<text x="32" y="474" font-size="12" fill="var(--text)">approved_headcount</text>
+<rect x="250" y="210" width="200" height="116" rx="8" fill="var(--surface)" stroke="var(--border-strong)"/>
+<path d="M250 218a8 8 0 0 1 8-8h184a8 8 0 0 1 8 8v20h-200z" fill="var(--accent-soft)"/>
+<text x="262" y="229" font-size="13" font-weight="600" fill="var(--accent-text)">daily_snapshots</text>
+<text x="262" y="254" font-size="12" fill="var(--text)">snapshot_date</text>
+<text x="262" y="274" font-size="12" fill="var(--text)">org_id → orgs</text>
+<text x="262" y="294" font-size="12" fill="var(--text)">filled, open_with_req …</text>
+<text x="262" y="314" font-size="12" fill="var(--text)">total_people</text>
+<rect x="480" y="210" width="200" height="136" rx="8" fill="var(--surface)" stroke="var(--border-strong)"/>
+<path d="M480 218a8 8 0 0 1 8-8h184a8 8 0 0 1 8 8v20h-200z" fill="var(--accent-soft)"/>
+<text x="492" y="229" font-size="13" font-weight="600" fill="var(--accent-text)">backfill_requests</text>
+<text x="492" y="254" font-size="12" fill="var(--text)">id</text>
+<text x="492" y="274" font-size="12" fill="var(--text)">departing_person_id</text>
+<text x="492" y="294" font-size="12" fill="var(--text)">position_id → positions</text>
+<text x="492" y="314" font-size="12" fill="var(--text)">status</text>
+<text x="492" y="334" font-size="12" fill="var(--text)">vp_approver_id, recruiter_id</text>
+<rect x="710" y="210" width="200" height="116" rx="8" fill="var(--surface)" stroke="var(--border-strong)"/>
+<path d="M710 218a8 8 0 0 1 8-8h184a8 8 0 0 1 8 8v20h-200z" fill="var(--accent-soft)"/>
+<text x="722" y="229" font-size="13" font-weight="600" fill="var(--accent-text)">request_events</text>
+<text x="722" y="254" font-size="12" fill="var(--text)">id</text>
+<text x="722" y="274" font-size="12" fill="var(--text)">backfill_request_id</text>
+<text x="722" y="294" font-size="12" fill="var(--text)">from_status → to_status</text>
+<text x="722" y="314" font-size="12" fill="var(--text)">actor_id, note, at</text>
+<rect x="250" y="370" width="200" height="96" rx="8" fill="var(--surface)" stroke="var(--border-strong)"/>
+<path d="M250 378a8 8 0 0 1 8-8h184a8 8 0 0 1 8 8v20h-200z" fill="var(--accent-soft)"/>
+<text x="262" y="389" font-size="13" font-weight="600" fill="var(--accent-text)">check_runs</text>
+<text x="262" y="414" font-size="12" fill="var(--text)">id</text>
+<text x="262" y="434" font-size="12" fill="var(--text)">run_at</text>
+<text x="262" y="454" font-size="12" fill="var(--text)">passed, warned, failed</text>
+<rect x="480" y="400" width="200" height="116" rx="8" fill="var(--surface)" stroke="var(--border-strong)"/>
+<path d="M480 408a8 8 0 0 1 8-8h184a8 8 0 0 1 8 8v20h-200z" fill="var(--accent-soft)"/>
+<text x="492" y="419" font-size="13" font-weight="600" fill="var(--accent-text)">check_results</text>
+<text x="492" y="444" font-size="12" fill="var(--text)">id</text>
+<text x="492" y="464" font-size="12" fill="var(--text)">check_run_id</text>
+<text x="492" y="484" font-size="12" fill="var(--text)">check_name, severity</text>
+<text x="492" y="504" font-size="12" fill="var(--text)">expected, actual</text>
+<rect x="710" y="385" width="200" height="116" rx="8" fill="var(--surface)" stroke="var(--border-strong)"/>
+<path d="M710 393a8 8 0 0 1 8-8h184a8 8 0 0 1 8 8v20h-200z" fill="var(--accent-soft)"/>
+<text x="722" y="404" font-size="13" font-weight="600" fill="var(--accent-text)">exception_resolutions</text>
+<text x="722" y="429" font-size="12" fill="var(--text)">id</text>
+<text x="722" y="449" font-size="12" fill="var(--text)">exception_type</text>
+<text x="722" y="469" font-size="12" fill="var(--text)">position_id → positions</text>
+<text x="722" y="489" font-size="12" fill="var(--text)">resolved_by</text>
+</svg>

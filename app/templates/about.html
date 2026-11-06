@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}About{% endblock %}
+
+{% block content %}
+<div class="page-head"><div><h1>About Headcount Desk</h1></div></div>
+<div class="stack">
+  <section class="card card-pad prose">
+    <p>Headcount Desk answers one question for a fictional AI research lab called Meridian Labs: <strong>how many people can we actually hire?</strong> It turns a noisy list of positions into usable open headcount for each SVP, and every number opens the rows behind it.</p>
+    <p>It also replaces a manual backfill process (form, spreadsheet, email approval, hand-assigned recruiter) with one tracked flow that has a full audit trail. And it checks its own data every day, so you can tell a real change from a bad load.</p>
+    <p>All data is synthetic: {{ counts.people | num }} made-up people in {{ counts.positions | num }} positions across {{ counts.teams | num }} teams, with errors planted on purpose so there is something to find. Roles are simulated with the switcher in the top right; there are no real logins.</p>
+    <p>Built by Avi Sheth with FastAPI, Postgres and HTMX. The business logic is plain SQL views.</p>
+    <p style="margin-top:24px">
+      <a class="btn" href="https://github.com/avisheth2020/headcount-desk/blob/main/docs/PRD.md">Read the PRD</a>
+      <a class="btn" href="https://github.com/avisheth2020/headcount-desk">Code on GitHub</a>
+      <a class="btn" href="/docs">API docs</a>
+    </p>
+  </section>
+  <section class="card">
+    <div class="card-head"><h2>How the data is shaped</h2><a class="small" href="https://github.com/avisheth2020/headcount-desk/blob/main/docs/SCHEMA.md">Full schema</a></div>
+    <div class="card-pad" style="overflow-x:auto">{% include "_er_diagram.svg" %}</div>
+  </section>
+</div>
+{% endblock %}
