@@ -104,3 +104,18 @@ def test_names_with_apostrophes_are_safe_in_the_backfill_form(client):
     finally:
         with db.get_conn() as conn:
             conn.execute("UPDATE people SET full_name = %s WHERE id = %s", (person["full_name"], person["person_id"]))
+
+
+def test_a_today_number_opens_exactly_its_rows(client):
+    """The SVP's "waiting on a VP" tile and the list it opens agree."""
+    import re
+    today = client.get("/today", cookies={"role": "svp"}).text
+    href, count = re.search(r'href="(/requests\?[^"]+)"><span>Backfills waiting on a VP</span><b>(\d+)</b>', today).groups()
+    rows = client.get(href.replace("&amp;", "&"), cookies={"role": "svp"}).text
+    assert rows.count('class="rowlink"') == int(count)
+
+
+def test_the_form_skeleton_is_hidden_until_something_loads():
+    from pathlib import Path
+    css = Path("app/static/app.css").read_text()
+    assert css.index(".skeleton-rows {") < css.index(".htmx-indicator { display: none; }")
