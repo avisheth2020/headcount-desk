@@ -36,8 +36,10 @@ CREATE TABLE people (
     CHECK (end_date IS NULL OR end_date >= start_date)
 );
 
+-- orgs and people point at each other, so this one is checked at commit time.
 ALTER TABLE orgs
-    ADD CONSTRAINT orgs_leader_fk FOREIGN KEY (leader_person_id) REFERENCES people (id);
+    ADD CONSTRAINT orgs_leader_fk FOREIGN KEY (leader_person_id) REFERENCES people (id)
+    DEFERRABLE INITIALLY DEFERRED;
 
 
 -- ── Positions and recruiting ────────────────────────────────────────────────
@@ -53,7 +55,7 @@ CREATE TABLE positions (
     position_type  text NOT NULL DEFAULT 'standard'
                    CHECK (position_type IN ('standard', 'reserve', 'negative')),
     person_id      integer REFERENCES people (id),   -- null = nobody in the seat
-    opened_at      date NOT NULL,
+    opened_at      date NOT NULL,                    -- when the seat was created or last vacated
     source         text NOT NULL DEFAULT 'plan' CHECK (source IN ('plan', 'backfill', 'transfer')),
     created_at     timestamptz NOT NULL DEFAULT now()
 );
