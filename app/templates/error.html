@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{ title }} · Headcount Desk</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="/static/theme.js?v={{ asset_version }}"></script>
   <link rel="stylesheet" href="/static/app.css?v={{ asset_version }}">
 </head>
 <body>
@@ -13,7 +13,7 @@
     <h1 style="margin:8px 0 12px">{{ title }}</h1>
     <p class="muted" style="margin-bottom:24px">{{ message }}</p>
     <a class="btn btn-primary" href="/">Back to Headcount</a>
-    {% if code >= 500 %}<form method="post" action="/reset" style="display:inline"><button class="btn">Reset the demo</button></form>{% endif %}
+    
   </main>
 </body>
 </html>

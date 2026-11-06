@@ -1,0 +1,17 @@
+{% import "_macros.html" as m %}
+{% for r in rows %}
+<tr data-depth="{{ r.depth }}">
+  <td style="padding-left: {{ 16 + r.depth * 22 }}px">
+    {% if r.has_children %}<button class="tree-toggle" type="button" aria-expanded="{{ 'true' if r.expanded else 'false' }}" aria-label="Show or hide what is under {{ r.name }}"
+        hx-get="/org/children?parent={{ r.org_id }}&depth={{ r.depth }}" hx-target="closest tr" hx-swap="afterend">▶</button>{% else %}<span class="tree-leaf"></span>{% endif %}
+    <a class="rowlink" href="/?org={{ r.org_id }}">{{ r.name }}</a> <span class="muted small">{{ LEVELS[r.level] | replace(" org", "") }}</span>
+  </td>
+  <td data-label="Leader" class="muted">{{ r.leader_name or "–" }}</td>
+  <td class="r" data-label="Approved"><a href="/plan?org={{ r.org_id }}">{{ r.approved | num }}</a></td>
+  <td class="r" data-label="Filled"><a href="/positions?org={{ r.org_id }}&bucket=filled">{{ r.filled | num }}</a></td>
+  <td class="r" data-label="Usable open"><a class="usable" href="/?org={{ r.org_id }}">{{ r.usable_open | num }}</a></td>
+  <td class="r" data-label="Budget"><a href="/budget?org={{ r.org_id }}">{{ r.budget | money }}</a></td>
+  <td class="r" data-label="Projected"><a href="/budget?org={{ r.org_id }}">{{ r.projected | money }}</a></td>
+  <td data-label="Of budget"><div class="row" style="gap:8px;flex-wrap:nowrap">{{ m.meter(r.pct_of_budget or 0, r.state, small=True) }}<span class="num small {{ '' if r.state == 'under' else 'strong' }}">{{ r.pct_of_budget if r.pct_of_budget is not none else "–" }}%</span></div></td>
+</tr>
+{% endfor %}

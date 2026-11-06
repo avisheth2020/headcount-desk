@@ -1,7 +1,7 @@
 """The data checks: the planted anomaly is flagged, clean data passes, broken data fails."""
 
 import pytest
-from fastapi.testclient import TestClient
+from tests.conftest import Client as TestClient
 
 from app import db
 from app.checks import CHECKS, run_checks
@@ -26,15 +26,16 @@ def test_planted_anomaly_is_flagged(seeded_db, manifest):
     assert flagged[0]["message"].startswith(f"{anomaly['org']} went from")
 
 
-@pytest.mark.parametrize("check_name", ["tieout", "rollup", "referential", "plan_integrity", "open_share"])
+@pytest.mark.parametrize("check_name", ["tieout", "rollup", "referential", "plan_integrity", "open_share", "cost_rates"])
 def test_other_checks_pass_on_fresh_data(seeded_db, check_name):
     rows = results(seeded_db, check_name)
     assert rows and worst(rows) == "pass", [r["message"] for r in rows if r["severity"] != "pass"]
 
 
-def test_this_mornings_run_is_five_of_six(seeded_db):
+def test_this_mornings_run_is_six_of_eight(seeded_db):
+    """Two checks need a look on fresh data, by design: the planted anomaly and two orgs over budget."""
     run = db.one(seeded_db, "SELECT * FROM check_runs ORDER BY run_at DESC LIMIT 1")
-    assert (run["passed"], run["warned"], run["failed"]) == (5, 1, 0)
+    assert (run["passed"], run["warned"], run["failed"]) == (6, 2, 0)
     assert db.one(seeded_db, "SELECT count(*) AS n FROM check_runs")["n"] == 14
 
 
@@ -96,9 +97,10 @@ def test_run_checks_stores_every_row_and_counts_checks(seeded_db):
 def test_health_pages(manifest):
     from app.main import app
     with TestClient(app) as client:
+        client.cookies.set("role", "rm")
         page = client.get("/health")
         assert page.status_code == 200
-        assert "5 of 6 checks passed" in page.text and "1 needs a look" in page.text
+        assert "6 of 8 checks passed" in page.text and "2 need a look" in page.text
         assert f"{manifest['anomaly']['org']} went from" in page.text
         for name in CHECKS:
             assert client.get(f"/health/check/{name}").status_code == 200

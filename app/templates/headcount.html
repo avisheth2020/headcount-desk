@@ -5,10 +5,10 @@
 {% block content %}
 {% if flash %}<p class="flash" style="margin-bottom:16px" role="status">{{ flash }}</p>{% endif %}
 
-<section class="card card-pad try" aria-label="Try this" style="margin-bottom:24px">
+<section class="card try" aria-label="Try this" style="margin-bottom:24px">
   <button class="close" type="button" aria-label="Dismiss" data-dismiss-try>×</button>
   <h2>New here? Try this</h2>
-  <p class="muted small" style="margin-bottom:12px">Headcount Desk shows how many people each org can really hire, tracks backfills, and checks its own data. Three things to click:</p>
+  <p class="muted small">Headcount Desk shows how many people each org can really hire and whether it is on budget, tracks backfills and next year's plan, and checks its own data.</p>
   <ol>
     <li><a href="/?org={{ personas.svp.org_id }}#math">See how many people the Research SVP can actually hire</a></li>
     <li><a href="/backfill/new?as=requester">Submit a backfill as a Requester, then switch to VP and approve it</a></li>
@@ -30,79 +30,94 @@
 </div>
 
 <div class="stack">
-  <section class="card" id="math">
-    <div class="card-pad hero">
+  <section class="card card-pad" id="math">
+    <div class="hero">
       <div>
         <p class="eyebrow">Usable open · {{ org.name }}{{ m.tip("usable_open") }}</p>
         <a class="hero-number" href="#breakdown" aria-label="{{ org.usable_open }} usable open positions. Jump to the breakdown.">{{ org.usable_open | num }}</a>
-        <p class="hero-caption">position{{ "" if org.usable_open == 1 else "s" }} {{ leader.full_name if leader and org.level != "company" else "Meridian Labs" }} can hire into today</p>
+        <p class="hero-caption">position{{ "" if org.usable_open == 1 else "s" }} <strong>{{ leader.full_name if leader and org.level != "company" else "Meridian Labs" }}</strong> can hire into today</p>
         {% set gap = org.open_no_req - org.usable_open %}
         {% if gap > 0 %}
         <p class="hero-note">The position tool lists <a href="/positions?org={{ org.org_id }}&bucket=open_no_req">{{ org.open_no_req | num }} open seats with no request</a>. That is {{ gap | num }} more than the plan supports. <a href="/exceptions?org={{ org.org_id }}">See why</a></p>
         {% endif %}
-      </div>
-      <div>
-        <div class="chart-box">
-          <canvas id="waterfall" role="img"
-                  aria-label="Waterfall: approved {{ org.approved }}, minus filled {{ org.filled }}, committed {{ org.committed }}, reserve {{ org.reserve }} and negative {{ org.negative }}, leaves {{ org.usable_open }} usable open."
-                  data-steps='{{ steps | tojson }}'></canvas>
+        <div class="hero-facts">
+          <a href="/budget?org={{ org.org_id }}"><span>Budget</span><strong class="num">{{ budget.budget | money }}</strong></a>
+          <a href="/budget?org={{ org.org_id }}"><span>Projected spend</span><strong class="num">{{ budget.projected | money }} · {{ budget.pct_of_budget }}%</strong></a>
         </div>
       </div>
-    </div>
-    <div class="math" aria-label="The math">
-      {% for key, sign in [("approved", ""), ("filled", "−"), ("committed", "−"), ("reserve", "−"), ("negative", "−")] %}
-        {% if sign %}<span class="op" aria-hidden="true">{{ sign }}</span>{% endif %}
-        <a class="term" href="{{ '/plan?org=' ~ org.org_id if key == 'approved' else '/positions?org=' ~ org.org_id ~ '&bucket=' ~ key }}">
-          <b>{{ org[key] | num }}</b><span>{{ BUCKETS[key][0] }}{{ m.tip(key) }}</span>
-        </a>
-      {% endfor %}
-      <span class="op" aria-hidden="true">=</span>
-      <a class="term result" href="#breakdown"><b>{{ org.usable_open | num }}</b><span>Usable open</span></a>
+
+      <div class="bridge" role="group" aria-label="Where the approved headcount goes">
+        <div class="bridge-title"><span><b class="num">{{ org.approved | num }}</b> approved positions{{ m.tip("approved") }}</span><a href="/plan?org={{ org.org_id }}">See the plan lines ›</a></div>
+        <div class="bar" role="group" aria-label="Of {{ org.approved }} approved: {{ org.filled }} filled, {{ org.committed }} committed, {{ org.reserve }} reserve, {{ org.negative }} negative, {{ org.usable_open }} usable open.">
+          {% for key in segments %}{% if org[key] > 0 %}<a class="seg-{{ key }}" style="flex: {{ org[key] }} 0 0" href="/positions?org={{ org.org_id }}&bucket={{ key }}" title="{{ BUCKETS[key][0] }}: {{ org[key] | num }}" aria-label="{{ BUCKETS[key][0] }}: {{ org[key] }} positions"></a>{% endif %}{% endfor %}
+          {% if org.usable_open > 0 %}<a class="seg-usable" style="flex: {{ org.usable_open }} 0 0" href="#breakdown" title="Usable open: {{ org.usable_open | num }}" aria-label="Usable open: {{ org.usable_open }} positions"></a>{% endif %}
+        </div>
+        {% if unfilled > 0 and org.approved > 0 %}
+        {# The zoom: the thin right-hand end of the bar above, stretched to full width. #}
+        <svg class="zoom" viewBox="0 0 100 18" preserveAspectRatio="none" aria-hidden="true"><path d="M{{ (100 * org.filled / org.approved) | round(2) }} 0 L0 18 M100 0 L100 18" stroke="currentColor" stroke-width="1" vector-effect="non-scaling-stroke" fill="none" stroke-dasharray="3 3"/></svg>
+        <div class="bridge-title"><span>Zoomed in: the <b class="num">{{ unfilled | num }}</b> approved positions with nobody in them</span><span>{{ (100 * unfilled / org.approved) | round(1) }}% of the plan</span></div>
+        <div class="bar" role="group" aria-label="Of the {{ unfilled }} unfilled: {{ org.committed }} committed, {{ org.reserve }} reserve, {{ org.negative }} negative, {{ org.usable_open }} usable open.">
+          {% for key in segments[1:] %}{% if org[key] > 0 %}<a class="seg-{{ key }}" style="flex: {{ org[key] }} 0 0" href="/positions?org={{ org.org_id }}&bucket={{ key }}" title="{{ BUCKETS[key][0] }}: {{ org[key] | num }}" aria-label="{{ BUCKETS[key][0] }}: {{ org[key] }} positions"></a>{% endif %}{% endfor %}
+          {% if org.usable_open > 0 %}<a class="seg-usable" style="flex: {{ org.usable_open }} 0 0" href="#breakdown" title="Usable open: {{ org.usable_open | num }}" aria-label="Usable open: {{ org.usable_open }} positions"></a>{% endif %}
+        </div>
+        {% endif %}
+        <div class="legend" aria-label="The math">
+          {% for key in segments %}
+          <a href="/positions?org={{ org.org_id }}&bucket={{ key }}"><i class="seg-{{ key }}"></i><b>{{ "−" if org[key] }}{{ org[key] | num }}</b><span>{{ BUCKETS[key][0] }}{{ m.tip(key) }}</span></a>
+          {% endfor %}
+          <a class="result" href="#breakdown"><i class="seg-usable"></i><b>{{ org.usable_open | num }}</b><span>Usable open</span></a>
+        </div>
+      </div>
     </div>
   </section>
 
   <section class="card" id="breakdown">
     <div class="card-head">
       <h2>{{ child_label or "Positions" }}</h2>
-      <a class="small" href="/positions?org={{ org.org_id }}">All {{ (org.filled + org.committed + org.reserve + org.negative + org.open_no_req) | num }} positions</a>
+      <div class="table-tools">
+        <a class="btn btn-sm" href="/positions?org={{ org.org_id }}">All {{ (org.filled + org.committed + org.reserve + org.negative + org.open_no_req) | num }} positions</a>
+        {% if children %}<a class="btn btn-sm" href="{{ url_with(request, format='csv') }}">↓ CSV</a>{% endif %}
+      </div>
     </div>
     {% if children %}
     <table class="table cards">
       <thead>
         <tr>
-          <th>{{ LEVELS[children[0].level] }}</th>
-          <th class="r">Approved{{ m.tip("approved") }}</th>
-          <th class="r">Filled{{ m.tip("filled") }}</th>
-          <th class="r">Committed{{ m.tip("committed") }}</th>
-          <th class="r">Reserve{{ m.tip("reserve") }}</th>
-          <th class="r">Negative{{ m.tip("negative") }}</th>
-          <th class="r">Usable open{{ m.tip("usable_open") }}</th>
+          {{ m.th(request, LEVELS[children[0].level], "name", sort, dir) }}
+          {{ m.th(request, "Approved", "approved", sort, dir, "r", "approved") }}
+          {{ m.th(request, "Filled", "filled", sort, dir, "r", "filled") }}
+          {{ m.th(request, "Committed", "committed", sort, dir, "r", "committed") }}
+          {{ m.th(request, "Reserve", "reserve", sort, dir, "r", "reserve") }}
+          {{ m.th(request, "Negative", "negative", sort, dir, "r", "negative") }}
+          {{ m.th(request, "Usable open", "usable", sort, dir, "r", "usable_open") }}
+          {{ m.th(request, "Of budget", "budget", sort, dir, "r") }}
           <th class="r">To fix</th>
         </tr>
       </thead>
       <tbody>
         {% for c in children %}
         <tr>
-          <td><a class="rowlink" href="/?org={{ c.org_id }}">{{ c.name }}</a></td>
+          <td><a class="rowlink" href="/?org={{ c.org_id }}">{{ c.name }} ›</a></td>
           <td class="r" data-label="Approved"><a href="/plan?org={{ c.org_id }}">{{ c.approved | num }}</a></td>
           <td class="r" data-label="Filled"><a href="/positions?org={{ c.org_id }}&bucket=filled">{{ c.filled | num }}</a></td>
           <td class="r" data-label="Committed"><a href="/positions?org={{ c.org_id }}&bucket=committed">{{ c.committed | num }}</a></td>
           <td class="r" data-label="Reserve"><a href="/positions?org={{ c.org_id }}&bucket=reserve">{{ c.reserve | num }}</a></td>
           <td class="r" data-label="Negative"><a href="/positions?org={{ c.org_id }}&bucket=negative">{{ c.negative | num }}</a></td>
           <td class="r" data-label="Usable open"><a class="usable" href="/?org={{ c.org_id }}">{{ c.usable_open | num }}</a></td>
-          <td class="r" data-label="To fix">{% if exceptions.get(c.org_id) %}<a class="chip chip-warn" href="/exceptions?org={{ c.org_id }}" style="border:0">⚠ {{ exceptions[c.org_id] }}</a>{% endif %}</td>
+          <td class="r" data-label="Of budget"><a href="/budget?org={{ c.org_id }}" class="{{ 'chip chip-bad' if c.state == 'over' else ('chip chip-warn' if c.state == 'watch' else '') }}">{{ c.pct_of_budget }}%</a></td>
+          <td class="r" data-label="To fix">{% if exceptions.get(c.org_id) %}<a class="chip chip-warn" href="/exceptions?org={{ c.org_id }}">⚠ {{ exceptions[c.org_id] }}</a>{% endif %}</td>
         </tr>
         {% endfor %}
         {% if has_direct %}
         <tr>
-          <td>Held at {{ org.name }} level<span class="sub">Leadership seats and central reserve, not yet given to an org below</span></td>
+          <td class="tall">Held at {{ org.name }} level<span class="sub">Leadership seats and central reserve</span></td>
           <td class="r" data-label="Approved"><a href="/plan?org={{ org.org_id }}&direct=1">{{ direct.approved | num }}</a></td>
           <td class="r" data-label="Filled"><a href="/positions?org={{ org.org_id }}&bucket=filled&direct=1">{{ direct.filled | num }}</a></td>
           <td class="r" data-label="Committed"><a href="/positions?org={{ org.org_id }}&bucket=committed&direct=1">{{ direct.committed | num }}</a></td>
           <td class="r" data-label="Reserve"><a href="/positions?org={{ org.org_id }}&bucket=reserve&direct=1">{{ direct.reserve | num }}</a></td>
           <td class="r" data-label="Negative"><a href="/positions?org={{ org.org_id }}&bucket=negative&direct=1">{{ direct.negative | num }}</a></td>
           <td class="r" data-label="Usable open"><a href="/positions?org={{ org.org_id }}&direct=1">{{ direct.usable_open | num }}</a></td>
-          <td class="r"></td>
+          <td class="r"></td><td class="r"></td>
         </tr>
         {% endif %}
       </tbody>
@@ -110,10 +125,11 @@
         <tr>
           <td>{{ org.name }} total</td>
           <td class="r" data-label="Approved"><a href="/plan?org={{ org.org_id }}">{{ org.approved | num }}</a></td>
-          {% for key in ["filled", "committed", "reserve", "negative"] %}
+          {% for key in segments %}
           <td class="r" data-label="{{ BUCKETS[key][0] }}"><a href="/positions?org={{ org.org_id }}&bucket={{ key }}">{{ org[key] | num }}</a></td>
           {% endfor %}
           <td class="r" data-label="Usable open"><a class="usable" href="#math">{{ org.usable_open | num }}</a></td>
+          <td class="r" data-label="Of budget"><a href="/budget?org={{ org.org_id }}">{{ budget.pct_of_budget }}%</a></td>
           <td class="r" data-label="To fix">{% if exceptions.get(org.org_id) %}<a href="/exceptions?org={{ org.org_id }}">{{ exceptions[org.org_id] }}</a>{% endif %}</td>
         </tr>
       </tfoot>
@@ -126,11 +142,6 @@
     {% endif %}
   </section>
 
-  <p class="muted small">Plan version {{ plan.name }}, locked {{ plan.locked_at | d }}. Data as of {{ as_of | dt }}. Usable open = approved − filled − committed − reserve − negative.</p>
+  <p class="muted small">Usable open = approved − filled − committed − reserve − negative. Plan version {{ plan.name }}, locked {{ plan.locked_at | d }}.</p>
 </div>
-{% endblock %}
-
-{% block scripts %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" defer></script>
-<script src="/static/waterfall.js?v={{ asset_version }}" defer></script>
 {% endblock %}

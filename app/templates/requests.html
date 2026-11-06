@@ -8,7 +8,7 @@
     {{ m.inbox_title(role, inbox | length) }}
     <p class="fresh">{% if role in ("vp", "recruiter") %}Where is my backfill? · {% endif %}Viewing as {{ me.full_name }} ({{ role_label }}) · Data as of {{ as_of | dt }} · Plan: <a href="/plan?org=1">{{ plan.name }}</a> (locked)</p>
   </div>
-  <a class="btn btn-primary" href="/backfill/new">+ Request a backfill</a>
+  {% if can_request %}<a class="btn btn-primary" href="/backfill/new">+ Request a backfill</a>{% endif %}
 </div>
 
 <div class="stack">
@@ -35,21 +35,27 @@
       <nav class="pills" aria-label="Whose requests">
         {% if has_mine %}<a class="pill" href="/requests?scope=mine" {% if scope == "mine" and not status %}aria-current="true"{% endif %}>Mine</a>{% endif %}
         <a class="pill" href="/requests?scope=all" {% if scope == "all" and not status %}aria-current="true"{% endif %}>Everyone's</a>
+        <a class="btn btn-sm" href="{{ url_with(request, format='csv') }}">↓ CSV</a>
       </nav>
     </div>
     {% if rows %}
     <table class="table cards two">
-      <thead><tr><th>Request</th><th>Team</th><th>Status</th><th>Waiting on</th><th class="r">In this status</th><th class="r">Days to open request</th><th class="r">Submitted</th></tr></thead>
+      <thead><tr>
+        {{ m.th(request, "Request", "id", sort, dir) }}{{ m.th(request, "Team", "team", sort, dir) }}{{ m.th(request, "Status", "status", sort, dir) }}
+        {{ m.th(request, "Waiting on", "waiting", sort, dir) }}{{ m.th(request, "In this status", "age", sort, dir, "r") }}
+        {{ m.th(request, "Days to open request", "cycle", sort, dir, "r") }}{{ m.th(request, "Submitted", "submitted", sort, dir, "r") }}
+        <th aria-label="Actions"></th></tr></thead>
       <tbody>
         {% for r in rows %}
         <tr>
-          <td><a class="rowlink" href="/requests/{{ r.id }}">#{{ r.id }} · {{ r.departing_name }}</a><span class="sub">{{ FAMILY[r.job_family] }}, {{ r.level }}{% if r.urgency == "urgent" %} · ▲ Urgent{% endif %}</span></td>
+          <td class="tall"><a class="rowlink" data-drawer href="/requests/{{ r.id }}">#{{ r.id }} · {{ r.departing_name }}</a><span class="sub">{{ FAMILY[r.job_family] }}, {{ r.level }}{% if r.urgency == "urgent" %} · ▲ Urgent{% endif %}</span></td>
           <td data-label="Team">{{ r.team_name }}</td>
           <td data-label="Status">{{ m.status_chip(r.status) }}</td>
           <td data-label="Waiting on">{{ r.waiting_on or "–" }}</td>
           <td class="r" data-label="In this status">{{ r.time_in_status | ago }}</td>
           <td class="r" data-label="Days to open request">{{ "%.1f" | format(r.days_to_open) if r.days_to_open is not none else "–" }}</td>
           <td class="r" data-label="Submitted">{{ r.created_at | d }}</td>
+          <td class="row-actions"><a class="btn btn-sm" data-drawer href="/requests/{{ r.id }}">Open</a></td>
         </tr>
         {% endfor %}
       </tbody>

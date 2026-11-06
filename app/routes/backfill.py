@@ -5,7 +5,7 @@ from urllib.parse import quote
 from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 
-from app import db, web, workflow
+from app import db, permissions, web, workflow
 
 router = APIRouter()
 
@@ -35,17 +35,28 @@ def requests_page(request: Request, scope: str | None = None, status: str | None
             where.append("ct.days_to_open IS NOT NULL")
         elif status in STATUS_LABELS:
             where.append("r.status = %(status)s")
+        order, sort, direction = web.sorting(request, {
+            "id": "r.id", "who": "r.departing_name", "team": "r.team_name", "status": "r.status", "waiting": "r.waiting_on",
+            "age": "r.time_in_status", "cycle": "ct.days_to_open", "submitted": "r.created_at"}, "submitted", "desc")
+        default_order = "(r.status IN ('filled', 'rejected')), r.updated_at DESC"
         rows = db.query(conn, f"""
             SELECT r.*, ct.days_to_open
             FROM v_backfill_requests r
             LEFT JOIN v_backfill_cycle_time ct ON ct.backfill_request_id = r.id
             WHERE {' AND '.join(where)}
-            ORDER BY (r.status IN ('filled', 'rejected')), r.updated_at DESC""", params)
+            ORDER BY {order if 'sort' in request.query_params else default_order}
+            LIMIT 500""", params)
+        if request.query_params.get("format") == "csv":
+            return web.csv_response("backfill-requests.csv", [
+                ("Request", "id"), ("Leaving", "departing_name"), ("Team", "team_name"), ("VP org", "vp_name"), ("Status", "status"),
+                ("Waiting on", "waiting_on"), ("Urgency", "urgency"), ("Days to open request", "days_to_open"), ("Submitted", "created_at")], rows)
         inbox = []
         if role == "vp":
             inbox = db.query(conn, """
-                SELECT r.*, u.usable_open AS vp_usable_open
+                SELECT r.*, u.usable_open AS vp_usable_open, pc.annual_cost, b.pct_of_budget, b.state AS budget_state, b.variance
                 FROM v_backfill_requests r JOIN v_usable_open u ON u.org_id = r.vp_id
+                JOIN v_budget b ON b.org_id = r.vp_id
+                LEFT JOIN v_position_cost pc ON pc.position_id = r.position_id
                 WHERE r.status = 'submitted' AND r.vp_approver_id = %s
                 ORDER BY (r.urgency = 'urgent') DESC, r.updated_at""", (me,))
         elif role == "recruiter":
@@ -60,7 +71,8 @@ def requests_page(request: Request, scope: str | None = None, status: str | None
                    count(*) FILTER (WHERE status = 'filled') AS filled
             FROM backfill_requests""")
         ctx.update(rows=rows, inbox=inbox, stats=stats, scope=scope, status=status, has_mine=bool(mine_col),
-                   STATUS_LABELS=STATUS_LABELS)
+                   STATUS_LABELS=STATUS_LABELS, sort=sort if "sort" in request.query_params else None, dir=direction,
+                   can_request=permissions.can_request_backfill(role))
     return web.render(request, "requests.html", ctx)
 
 
@@ -78,6 +90,9 @@ def _detail_context(request: Request, conn, request_id: int) -> dict:
             WHERE e.backfill_request_id = %s ORDER BY e.at, e.id""", (request_id,)),
         staffing=db.one(conn, "SELECT id, status, opened_at FROM staffing_requests WHERE backfill_request_id = %s", (request_id,)),
         vp_usable_open=usable_open_for(conn, r["vp_id"]),
+        money=db.one(conn, """
+            SELECT pc.annual_cost, b.pct_of_budget, b.state, b.variance
+            FROM v_budget b LEFT JOIN v_position_cost pc ON pc.position_id = %s WHERE b.org_id = %s""", (r["position_id"], r["vp_id"])),
         can_approve=role == "vp" and r["status"] == "submitted" and r["vp_approver_id"] == me,
         can_open=role == "recruiter" and r["status"] == "recruiter_assigned" and r["recruiter_id"] == me,
         can_fill=role == "recruiter" and r["status"] == "req_open" and r["recruiter_id"] == me,
@@ -93,13 +108,20 @@ def request_detail(request: Request, request_id: int, flash: str | None = None):
     return web.render(request, "request_detail.html", ctx)
 
 
+def _request_row(conn, request_id: int) -> dict:
+    row = db.one(conn, "SELECT * FROM v_backfill_requests WHERE id = %s", (request_id,))
+    if row is None:
+        raise HTTPException(404, "No such request")
+    return row
+
+
 def _act(request: Request, request_id: int, action, card: bool):
     """Run one workflow action as the current persona, then re-render either
     the inbox card (HTMX, in place) or the detail page."""
     with db.get_conn() as conn:
         ctx = web.page_context(request, conn)
         try:
-            message = action(conn, ctx["me"]["id"])
+            message = action(conn, ctx["me"]["id"], ctx)
         except workflow.WorkflowError as error:
             conn.rollback()
             if card:
@@ -117,7 +139,8 @@ def _act(request: Request, request_id: int, action, card: bool):
 
 @router.post("/requests/{request_id}/approve", include_in_schema=False)
 def approve(request: Request, request_id: int):
-    def action(conn, me):
+    def action(conn, me, ctx):
+        permissions.check_approve(ctx, _request_row(conn, request_id))
         recruiter = workflow.approve(conn, request_id, me)
         return f"Approved. {recruiter['full_name']} was assigned automatically."
     return _act(request, request_id, action, card="hx-request" in request.headers)
@@ -125,15 +148,17 @@ def approve(request: Request, request_id: int):
 
 @router.post("/requests/{request_id}/reject", include_in_schema=False)
 def reject(request: Request, request_id: int, reason: str = Form("")):
-    def action(conn, me):
-        workflow.reject(conn, request_id, me, reason)
+    def action(conn, me, ctx):
+        permissions.check_approve(ctx, _request_row(conn, request_id))
+        workflow.reject(conn, request_id, me, reason[:500])
         return "Rejected. The requester can see your reason."
     return _act(request, request_id, action, card="hx-request" in request.headers)
 
 
 @router.post("/requests/{request_id}/open", include_in_schema=False)
 def open_request(request: Request, request_id: int):
-    def action(conn, me):
+    def action(conn, me, ctx):
+        permissions.check_recruit(ctx, _request_row(conn, request_id))
         workflow.open_request(conn, request_id, me)
         return "Staffing request opened. Nobody had to re-enter the role."
     return _act(request, request_id, action, card="hx-request" in request.headers)
@@ -141,8 +166,9 @@ def open_request(request: Request, request_id: int):
 
 @router.post("/requests/{request_id}/fill", include_in_schema=False)
 def fill(request: Request, request_id: int, hire_name: str = Form("")):
-    def action(conn, me):
-        workflow.fill(conn, request_id, me, hire_name)
+    def action(conn, me, ctx):
+        permissions.check_recruit(ctx, _request_row(conn, request_id))
+        workflow.fill(conn, request_id, me, hire_name[:80])
         return f"Filled. {' '.join(hire_name.split())} now holds the seat."
     return _act(request, request_id, action, card=False)
 
@@ -150,8 +176,8 @@ def fill(request: Request, request_id: int, hire_name: str = Form("")):
 # ── The request form ─────────────────────────────────────────────────────────
 
 def _scope_org(ctx: dict) -> int:
-    """A requester asks for their own org's people. Everyone else can pick anyone."""
-    return ctx["me"]["org_id"] if ctx["role"] == "requester" else 1
+    """People ask for backfills in their own org. The resource manager can pick anyone."""
+    return permissions.backfill_scope(ctx)
 
 
 @router.get("/backfill/new", response_class=HTMLResponse, include_in_schema=False)
@@ -166,7 +192,8 @@ def backfill_new(request: Request, person: int | None = None):
             SELECT k.* FROM v_backfill_candidates k JOIN v_org_closure c ON c.org_id = k.org_id
             WHERE c.ancestor_id = %s AND k.end_date >= today()
             ORDER BY k.end_date LIMIT 6""", (_scope_org(ctx),))
-        ctx["scope_name"] = ctx["me"]["org_name"] if ctx["role"] == "requester" else "Meridian Labs"
+        ctx["scope_name"] = "Meridian Labs" if ctx["role"] == "rm" else ctx["me"]["org_name"]
+        ctx["can_request"] = permissions.can_request_backfill(ctx["role"])
         ctx["selected"] = _preview(conn, person) if person else None
     return web.render(request, "backfill_new.html", ctx)
 
@@ -189,6 +216,8 @@ def _preview(conn, person_id: int) -> dict | None:
     if k is None:
         return None
     k["vp_usable_open"] = usable_open_for(conn, k["vp_id"])
+    k["budget"] = db.one(conn, "SELECT pct_of_budget, state FROM v_budget WHERE org_id = %s", (k["vp_id"],))
+    k["annual_cost"] = db.one(conn, "SELECT annual_cost FROM v_position_cost WHERE position_id = %s", (k["position_id"],))["annual_cost"]
     k["cost"] = db.one(conn, """
         SELECT pl.approved_cost_usd / nullif(pl.approved_headcount, 0) AS per_head
         FROM plan_lines pl JOIN v_current_plan cp ON cp.id = pl.plan_version_id
@@ -210,6 +239,11 @@ def backfill_preview(request: Request, person: int):
 def backfill_submit(request: Request, person: int = Form(...), justification: str = Form(""), urgency: str = Form("normal")):
     with db.get_conn() as conn:
         ctx = web.page_context(request, conn)
+        candidate = db.one(conn, "SELECT org_id FROM v_backfill_candidates WHERE person_id = %s", (person,))
+        if candidate:
+            permissions.check_request_backfill(conn, ctx, candidate["org_id"])
+        if len(justification) > 500:
+            return RedirectResponse(f"/backfill/new?person={person}&flash={quote('Keep the reason under 500 characters.')}", status_code=303)
         try:
             request_id = workflow.submit(conn, person, ctx["me"]["id"], justification,
                                          urgency if urgency in ("low", "normal", "urgent") else "normal")

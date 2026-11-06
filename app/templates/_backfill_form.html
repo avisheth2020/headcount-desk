@@ -1,4 +1,4 @@
-<form method="post" action="/backfill" style="margin-top:24px">
+<form method="post" action="/backfill" style="margin-top:24px">{{ csrf_input(request) }}
   <input type="hidden" name="person" value="{{ selected.person_id }}">
   <div class="summary-card">
     <h3 style="margin-bottom:12px">{{ selected.full_name }} <span class="chip">Filled in for you</span></h3>
@@ -8,7 +8,7 @@
       <dt>Seat</dt><dd class="num">{{ selected.position_code }}</dd>
       <dt>Last day</dt><dd>{{ selected.end_date | d }}</dd>
       <dt>Approver</dt><dd>{{ selected.vp_approver_name }} (VP)</dd>
-      {% if selected.cost and selected.cost.per_head %}<dt>Budgeted cost</dt><dd>{{ selected.cost.per_head | money }} a year, already in the plan</dd>{% endif %}
+      <dt>Cost</dt><dd><strong class="num">{{ selected.annual_cost | money }}</strong> a year, already in the budget</dd>
     </dl>
   </div>
   <div class="field" style="margin-top:24px">
@@ -23,6 +23,6 @@
       <label><input type="radio" name="urgency" value="urgent"> Urgent</label>
     </div>
   </div>
-  <p class="impact" style="margin:24px 0 16px">This reuses an existing position ({{ selected.position_code }}), so it adds no headcount. Usable open for {{ selected.vp_name }} stays at {{ selected.vp_usable_open }}.</p>
+  <p class="impact" style="margin:24px 0 16px">This reuses an existing position ({{ selected.position_code }}), so it adds no headcount. Usable open for {{ selected.vp_name }} stays at {{ selected.vp_usable_open }}, and its projected spend stays at {{ selected.budget.pct_of_budget }}% of budget.</p>
   <button class="btn btn-primary" type="submit">Send to {{ selected.vp_approver_name }} for approval</button>
 </form>

@@ -1,5 +1,6 @@
--- Headcount Desk schema. Plain Postgres, no ORM.
--- Applied by scripts/migrate.py. Views live in views.sql and checks.sql.
+-- 001: the V1 baseline. Tables, constraints, triggers and helper functions.
+-- Numbered migrations change tables and are applied once (see schema_migrations).
+-- Views are code, not state: they live in db/views/ and are rebuilt on every migrate.
 
 -- The business day, defined once. It runs on US Eastern time and starts at
 -- 6 AM, when the morning snapshot loads. So "90 days old" and "overnight" do

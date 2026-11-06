@@ -35,8 +35,9 @@
   </nav>
 
   <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap">
-    <p class="muted small">Grouped by the VP who owns the seats. Marking one resolved records who cleared it; it does not hide the row.</p>
-    <a class="small" href="/exceptions?{{ q_org }}{{ q_type }}{{ '' if show == 'all' else '&show=all' }}">{{ "Hide resolved" if show == "all" else "Show resolved too" }}</a>
+    <p class="muted small">Grouped by the VP who owns the seats. {% if can_resolve %}Marking one resolved records who cleared it; it does not hide the row.{% else %}Only a resource manager, or the VP or SVP who owns the seat, can mark one resolved.{% endif %}</p>
+    <span class="row"><a class="small" href="/exceptions?{{ q_org }}{{ q_type }}{{ '' if show == 'all' else '&show=all' }}">{{ "Hide resolved" if show == "all" else "Show resolved too" }}</a>
+      <a class="btn btn-sm" href="{{ url_with(request, format='csv') }}">↓ CSV</a></span>
   </div>
 
   {% for g in groups %}

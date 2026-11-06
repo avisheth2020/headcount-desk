@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m %}
+{% block title %}Planning{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>What does each org need next year?</h1>
+    <p class="fresh">{{ cycle.name }} · {{ cycle.fiscal_year }} starts {{ cycle.starts_on | d }} · every VP starts from {{ cycle.base_plan_name }} · Data as of {{ as_of | dt }}</p>
+  </div>
+  <div class="row">{% if cycle.status == "locked" %}<span class="chip chip-good">🔒 Locked</span>{% else %}<span class="chip chip-accent">◐ Cycle open</span>{% endif %}
+    {% if mine %}<a class="btn btn-primary" href="/planning/{{ mine.id }}">{{ "Edit your plan" if mine.status in ("draft", "sent_back") else "Open your plan" }}</a>{% endif %}</div>
+</div>
+
+<div class="stack">
+  {% if flash %}<p class="flash" role="status">{{ flash }}</p>{% endif %}
+  {% if error %}<p class="flash flash-bad" role="alert">{{ error }}</p>{% endif %}
+
+  {% if cycle.status == "locked" %}
+  <div class="banner banner-good" role="status"><span class="icon" aria-hidden="true">🔒</span>
+    <span>{{ cycle.locked_plan_name }} was locked {{ cycle.locked_at | dt }} by {{ cycle.locked_by_name }}.
+      <span class="sub">It is a new plan version with its own fingerprint. It takes effect on {{ cycle.starts_on | d }}, so this year's numbers have not moved.</span></span></div>
+  {% elif mine and mine.status == "sent_back" %}
+  <div class="banner banner-warn" role="status"><span class="icon" aria-hidden="true">↩</span>
+    <span>Your plan was sent back by {{ mine.svp_leader_name }}.<span class="sub"><a href="/planning/{{ mine.id }}">Read the comment and revise it ›</a></span></span></div>
+  {% elif mine and mine.status == "draft" %}
+  <div class="banner" role="status"><span class="icon" aria-hidden="true">✏️</span>
+    <span>Your plan is still a draft.<span class="sub"><a href="/planning/{{ mine.id }}">Finish and submit it ›</a></span></span></div>
+  {% endif %}
+
+  <nav class="tiles" aria-label="Envelopes by SVP">
+    {% for e in envelopes %}
+    <a class="card tile" href="#asks" {% if my_envelope and e.svp_org_id == my_envelope.svp_org_id %}aria-current="true"{% endif %}>
+      <span>{{ e.svp_name }} envelope{{ m.hint("The most headcount this SVP may plan for next year, set top-down. Submitted and approved asks count against it; drafts do not yet.") }}</span>
+      <b>{{ e.proposed_headcount | num }} <span class="muted" style="font-size:14px;font-weight:500">of {{ e.headcount_envelope | num }}</span></b>
+      <small>{% if e.headcount_headroom < 0 %}<span class="chip chip-bad">▲ {{ -e.headcount_headroom }} over</span>{% else %}<span class="chip chip-good">✓ {{ e.headcount_headroom }} headroom</span>{% endif %}
+        · {{ e.proposed_cost | money }} of {{ e.cost_envelope_usd | money }}</small>
+      <small>{{ e.n_approved }} approved · {{ e.n_submitted }} to review · {{ e.n_sent_back }} sent back · {{ e.n_draft }} drafting</small>
+    </a>
+    {% endfor %}
+  </nav>
+
+  <section class="card" id="asks">
+    <div class="card-head">
+      <h2>VP plans <span class="count">{{ rows | length }}</span></h2>
+      <div class="table-tools"><span class="muted small">Asked so far: {{ m.signed(totals.final) }} positions, {{ "+" if totals.cost > 0 }}{{ totals.cost | money }}</span><a class="btn btn-sm" href="{{ url_with(request, format='csv') }}">↓ CSV</a></div>
+    </div>
+    <table class="table cards">
+      <thead><tr>
+        {{ m.th(request, "VP org", "vp", sort, dir) }}{{ m.th(request, "SVP", "svp", sort, dir) }}{{ m.th(request, "Status", "status", sort, dir) }}
+        {{ m.th(request, "This year", "base", sort, dir, "r") }}{{ m.th(request, "Asked", "ask", sort, dir, "r") }}{{ m.th(request, "Counts", "final", sort, dir, "r") }}
+        <th class="r">Next year</th>{{ m.th(request, "Cost impact", "cost", sort, dir, "r") }}<th aria-label="Actions"></th>
+      </tr></thead>
+      <tbody>
+        {% for r in rows %}
+        <tr>
+          <td class="tall"><a class="rowlink" href="/planning/{{ r.id }}">{{ r.vp_name }} ›</a><span class="sub">{{ r.vp_leader_name }}</span></td>
+          <td data-label="SVP">{{ r.svp_name }}</td>
+          <td data-label="Status">{{ m.plan_chip(r.status) }}</td>
+          <td class="r" data-label="This year"><a href="/plan?org={{ r.vp_org_id }}">{{ r.base_headcount | num }}</a></td>
+          <td class="r" data-label="Asked"><a href="/planning/{{ r.id }}">{{ m.signed(r.requested_change) }}</a></td>
+          <td class="r strong" data-label="Counts"><a href="/planning/{{ r.id }}">{{ m.signed(r.final_change) }}</a></td>
+          <td class="r" data-label="Next year"><a href="/planning/{{ r.id }}">{{ r.proposed_headcount | num }}</a></td>
+          <td class="r" data-label="Cost impact"><a href="/planning/{{ r.id }}">{{ "+" if r.final_cost > 0 }}{{ r.final_cost | money }}</a></td>
+          <td class="row-actions"><a class="btn btn-sm" href="/planning/{{ r.id }}">{{ "Review" if role == "svp" and r.status == "submitted" and r.svp_org_id == me.org_id else "Open" }}</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  {% if cycle.status == "open" and can_lock %}
+  <section class="card card-pad" id="lock">
+    <h2 style="margin-bottom:4px">Lock the {{ cycle.fiscal_year }} plan</h2>
+    {% if waiting %}
+    <p class="muted small" style="margin-bottom:12px">{{ waiting | length }} VP plan{{ "" if waiting | length == 1 else "s are" }}{{ " is" if waiting | length == 1 }} not approved yet: {% for w in waiting %}{{ w.vp_name }} ({{ w.status | replace("_", " ") }}){{ ", " if not loop.last }}{% endfor %}. You can wait, or lock now and those orgs carry this year's numbers into {{ cycle.fiscal_year }}.</p>
+    {% else %}
+    <p class="muted small" style="margin-bottom:12px">Every VP plan is approved. Locking writes a new plan version that nobody can edit.</p>
+    {% endif %}
+    <form method="post" action="/planning/lock" class="row">{{ csrf_input(request) }}
+      {% if waiting %}<label style="margin:0;font-weight:400;display:flex;gap:8px;align-items:center"><input type="checkbox" name="carry_over" value="yes" required> Lock anyway; unapproved orgs keep this year's headcount</label>{% endif %}
+      <button class="btn btn-primary" type="submit">🔒 Lock the plan</button>
+    </form>
+  </section>
+  {% endif %}
+
+  {% if locked_lines %}
+  <section class="card">
+    <div class="card-head"><h2>{{ cycle.locked_plan_name }}: what was locked</h2><span class="muted small">At VP level. Splitting it down to teams happens after the lock.</span></div>
+    <table class="table cards two"><thead><tr><th>Org</th><th>Job family</th><th class="r">Approved positions</th><th class="r">Approved cost</th></tr></thead><tbody>
+      {% for l in locked_lines %}<tr><td class="strong">{{ l.org_name }}</td><td data-label="Job family">{{ FAMILY[l.job_family] }}</td><td class="r" data-label="Approved positions">{{ l.approved_headcount | num }}</td><td class="r" data-label="Approved cost">{{ l.approved_cost_usd | money }}</td></tr>{% endfor %}
+    </tbody></table>
+  </section>
+  {% endif %}
+
+  <section class="card">
+    <div class="card-head"><h2>Latest activity</h2><span class="muted small">The audit trail for the cycle</span></div>
+    <div class="card-pad"><ol class="timeline">
+      {% for e in events %}<li><time datetime="{{ e.at.isoformat() }}">{{ e.at | dt }}</time>
+        <strong>{% if e.to_status == "locked" %}Plan locked by {{ e.actor_name }}{% else %}{{ e.vp_name }}: {{ {"draft": "draft started by", "submitted": "submitted by", "sent_back": "sent back by", "approved": "approved by"}[e.to_status] }} {{ e.actor_name }}{% endif %}</strong>
+        {% if e.note %}<div class="note">{{ e.note }}</div>{% endif %}</li>{% endfor %}
+    </ol></div>
+  </section>
+</div>
+{% endblock %}

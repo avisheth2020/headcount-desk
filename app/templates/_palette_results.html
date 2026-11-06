@@ -1,0 +1,24 @@
+{% if go %}
+<div class="eyebrow">Go to</div>
+{% for label, href in go %}<a class="palette-item" href="{{ href }}"><span>{{ label }}</span><small>Page</small></a>{% endfor %}
+{% endif %}
+{% if people %}
+<div class="eyebrow">People and positions</div>
+{% for r in people %}
+<a class="palette-item" data-drawer href="/positions/{{ r.position_id }}"><span>{{ r.full_name or "Empty seat" }} <span class="muted mono small">{{ r.position_code }}</span></span><small>{{ r.org_name }} · {{ BUCKETS[r.bucket][0] }}</small></a>
+{% endfor %}
+{% endif %}
+{% if orgs %}
+<div class="eyebrow">Orgs</div>
+{% for o in orgs %}<a class="palette-item" href="/?org={{ o.id }}"><span>{{ o.name }}</span><small>{{ LEVELS[o.level] }}</small></a>{% endfor %}
+{% endif %}
+{% if backfills or roles %}
+<div class="eyebrow">Actions</div>
+{% for k in backfills %}<a class="palette-item" href="/backfill/new?person={{ k.person_id }}"><span>Request a backfill for {{ k.full_name }}</span><small>{{ k.team_name }}</small></a>{% endfor %}
+{% for key, label in roles %}
+<form method="post" action="/role">{{ csrf_input(request) }}<button class="palette-item" name="role" value="{{ key }}"><span>Switch role to {{ label }}</span><small>{{ personas[key].full_name }}</small></button></form>
+{% endfor %}
+{% endif %}
+{% if not (go or people or orgs or backfills or roles) %}
+<p class="muted" style="padding:16px 12px">Nothing matches “{{ q }}”. Try a name, a position code like P-00012, or an org.</p>
+{% endif %}

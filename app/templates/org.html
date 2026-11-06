@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m %}
+{% block title %}Org explorer{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Who sits where, and what does it cost?</h1>
+    {{ m.fresh(as_of, plan) }}
+  </div>
+</div>
+<section class="card">
+  <div class="card-head"><h2>Meridian Labs</h2><span class="muted small">Company → SVP → VP → director → team. Open a row to go deeper; every number opens its rows.</span></div>
+  <table class="table cards" id="org-tree">
+    <thead><tr><th>Org</th><th>Leader</th><th class="r">Approved</th><th class="r">Filled</th><th class="r">Usable open</th><th class="r">Budget</th><th class="r">Projected</th><th>Of budget</th></tr></thead>
+    <tbody>{% include "_org_rows.html" %}</tbody>
+  </table>
+</section>
+{% endblock %}

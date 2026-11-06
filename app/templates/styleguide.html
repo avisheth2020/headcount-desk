@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m %}
+{% block title %}Styleguide{% endblock %}
+
+{% macro pane(theme) %}
+<div class="sg-pane themed" data-theme="{{ theme }}">
+  <div><p class="eyebrow">{{ theme }} theme</p><h2 style="margin-top:4px">Color</h2></div>
+  <div class="swatches">
+    {% for t in ["bg", "surface", "surface-2", "surface-3", "border", "border-strong", "text", "muted", "accent", "accent-soft", "good", "good-soft", "warn", "warn-soft", "bad", "bad-soft", "seg-filled", "seg-committed", "seg-reserve", "seg-negative"] %}
+    <div class="swatch"><i style="background: var(--{{ t }})"></i>{{ t }}</div>
+    {% endfor %}
+  </div>
+
+  <h2>Type</h2>
+  <div>
+    <p class="eyebrow">Eyebrow · 11 / 600</p>
+    <p class="hero-number" style="margin:4px 0">1,284</p>
+    <h1>Page question, 22 / 650</h1>
+    <h2 style="margin-top:6px">Card title, 15 / 600</h2>
+    <p style="margin-top:6px">Body, 14 / 400. Numbers are tabular: <span class="num">1,234,567</span> and <span class="mono">P-00012</span>.</p>
+    <p class="muted small" style="margin-top:4px">Small and muted, 12.5 / 400, for meta and freshness lines.</p>
+  </div>
+
+  <h2>Buttons and chips</h2>
+  <div class="row"><button class="btn btn-primary" type="button">Primary</button><button class="btn" type="button">Default</button><button class="btn btn-quiet" type="button">Quiet</button><button class="btn btn-sm" type="button">Small</button><button class="btn" type="button" disabled>Disabled</button></div>
+  <div class="row"><span class="chip">○ Neutral</span><span class="chip chip-accent">◐ Committed</span><span class="chip chip-good">✓ Passed</span><span class="chip chip-warn">⚠ Needs a look</span><span class="chip chip-bad">× Failed</span></div>
+  <div class="pills"><span class="pill" aria-current="true">Selected</span><span class="pill">Pill</span><span class="pill">Filter <span class="count">12</span></span></div>
+
+  <h2>Bridge and meter</h2>
+  <div class="bridge">
+    <div class="bridge-title"><span><b class="num">2,163</b> approved positions</span><span>each segment is a link</span></div>
+    <div class="bar"><a class="seg-filled" style="flex:2008 0 0" href="#" aria-label="Filled"></a><a class="seg-committed" style="flex:76 0 0" href="#" aria-label="Committed"></a><a class="seg-reserve" style="flex:20 0 0" href="#" aria-label="Reserve"></a><a class="seg-negative" style="flex:4 0 0" href="#" aria-label="Negative"></a><a class="seg-usable" style="flex:55 0 0" href="#" aria-label="Usable open"></a></div>
+    <div class="bridge-title"><span>Zoomed in: the <b class="num">155</b> with nobody in them</span></div>
+    <div class="bar"><a class="seg-committed" style="flex:76 0 0" href="#" aria-label="Committed"></a><a class="seg-reserve" style="flex:20 0 0" href="#" aria-label="Reserve"></a><a class="seg-negative" style="flex:4 0 0" href="#" aria-label="Negative"></a><a class="seg-usable" style="flex:55 0 0" href="#" aria-label="Usable open"></a></div>
+  </div>
+  <div style="display:grid;gap:14px">{{ m.meter(96.8, "under") }}{{ m.meter(99.3, "watch") }}{{ m.meter(102.4, "over") }}</div>
+
+  <h2>Tiles and banner</h2>
+  <div class="tiles"><div class="card tile"><span>Usable open</span><b>55</b><small>of 2,163 approved</small></div><div class="card tile" aria-current="true"><span>Selected tile</span><b>99.3%</b><small>{{ m.budget_chip("watch") }}</small></div></div>
+  <div class="banner banner-warn"><span class="icon" aria-hidden="true">⚠️</span><span>6 of 8 checks passed. 2 need a look.<span class="sub">A verdict in one sentence, with what to do next.</span></span></div>
+
+  <h2>Table</h2>
+  <div class="card">
+    <table class="table"><thead><tr><th aria-sort="ascending"><a href="#">Org<span class="dir">▲</span></a></th><th class="r"><a href="#">Filled</a></th><th class="r"><a href="#">Usable</a></th><th>State</th></tr></thead>
+      <tbody><tr><td><a class="rowlink" href="#">Applied Research ›</a></td><td class="r"><a href="#">493</a></td><td class="r"><a class="usable" href="#">22</a></td><td>{{ m.budget_chip("watch") }}</td></tr>
+        <tr><td><a class="rowlink" href="#">Safety &amp; Alignment ›</a></td><td class="r"><a href="#">411</a></td><td class="r"><a class="usable" href="#">8</a></td><td>{{ m.budget_chip("under") }}</td></tr></tbody>
+      <tfoot><tr><td>Total</td><td class="r">904</td><td class="r">30</td><td></td></tr></tfoot></table>
+  </div>
+
+  <h2>Workflow</h2>
+  <div class="card card-pad"><ol class="stepper"><li class="done">Submitted</li><li class="now">VP approval</li><li>Recruiter</li><li>Request open</li><li>Filled</li></ol></div>
+  <div class="card req-card"><div><h3>Backfill for Dana Lee <span class="muted" style="font-weight:400">(Research, L5)</span></h3><p class="quote">“Critical for the Q1 evaluation roadmap”</p><div class="facts">{{ m.urgency_chip("urgent") }}<span><strong>2 days</strong> waiting</span></div></div><div class="actions"><button class="btn" type="button">Reject</button><button class="btn btn-primary" type="button">Approve ✓</button></div></div>
+
+  <h2>Forms and states</h2>
+  <div><label for="sg-{{ theme }}">Label</label><input id="sg-{{ theme }}" type="text" placeholder="Placeholder text"></div>
+  <div class="skeleton-rows" style="padding:0"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+  <div class="card empty-state" style="padding:24px"><b>Nothing to fix here 🎉</b>An empty state says what is true and offers one next step.</div>
+  <div><span class="toast" style="display:inline-flex;animation:none">P-06668 marked resolved. <button type="button">Undo</button></span></div>
+</div>
+{% endmacro %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Styleguide</h1>
+    <p class="fresh">Every component in both themes. The spec is <code>docs/DESIGN.md</code>; this page is the proof that the app follows it.</p>
+  </div>
+  <div class="row"><button class="btn" type="button" data-palette-open>Open the command palette <span class="kbd">⌘K</span></button><a class="btn" data-drawer href="/positions/12">Open a drawer</a></div>
+</div>
+<div class="sg-themes">{{ pane("light") }}{{ pane("dark") }}</div>
+{% endblock %}

@@ -71,6 +71,23 @@ REJECT_REASONS = [
     "Hold until the Q1 refresh confirms the team's scope",
 ]
 
+# Loaded cost: a base by job family at L5, scaled by level and by where the seat is based.
+COST_BASE_L5 = {"research": 360_000, "eng": 330_000, "ops": 170_000, "g&a": 185_000}
+LEVEL_FACTOR = {"L3": 0.62, "L4": 0.80, "L5": 1.00, "L6": 1.28, "L7": 1.65, "L8": 2.20, "L9": 3.00}
+LOCATION_FACTOR = {"New York": 1.08, "San Francisco": 1.15, "London": 0.92, "Seattle": 1.05, "Toronto": 0.85, "Remote": 0.95}
+# Where each VP org's projected spend should land against its budget (two are over on purpose).
+BUDGET_TARGETS = [0.962, 0.975, 0.984, 1.012, 0.970, 0.979, 1.024, 0.968, 0.981, 0.976, 0.973, 0.966]
+DEMO_VP_BUDGET_TARGET = 0.993     # the demo VP is close to the line, so a backfill is a real decision
+
+PLAN_REASONS = {
+    "research": ["Two new evaluation pods for the agents work", "Staff the interpretability programme approved last quarter",
+                 "Cover the safety reviews every launch now needs", "Grow the team that owns our core training recipes"],
+    "eng": ["On-call coverage for the new training cluster", "Tooling the research teams keep asking for",
+            "Retire the legacy pipeline without stalling releases", "A second team for the enterprise roadmap"],
+    "ops": ["Support load has grown with headcount", "Onboarding capacity for next year's hiring", "Run the new office in Toronto"],
+    "g&a": ["Close the books faster as we scale", "Contract volume has doubled", "Compliance work for the new markets"],
+}
+
 # How many of each error to plant.
 PLANT_COUNTS = {"stale_open": 150, "duplicate": 20, "ghost_fill": 15, "miscoded": 30, "reserve_misplaced": 25}
 NEGATIVE_TEAMS_PER_SVP, NEGATIVE_PER_TEAM = 2, 2
@@ -84,11 +101,14 @@ class Builder:
     def __init__(self, as_of: date, now: datetime):
         self.as_of, self.now = as_of, now
         self.rng = random.Random(SEED)
+        self.rng2 = random.Random(SEED + 1)   # for everything added after V1, so V1's data never shifts
         self.fake = Faker("en_US")
         self.fake.seed_instance(SEED)
         self.orgs, self.people, self.positions = [], [], []
         self.staffing, self.backfills, self.events = [], [], []
         self.coverage, self.snapshots, self.resolutions = [], [], []
+        self.cost_rates, self.fiscal_years = [], []
+        self.cycles, self.envelopes, self.submissions, self.submission_lines, self.planning_events = [], [], [], [], []
         self.plan = defaultdict(int)          # (org_id, family) -> approved headcount
         self.emails = set()
         self.used = set()                     # people already used for a plant or a persona
@@ -437,6 +457,42 @@ class Builder:
 
     # ── the plan ─────────────────────────────────────────────────────────────
 
+    def build_costs(self):
+        """The rate card, where each seat is based, the fiscal calendar, and a
+        longer history of filled staffing requests (for time-to-fill)."""
+        r = self.rng2
+        self.rate = {(f, lvl, loc): round(base * LEVEL_FACTOR[lvl] * LOCATION_FACTOR[loc], -3)
+                     for f, base in COST_BASE_L5.items() for lvl in LEVEL_FACTOR for loc in LOCATION_FACTOR}
+        self.cost_rates = [{"job_family": f, "level": lvl, "location": loc, "annual_loaded_cost_usd": cost}
+                           for (f, lvl, loc), cost in self.rate.items()]
+        person = {p["id"]: p for p in self.people}
+        for pos in self.positions:
+            holder = person.get(pos["person_id"])
+            pos["location"] = holder["location"] if holder else r.choices(LOCATIONS, [25, 30, 15, 10, 8, 12])[0]
+        # The fiscal year started at the beginning of last month, so we are in Q1.
+        start = (self.as_of - timedelta(days=35)).replace(day=1)
+        for i, name in enumerate(("FY27", "FY28")):
+            begins = start.replace(year=start.year + i)
+            self.fiscal_years.append({"name": name, "starts_on": begins,
+                                      "ends_on": begins.replace(year=begins.year + 1) - timedelta(days=1)})
+        self.months_left = round(max((self.fiscal_years[0]["ends_on"] - self.as_of).days, 0) / 30.4375, 1)
+        # Everyone hired in the last eight months came through a staffing request.
+        already = {s["position_id"] for s in self.staffing if s["status"] == "filled"}
+        pool = defaultdict(list)
+        for c in self.coverage:
+            pool[c["job_family"]].append(c["person_id"])
+        for p in self.people:
+            pos = p.get("position")
+            if pos is None or pos["id"] in already or p["end_date"] is not None or pos["person_id"] != p["id"]:
+                continue
+            if not self.days_ago(240) <= p["start_date"] <= self.as_of:
+                continue
+            days_to_fill = min(max(int(r.lognormvariate(3.75, 0.45)), 12), 150)
+            closed = p["start_date"] - timedelta(days=r.randint(5, 14))
+            self.staffing.append({"position_id": pos["id"], "recruiter_id": r.choice(pool[pos["job_family"]] or pool["eng"]),
+                                  "status": "filled", "backfill_request_id": None,
+                                  "opened_at": closed - timedelta(days=days_to_fill), "closed_at": closed})
+
     def build_plan(self):
         rng = self.rng
         refresh = {k: v for k, v in sorted(self.plan.items()) if v > 0}
@@ -445,15 +501,123 @@ class Builder:
             original[key] -= rng.randint(1, 2)
         rm = self.personas["rm"]["id"]
         lock = lambda days: datetime.combine(self.days_ago(days), time(17, 0), ET)
+        fy = self.fiscal_years[0]
         self.plan_versions = [
-            {"id": 1, "name": "FY27 Plan", "locked_at": lock(96), "locked_by": rm},
-            {"id": 2, "name": "FY27 Q1 Refresh", "locked_at": lock(12), "locked_by": rm},
+            {"id": 1, "name": "FY27 Plan", "locked_at": lock(96), "locked_by": rm, "fiscal_year": "FY27", "effective_from": fy["starts_on"]},
+            {"id": 2, "name": "FY27 Q1 Refresh", "locked_at": lock(12), "locked_by": rm, "fiscal_year": "FY27", "effective_from": self.days_ago(12)},
         ]
+        per_head = self.budget_per_head(refresh)
         self.plan_lines = [
             {"plan_version_id": vid, "org_id": org_id, "job_family": family, "approved_headcount": n,
-             "approved_cost_usd": n * COST_PER_HEAD[family]}
+             "approved_cost_usd": round(n * per_head[(org_id, family)], -3)}
             for vid, lines in ((1, original), (2, refresh)) for (org_id, family), n in lines.items()
         ]
+
+    def budget_per_head(self, lines):
+        """Budgeted cost per head for each plan line: the average rate of the seats
+        it pays for, scaled so each VP org lands where BUDGET_TARGETS says."""
+        active_reqs = {s["position_id"] for s in self.staffing if s["status"] in ("open", "offer_out")}
+        person = {p["id"]: p for p in self.people}
+        org = {o["id"]: o for o in self.orgs}
+
+        def vp_of(o):
+            while o and o["level"] != "vp":
+                o = o["parent"]
+            return o
+
+        seat_rates, family_rates = defaultdict(list), defaultdict(list)
+        spend = defaultdict(float)                     # projected spend per VP org
+        for pos in self.positions:
+            cost = self.rate[(pos["job_family"], pos["level"], pos["location"])]
+            holder = person.get(pos["person_id"])
+            family = holder["job_family"] if holder else pos["job_family"]
+            seat_rates[(pos["org_id"], family)].append(cost)
+            family_rates[family].append(cost)
+            vp = vp_of(pos["org"])
+            if vp is None or pos["position_type"] == "reserve":
+                continue
+            if pos["person_id"]:
+                spend[vp["id"]] += cost
+            elif pos["id"] in active_reqs:
+                spend[vp["id"]] += cost * self.months_left / 12
+        average = lambda xs: sum(xs) / len(xs)
+        raw = {key: average(seat_rates.get(key) or family_rates[key[1]]) for key in lines}
+        raw_budget = defaultdict(float)
+        for (org_id, family), n in lines.items():
+            vp = vp_of(org[org_id])
+            if vp:
+                raw_budget[vp["id"]] += n * raw[(org_id, family)]
+        targets = iter(BUDGET_TARGETS)
+        factor = {}
+        for vp in [o for o in self.orgs if o["level"] == "vp"]:
+            target = DEMO_VP_BUDGET_TARGET if vp is self.priya_org else next(targets)
+            factor[vp["id"]] = spend[vp["id"]] / (target * raw_budget[vp["id"]])
+        per_head = {}
+        for key in lines:
+            vp = vp_of(org[key[0]])
+            per_head[key] = raw[key] * (factor[vp["id"]] if vp else 1.0)
+        return per_head
+
+    def build_planning(self):
+        """FY28 planning, caught mid-cycle: in the demo SVP's org one VP is still
+        drafting (the demo VP), two have submitted and one was sent back. The
+        other two SVPs have approved all of theirs."""
+        r, now = self.rng2, self.now
+        self.cycles = [{"id": 1, "name": "FY28 Planning", "fiscal_year": "FY28", "base_plan_version_id": 2, "status": "open"}]
+        org = {o["id"]: o for o in self.orgs}
+        base = defaultdict(lambda: defaultdict(lambda: [0, 0.0]))           # vp id -> family -> [headcount, cost]
+        for line in self.plan_lines:
+            node = org[line["org_id"]]
+            while node and node["level"] != "vp":
+                node = node["parent"]
+            if line["plan_version_id"] == 2 and node:
+                base[node["id"]][line["job_family"]][0] += line["approved_headcount"]
+                base[node["id"]][line["job_family"]][1] += float(line["approved_cost_usd"])
+        demo_svp = self.personas["svp"]["org"]
+        research_states = iter(["draft", "submitted", "sent_back", "submitted"])
+        research_asks = iter([(12, 4), (14, 3), (70, 8), (-2, 9)])              # (primary family, secondary family)
+        submitted_total = 14 + 3 - 2 + 9
+        for svp in [o for o in self.orgs if o["level"] == "svp"]:
+            vps = [o for o in self.orgs if o["parent"] is svp]
+            headcount = sum(h for vp in vps for h, _ in base[vp["id"]].values())
+            cost = sum(c for vp in vps for _, c in base[vp["id"]].values())
+            self.envelopes.append({"cycle_id": 1, "svp_org_id": svp["id"], "headcount_envelope": round(headcount * 1.04),
+                                   "cost_envelope_usd": round(cost * 1.045, -3)})
+            headroom = round(headcount * 1.04) - headcount
+            for vp in vps:
+                status = next(research_states) if svp is demo_svp else "approved"
+                ask = next(research_asks) if svp is demo_svp else (r.randint(4, 12), r.randint(0, 4))
+                sub = {"id": len(self.submissions) + 1, "cycle_id": 1, "vp_org_id": vp["id"], "status": status}
+                families = sorted(base[vp["id"]], key=lambda f: -base[vp["id"]][f][0])
+                trimmed = status == "approved" and r.random() < 0.3                # the SVP approved a little less
+                for i, family in enumerate(families):
+                    change = ask[i] if i < 2 else 0
+                    self.submission_lines.append({
+                        "submission_id": sub["id"], "job_family": family, "base_headcount": base[vp["id"]][family][0],
+                        "base_cost_usd": round(base[vp["id"]][family][1], 2), "requested_change": change,
+                        "approved_change": max(change - 3, 0) if trimmed and i == 0 else None,
+                        "justification": r.choice(PLAN_REASONS[family]) if change else ""})
+                total = sum(ask[:len(families)][:2])
+
+                def event(frm, to, actor, note, hours_ago):
+                    at = now - timedelta(hours=hours_ago)
+                    self.planning_events.append({"cycle_id": 1, "submission_id": sub["id"], "from_status": frm, "to_status": to,
+                                                 "actor_id": actor["id"], "note": note, "at": at})
+                    sub["updated_at"] = at
+
+                started = r.randint(200, 290)
+                sub["created_at"] = now - timedelta(hours=started)
+                event(None, "draft", vp["leader"], "Started from FY27 Q1 Refresh", started)
+                if status != "draft":
+                    event("draft", "submitted", vp["leader"], f"Asked for {total:+d} positions", r.randint(80, 150))
+                if status == "sent_back":
+                    over = submitted_total + total - headroom
+                    event("submitted", "sent_back", svp["leader"],
+                          f"With the other asks this puts Research {over} over its envelope. Bring it under +{total - over - 4}, or say what you would trade.", 26)
+                if status == "approved":
+                    event("submitted", "approved", svp["leader"],
+                          f"Approved {total - 3:+d} of the {total:+d} requested" if trimmed else "Approved as requested", r.randint(20, 70))
+                self.submissions.append(sub)
 
     # ── sixty days of snapshots ──────────────────────────────────────────────
 
@@ -543,7 +707,9 @@ class Builder:
         self.plant_noise()
         self.give_notice()
         self.build_backfills()
+        self.build_costs()
         self.build_plan()
+        self.build_planning()
         self.build_snapshots()
         self.build_resolutions()
         for org in self.orgs:
@@ -568,9 +734,11 @@ class Builder:
 TABLES = {  # table -> columns, in load order
     "orgs": ["id", "name", "parent_id", "level", "leader_person_id", "cost_center"],
     "people": ["id", "full_name", "email", "org_id", "job_family", "level", "location", "start_date", "end_date", "manager_id"],
-    "positions": ["id", "position_code", "org_id", "job_family", "level", "position_type", "person_id", "opened_at", "source"],
+    "positions": ["id", "position_code", "org_id", "job_family", "level", "position_type", "person_id", "opened_at", "source", "location"],
+    "cost_rates": ["job_family", "level", "location", "annual_loaded_cost_usd"],
+    "fiscal_years": ["name", "starts_on", "ends_on"],
     "recruiter_coverage": ["person_id", "job_family"],
-    "plan_versions": ["id", "name"],
+    "plan_versions": ["id", "name", "fiscal_year", "effective_from"],
     "plan_lines": ["plan_version_id", "org_id", "job_family", "approved_headcount", "approved_cost_usd"],
     "backfill_requests": ["id", "departing_person_id", "position_id", "requested_by", "justification", "urgency", "status",
                           "vp_approver_id", "recruiter_id", "created_at", "updated_at"],
@@ -578,6 +746,11 @@ TABLES = {  # table -> columns, in load order
     "request_events": ["backfill_request_id", "from_status", "to_status", "actor_id", "note", "at"],
     "daily_snapshots": ["snapshot_date", "org_id", "filled", "open_with_req", "open_no_req", "reserve", "negative", "total_people"],
     "exception_resolutions": ["exception_type", "position_id", "resolved_by", "resolved_at"],
+    "planning_cycles": ["id", "name", "fiscal_year", "base_plan_version_id", "status"],
+    "planning_envelopes": ["cycle_id", "svp_org_id", "headcount_envelope", "cost_envelope_usd"],
+    "plan_submissions": ["id", "cycle_id", "vp_org_id", "status", "created_at", "updated_at"],
+    "plan_submission_lines": ["submission_id", "job_family", "base_headcount", "base_cost_usd", "requested_change", "approved_change", "justification"],
+    "planning_events": ["cycle_id", "submission_id", "from_status", "to_status", "actor_id", "note", "at"],
 }
 ALL_TABLES = list(TABLES) + ["check_runs", "check_results", "app_meta"]
 
@@ -587,7 +760,9 @@ def load(conn, b: Builder) -> None:
     data = {"orgs": b.orgs, "people": b.people, "positions": b.positions, "recruiter_coverage": b.coverage,
             "plan_versions": b.plan_versions, "plan_lines": b.plan_lines, "backfill_requests": b.backfills,
             "staffing_requests": b.staffing, "request_events": b.events, "daily_snapshots": b.snapshots,
-            "exception_resolutions": b.resolutions}
+            "exception_resolutions": b.resolutions, "cost_rates": b.cost_rates, "fiscal_years": b.fiscal_years,
+            "planning_cycles": b.cycles, "planning_envelopes": b.envelopes, "plan_submissions": b.submissions,
+            "plan_submission_lines": b.submission_lines, "planning_events": b.planning_events}
     cur = conn.cursor()
     cur.execute(f"TRUNCATE {', '.join(ALL_TABLES)} RESTART IDENTITY CASCADE")
     for table, cols in TABLES.items():
@@ -599,7 +774,7 @@ def load(conn, b: Builder) -> None:
         cur.execute("UPDATE plan_versions SET locked_at = %s, locked_by = %s, content_hash = plan_hash(id) WHERE id = %s",
                     (v["locked_at"], v["locked_by"], v["id"]))
     # Hand-assigned ids: move each sequence past them.
-    for table in ("orgs", "people", "positions", "plan_versions", "backfill_requests"):
+    for table in ("orgs", "people", "positions", "plan_versions", "backfill_requests", "planning_cycles", "plan_submissions"):
         cur.execute(f"SELECT setval(pg_get_serial_sequence('{table}', 'id'), (SELECT max(id) FROM {table}))")
     meta = {"seed_as_of": b.as_of.isoformat(), "seeded_at": b.now.isoformat(),
             **{f"persona_{role}": str(p["id"]) for role, p in b.personas.items()}}

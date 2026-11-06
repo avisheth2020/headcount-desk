@@ -11,6 +11,8 @@ CHECKS = {
     "ratio": ("Ratio", "No VP org's share of company headcount moves more than 3 points in a day."),
     "plan_integrity": ("Plan integrity", "The locked plan still matches the fingerprint taken when it was locked."),
     "open_share": ("Exception volume", "No VP org has more than 8% of its seats open with nobody recruiting."),
+    "budget": ("Budget", "No VP org is projected to spend more than its approved budget."),
+    "cost_rates": ("Cost rates", "Every position has a cost rate, so every seat can be priced."),
 }
 
 
