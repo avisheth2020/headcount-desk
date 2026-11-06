@@ -23,13 +23,14 @@
   </section>
   {% endif %}
 
-  <nav class="tiles" aria-label="Request pipeline">
-    <a class="card tile tile-wide" href="/requests?scope=all&status=opened{{ q_org }}" {% if status == "opened" %}aria-current="true"{% endif %}><span>Median days from request to open req</span><b>{{ "%.1f" | format(stats.median_days or 0) }} days</b></a>
-    <a class="card tile" href="/requests?scope=all&status=submitted{{ q_org }}" {% if status == "submitted" %}aria-current="true"{% endif %}><span>Waiting on a VP</span><b>{{ stats.waiting_vp | num }}</b></a>
-    <a class="card tile" href="/requests?scope=all&status=recruiter_assigned{{ q_org }}" {% if status == "recruiter_assigned" %}aria-current="true"{% endif %}><span>Waiting on a recruiter</span><b>{{ stats.waiting_recruiter | num }}</b></a>
-    <a class="card tile" href="/requests?scope=all&status=req_open{{ q_org }}" {% if status == "req_open" %}aria-current="true"{% endif %}><span>Req open</span><b>{{ stats.req_open | num }}</b></a>
-    <a class="card tile" href="/requests?scope=all&status=filled{{ q_org }}" {% if status == "filled" %}aria-current="true"{% endif %}><span>Filled</span><b>{{ stats.filled | num }}</b></a>
-  </nav>
+  <section class="card card-pad flow-card" aria-label="Request pipeline">
+    <nav class="flow" aria-label="Filter by stage" {{ IN_PLACE }}>
+      {% for key, label, n in stages %}
+      <a class="stage-{{ key }}" style="flex: {{ [n, 3] | max }} 1 0" href="/requests?scope=all{{ '&status=' ~ key if status != key }}{{ q_org }}" {% if status == key %}aria-current="true"{% endif %}><b>{{ n | num }}</b><span>{{ label }}</span></a>
+      {% endfor %}
+    </nav>
+    <p class="small muted"><a {{ IN_PLACE }} href="/requests?scope=all&status=opened{{ q_org }}">{{ "%.1f" | format(stats.median_days or 0) }} days</a> median from request to open req</p>
+  </section>
 
   <section class="card">
     <div class="card-head">
@@ -37,25 +38,25 @@
       <nav class="pills" aria-label="Whose requests" {{ IN_PLACE }}>
         {% if has_mine %}<a class="pill" href="/requests?scope=mine" {% if scope == "mine" and not status %}aria-current="true"{% endif %}>Mine</a>{% endif %}
         <a class="pill" href="/requests?scope=all{{ q_org }}" {% if scope == "all" and not status %}aria-current="true"{% endif %}>Everyone's</a>
+        {% if not status %}<a class="pill" href="{{ url_with(request, show=None if show == 'all' else 'all') }}" {% if show == "all" %}aria-current="true"{% endif %}>Closed too</a>{% endif %}
         <a class="btn btn-sm" hx-boost="false" href="{{ url_with(request, format='csv') }}">{{ ico("download") }}CSV</a>
       </nav>
     </div>
     {% if rows %}
-    <table class="table cards two">
+    <table class="table cards compact one">
       <thead><tr>
         {{ m.th(request, "Request", "id", sort, dir) }}{{ m.th(request, "Team", "team", sort, dir) }}{{ m.th(request, "Status", "status", sort, dir) }}
         {{ m.th(request, "Waiting on", "waiting", sort, dir) }}{{ m.th(request, "In this status", "age", sort, dir, "r") }}
-        {{ m.th(request, "Days to req", "cycle", sort, dir, "r") }}{{ m.th(request, "Submitted", "submitted", sort, dir, "r") }}
+        {{ m.th(request, "Submitted", "submitted", sort, dir, "r") }}
         <th aria-label="Actions"></th></tr></thead>
       <tbody>
         {% for r in rows %}
         <tr>
           <td class="tall"><a class="rowlink" data-drawer href="/requests/{{ r.id }}">#{{ r.id }} · {{ r.departing_name }}</a><span class="sub">{{ FAMILY[r.job_family] }}, {{ r.level }}{% if r.urgency == "urgent" %} · {{ ico("up") }}Urgent{% endif %}</span></td>
           <td data-label="Team">{{ r.team_name }}</td>
-          <td data-label="Status">{{ m.status_chip(r.status) }}</td>
+          <td data-label="Status">{{ m.mini_steps(r.status) }}{{ m.status_chip(r.status) }}</td>
           <td data-label="Waiting on">{{ r.waiting_on or "–" }}</td>
-          <td class="r" data-label="In this status">{{ r.time_in_status | ago }}</td>
-          <td class="r" data-label="Days to req">{{ "%.1f" | format(r.days_to_open) if r.days_to_open is not none else "–" }}</td>
+          <td class="r keep nowrap" data-label="In this status"><span class="age-cell"><i style="width: {{ r.age_bar }}%"></i></span>{{ r.time_in_status | ago }}</td>
           <td class="r" data-label="Submitted">{{ r.created_at | d }}</td>
           <td class="row-actions"><a class="btn btn-sm" data-drawer href="/requests/{{ r.id }}">Open</a></td>
         </tr>

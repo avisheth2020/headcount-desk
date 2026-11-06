@@ -36,12 +36,16 @@ def requests_page(request: Request, scope: str | None = None, status: str | None
             where.append(f"r.{mine_col} = %(me)s")
         if status == "opened":                               # the rows behind the median
             where.append("ct.days_to_open IS NOT NULL")
+        elif status == "recruiter_assigned":                 # the stage covers the moment before a recruiter is picked
+            where.append("r.status IN ('vp_approved', 'recruiter_assigned')")
         elif status in STATUS_LABELS:
             where.append("r.status = %(status)s")
+        elif request.query_params.get("show") != "all":      # closed requests stay out of the way until asked for
+            where.append("r.status NOT IN ('filled', 'rejected')")
         order, sort, direction = web.sorting(request, {
             "id": "r.id", "who": "r.departing_name", "team": "r.team_name", "status": "r.status", "waiting": "r.waiting_on",
             "age": "r.time_in_status", "cycle": "ct.days_to_open", "submitted": "r.created_at"}, "submitted", "desc")
-        default_order = "(r.status IN ('filled', 'rejected')), r.updated_at DESC"
+        default_order = "(r.status IN ('filled', 'rejected')), r.time_in_status DESC"      # longest in its stage first
         rows = db.query(conn, f"""
             SELECT r.*, ct.days_to_open
             FROM v_backfill_requests r
@@ -71,9 +75,16 @@ def requests_page(request: Request, scope: str | None = None, status: str | None
                    count(*) FILTER (WHERE r.status = 'submitted') AS waiting_vp,
                    count(*) FILTER (WHERE r.status IN ('vp_approved', 'recruiter_assigned')) AS waiting_recruiter,
                    count(*) FILTER (WHERE r.status = 'req_open') AS req_open,
-                   count(*) FILTER (WHERE r.status = 'filled') AS filled
+                   count(*) FILTER (WHERE r.status = 'filled') AS filled,
+                   count(*) FILTER (WHERE r.status = 'rejected') AS rejected
             FROM v_backfill_requests r WHERE {in_org if org is not None else 'TRUE'}""", params)
+        longest = max((r["time_in_status"].total_seconds() for r in rows), default=0) or 1
+        for r in rows:
+            r["age_bar"] = round(r["time_in_status"].total_seconds() / longest * 100)
         ctx.update(rows=rows, inbox=inbox, stats=stats, scope=scope, status=status, has_mine=bool(mine_col), org=org,
+                   show=request.query_params.get("show"),
+                   stages=[("submitted", "Waiting on VP", stats["waiting_vp"]), ("recruiter_assigned", "With recruiter", stats["waiting_recruiter"]),
+                           ("req_open", "Req open", stats["req_open"]), ("filled", "Filled", stats["filled"]), ("rejected", "Rejected", stats["rejected"])],
                    org_name=db.one(conn, "SELECT name FROM orgs WHERE id = %s", (org,))["name"] if org else None,
                    STATUS_LABELS=STATUS_LABELS, sort=sort if "sort" in request.query_params else None, dir=direction,
                    can_request=permissions.can_request_backfill(role))
