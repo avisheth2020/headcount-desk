@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m %}
+{% block title %}Data health{% endblock %}
+
+{% macro status_chip(status) %}
+  {% if status == "pass" %}<span class="chip chip-good">✓ Passed</span>
+  {% elif status == "warn" %}<span class="chip chip-warn">⚠ Needs a look</span>
+  {% else %}<span class="chip chip-bad">× Failed</span>{% endif %}
+{% endmacro %}
+
+{% block content %}
+{% set attention = run.warned + run.failed %}
+<div class="page-head">
+  <div>
+    <h1>Can I trust these numbers?</h1>
+    {{ m.fresh(as_of, plan) }}
+  </div>
+  <form method="post" action="/health/run"><button class="btn" type="submit">↻ Run checks now</button></form>
+</div>
+
+<div class="stack">
+  {% if flash %}<p class="flash" role="status">{{ flash }}</p>{% endif %}
+
+  <div class="banner {{ 'banner-bad' if run.failed else ('banner-warn' if run.warned else 'banner-good') }}" role="status">
+    <span class="icon" aria-hidden="true">{{ "⛔" if run.failed else ("⚠️" if run.warned else "✅") }}</span>
+    <span>
+      {{ run.passed }} of {{ total }} checks passed at {{ run.run_at | dt }}.
+      {% if attention %}{{ attention }} need{{ "s" if attention == 1 else "" }} a look.{% else %}Nothing needs a look.{% endif %}
+      <span class="sub">{% if run.failed %}A failed check means a number on the other pages may be wrong.{% elif run.warned %}The headcount numbers tie out. One thing looks unusual and is worth a minute.{% else %}Every number on the other pages ties out to the stored data.{% endif %}</span>
+    </span>
+  </div>
+
+  {% if problems %}
+  <section class="card" aria-label="What needs a look">
+    <div class="card-head"><h2>What needs a look</h2></div>
+    {% for p in problems %}
+    <div class="finding">
+      <div style="margin-bottom:6px">{{ status_chip(p.severity) }} <span class="muted small">{{ p.title }} check</span></div>
+      <p>{{ p.message }}</p>
+      <p class="small" style="margin-top:6px"><a href="{{ p.link }}">See the rows behind this ›</a></p>
+    </div>
+    {% endfor %}
+  </section>
+  {% endif %}
+
+  <section aria-label="All checks">
+    <div class="checks">
+      {% for c in cards %}
+      <a class="card check" href="/health/check/{{ c.name }}">
+        {{ status_chip(c.status) }}
+        <h3>{{ c.title }}</h3>
+        <p>{{ c.asserts }}</p>
+        <p style="margin-top:10px"><span class="num" style="color:var(--text);font-weight:600">{{ c.tested }}</span> tested{% if c.problems %} · <span class="num" style="color:var(--warn);font-weight:600">{{ c.problems }}</span> to look at{% else %} · all passed{% endif %} ›</p>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="card card-pad" aria-label="History">
+    <div style="display:flex;justify-content:space-between;gap:16px;align-items:flex-end;flex-wrap:wrap">
+      <div>
+        <h2>Last {{ history | length }} runs</h2>
+        <p class="muted small" style="margin-top:4px">{{ clean_runs }} clean, {{ history | length - clean_runs }} with something to look at. Checks run every morning after the snapshot loads.</p>
+      </div>
+      <div class="spark" role="img" style="width:min(100%, 360px)"
+           aria-label="Checks passed per run, oldest to newest: {% for h in history %}{{ h.passed }}{{ ', ' if not loop.last }}{% endfor %}">
+        {% for h in history %}
+        <i class="{{ 'fail' if h.failed else ('warn' if h.warned else '') }}" style="height: {{ (100 * h.passed / total) | round }}%"
+           title="{{ h.run_at | dt }}: {{ h.passed }} of {{ total }} passed"></i>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+</div>
+{% endblock %}

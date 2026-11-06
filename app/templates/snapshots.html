@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Snapshots · {{ org.name }}{% endblock %}
+
+{% block content %}
+<nav class="crumbs" aria-label="Breadcrumb"><a href="/health">Data health</a><span aria-hidden="true">›</span><span class="here">Snapshots · {{ org.name }}</span></nav>
+<div class="page-head">
+  <div>
+    <h1>{{ org.name }}: the last {{ rows | length }} daily snapshots</h1>
+    <p class="fresh">One stored row per org per day. The tie-out and ratio checks compare the top row to the one below it.
+      Live count right now: <strong class="num">{{ live.people | num }}</strong> people.</p>
+  </div>
+  <a class="btn" href="/?org={{ org.id }}">See {{ org.name }} headcount</a>
+</div>
+<section class="card">
+  <table class="table cards">
+    <thead><tr><th>Snapshot</th><th class="r">Filled</th><th class="r">Open, with request</th><th class="r">Open, no request</th><th class="r">Reserve</th><th class="r">Negative</th><th class="r">People</th><th class="r">Share of company</th><th class="r">Move</th></tr></thead>
+    <tbody>
+      {% for r in rows %}
+      {% set hot = r.share_move is not none and (r.share_move | abs) > 3 %}
+      <tr class="{{ 'hot' if hot }}">
+        <td class="strong">{{ r.snapshot_date | d }}{% if loop.first %} <span class="muted" style="font-weight:400">· latest</span>{% endif %}</td>
+        <td class="r" data-label="Filled">{{ r.filled | num }}</td>
+        <td class="r" data-label="Open, with request">{{ r.open_with_req | num }}</td>
+        <td class="r" data-label="Open, no request">{{ r.open_no_req | num }}</td>
+        <td class="r" data-label="Reserve">{{ r.reserve | num }}</td>
+        <td class="r" data-label="Negative">{{ r.negative | num }}</td>
+        <td class="r {{ 'strong' if hot }}" data-label="People">{{ r.total_people | num }}{% if hot %} <span class="muted" style="font-weight:400">({{ "+" if r.people_move > 0 }}{{ r.people_move | num }})</span>{% endif %}</td>
+        <td class="r" data-label="Share of company">{{ "%.1f" | format(r.share) }}%</td>
+        <td class="r" data-label="Move">{% if r.share_move is none %}–{% elif hot %}<span class="chip chip-warn">⚠ {{ "%+.1f" | format(r.share_move) }} pts</span>{% else %}<span class="muted">{{ "0.0" if (r.share_move | abs) < 0.05 else "%+.1f" | format(r.share_move) }}</span>{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}
