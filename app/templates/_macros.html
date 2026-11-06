@@ -128,4 +128,25 @@
   {% endif %}
 {% endmacro %}
 
+{# How the room to grow is used. Only the growth is drawn, because this year's headcount would swamp it. #}
+{% macro room_gauge(use, mine=None, mine_label="This plan") %}
+{% set drafting = mine if mine is not none else use.draft %}
+{% set left = use.left - (mine or 0) %}
+<div class="room" data-room="{{ use.room }}" data-others="{{ use.approved + use.submitted }}">
+  <div class="room-bar">
+    {% if use.approved > 0 %}<i class="seg-filled" style="flex: {{ use.approved }} 0 0" data-chart-tip="Approved +{{ use.approved }}"></i>{% endif %}
+    {% if use.submitted > 0 %}<i class="seg-committed" style="flex: {{ use.submitted }} 0 0" data-chart-tip="Submitted +{{ use.submitted }}"></i>{% endif %}
+    <i class="{{ 'seg-over' if left < 0 else 'seg-usable' }}" data-room-mine style="flex: {{ [drafting, 0] | max }} 0 0" data-chart-tip="{{ mine_label }}"></i>
+    <i class="seg-rest" data-room-left style="flex: {{ [left, 0] | max }} 0 0"></i>
+  </div>
+  <p class="stack-key">
+    {% if use.approved %}<span><i class="seg-filled"></i>Approved +{{ use.approved }}</span>{% endif %}
+    {% if use.submitted %}<span><i class="seg-committed"></i>Submitted +{{ use.submitted }}</span>{% endif %}
+    {% if drafting or mine is not none %}<span><i class="seg-usable"></i>{{ mine_label }} <span data-room-mine-text>{{ signed(drafting) }}</span></span>{% endif %}
+    <span><i class="seg-rest"></i><span data-room-left-text>{% if left < 0 %}{{ -left }} over the limit{% else %}{{ left }} left{% endif %}</span> of {{ use.room }}</span>
+    {% if use.sent_back %}<span class="{{ 'warn-text' if use.sent_back > left }}"><i class="seg-negative"></i>Sent back {{ signed(use.sent_back) }}{{ ", would not fit" if use.sent_back > left }}</span>{% endif %}
+  </p>
+</div>
+{% endmacro %}
+
 {% macro signed(n) %}{{ "+" if n > 0 }}{{ n | num }}{% endmacro %}

@@ -28,27 +28,24 @@
     <span>Your plan is still a draft.<span class="sub"><a href="/planning/{{ mine.id }}">Finish and submit it ›</a></span></span></div>
   {% endif %}
 
-  <nav class="tiles" aria-label="Envelopes by SVP">
+  <section class="envelopes" aria-label="Room to grow by SVP">
     {% for e in envelopes %}
-    <a class="card tile" href="#asks" {% if my_envelope and e.svp_org_id == my_envelope.svp_org_id %}aria-current="true"{% endif %}>
-      <span>{{ e.svp_name }} envelope{{ m.hint("The most headcount this SVP may plan for next year, set top-down. Submitted and approved asks count against it; drafts do not yet.") }}</span>
-      <b>{{ e.proposed_headcount | num }} <span class="muted" style="font-size:14px;font-weight:500">of {{ e.headcount_envelope | num }}</span></b>
-      <small>{% if e.headcount_headroom < 0 %}<span class="chip chip-bad">{{ ico("up") }}{{ -e.headcount_headroom }} over</span>{% else %}<span class="chip chip-good">{{ ico("check") }}{{ e.headcount_headroom }} headroom</span>{% endif %}
-        · {{ e.proposed_cost | money }} of {{ e.cost_envelope_usd | money }}</small>
-      <small>{{ e.n_approved }} approved · {{ e.n_submitted }} to review · {{ e.n_sent_back }} sent back · {{ e.n_draft }} drafting</small>
-    </a>
+    <div class="card env" {% if my_envelope and e.svp_org_id == my_envelope.svp_org_id %}aria-current="true"{% endif %}>
+      <div class="env-head"><h2>{{ e.svp_name }}{{ m.hint("The most this SVP may add next year. Submitted and approved asks count against it; drafts and plans sent back do not yet.") }}</h2><span class="muted small num">{{ e.proposed_cost | money }} of {{ e.cost_envelope_usd | money }}</span></div>
+      {{ m.room_gauge(e.use, none, "Drafting") }}
+    </div>
     {% endfor %}
-  </nav>
+  </section>
 
   <section class="card" id="asks">
     <div class="card-head">
       <h2>VP plans <span class="count">{{ rows | length }}</span></h2>
       <div class="table-tools"><span class="muted small">Asked so far: {{ m.signed(totals.final) }} positions, {{ "+" if totals.cost > 0 }}{{ totals.cost | money }}</span><a class="btn btn-sm" href="{{ url_with(request, format='csv') }}">{{ ico("download") }}CSV</a></div>
     </div>
-    <table class="table cards">
+    <table class="table cards compact">
       <thead><tr>
         {{ m.th(request, "VP org", "vp", sort, dir) }}{{ m.th(request, "SVP", "svp", sort, dir) }}{{ m.th(request, "Status", "status", sort, dir) }}
-        {{ m.th(request, "This year", "base", sort, dir, "r") }}{{ m.th(request, "Asked", "ask", sort, dir, "r") }}{{ m.th(request, "Counts", "final", sort, dir, "r") }}
+        {{ m.th(request, "This year", "base", sort, dir, "r") }}{{ m.th(request, "Asked", "ask", sort, dir, "r") }}{{ m.th(request, "Counted", "final", sort, dir, "r") }}
         <th class="r">Next year</th>{{ m.th(request, "Cost impact", "cost", sort, dir, "r") }}<th aria-label="Actions"></th>
       </tr></thead>
       <tbody>
@@ -59,8 +56,8 @@
           <td data-label="Status">{{ m.plan_chip(r.status) }}</td>
           <td class="r" data-label="This year"><a href="/plan?org={{ r.vp_org_id }}">{{ r.base_headcount | num }}</a></td>
           <td class="r" data-label="Asked"><a href="/planning/{{ r.id }}">{{ m.signed(r.requested_change) }}</a></td>
-          <td class="r strong" data-label="Counts"><a href="/planning/{{ r.id }}">{{ m.signed(r.final_change) }}</a></td>
-          <td class="r" data-label="Next year"><a href="/planning/{{ r.id }}">{{ r.proposed_headcount | num }}</a></td>
+          <td class="r strong keep" data-label="Counted"><a href="/planning/{{ r.id }}">{{ m.signed(r.final_change) }}</a></td>
+          <td class="r keep" data-label="Next year"><a href="/planning/{{ r.id }}">{{ r.proposed_headcount | num }}</a></td>
           <td class="r" data-label="Cost impact"><a href="/planning/{{ r.id }}">{{ "+" if r.final_cost > 0 }}{{ r.final_cost | money }}</a></td>
           <td class="row-actions"><a class="btn btn-sm" href="/planning/{{ r.id }}">{{ "Review" if role == "svp" and r.status == "submitted" and r.svp_org_id == me.org_id else "Open" }}</a></td>
         </tr>
