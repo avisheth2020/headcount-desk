@@ -35,6 +35,10 @@ def submission(conn, submission_id: int) -> dict:
 
 @router.get("/planning", response_class=HTMLResponse, include_in_schema=False)
 def planning_home(request: Request, flash: str | None = None, error: str | None = None):
+    if request.query_params.get("as") in web.ROLES:           # the "Try this" link arrives as a VP
+        response = RedirectResponse("/planning", status_code=303)
+        response.set_cookie("role", request.query_params["as"], max_age=60 * 60 * 24 * 30, samesite="lax")
+        return response
     with db.get_conn() as conn:
         ctx = web.page_context(request, conn)
         cycle = current_cycle(conn)
