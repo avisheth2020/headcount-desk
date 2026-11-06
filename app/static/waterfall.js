@@ -44,6 +44,8 @@ document.addEventListener("DOMContentLoaded", () => {
       indexAxis: narrow ? "y" : "x",
       responsive: true, maintainAspectRatio: false, animation: { duration: 250 },
       layout: { padding: narrow ? { right: 48 } : { top: 22 } },
+      // Hovering or tapping anywhere in a bar's lane counts, so the thin bars are easy to hit.
+      interaction: { mode: "index", axis: narrow ? "y" : "x", intersect: false },
       onClick(_, hits) { if (hits.length) window.location.href = steps[hits[0].index].href; },
       onHover(e, hits) { e.native.target.style.cursor = hits.length ? "pointer" : "default"; },
       plugins: {

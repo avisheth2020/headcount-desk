@@ -1,7 +1,7 @@
 <div id="progress" class="card card-pad" {% if oob %}hx-swap-oob="true"{% endif %}>
   <div style="display:flex;justify-content:space-between;align-items:baseline;gap:16px;margin-bottom:10px;flex-wrap:wrap">
-    <h2><span class="num">{{ progress.resolved | num }} of {{ progress.total | num }}</span> resolved</h2>
-    <span class="muted small"><span class="num">{{ (progress.total - progress.resolved) | num }}</span> still to fix</span>
+    <h2><a class="num" href="/exceptions?org={{ org.id }}&show=all" style="color:inherit">{{ progress.resolved | num }} of {{ progress.total | num }}</a> resolved</h2>
+    <a class="small" href="/exceptions?org={{ org.id }}"><span class="num">{{ (progress.total - progress.resolved) | num }}</span> still to fix</a>
   </div>
   <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="{{ progress.total }}" aria-valuenow="{{ progress.resolved }}" aria-label="Exceptions resolved">
     <i style="width: {{ (100 * progress.resolved / progress.total) | round(1) if progress.total else 100 }}%"></i>

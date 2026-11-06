@@ -123,6 +123,7 @@ p { margin: 0; }
 .role-menu button span { font-size: 12px; color: var(--muted); }
 
 .tabbar { display: none; }
+.search-toggle { display: none; }
 
 /* ── Page frame ──────────────────────────────────────────────────────────── */
 
@@ -240,7 +241,7 @@ a.hero-number:hover { color: var(--accent); text-decoration: none; }
 
 .dl { display: grid; grid-template-columns: 160px 1fr; gap: 10px var(--s3); font-size: 14px; margin: 0; }
 .dl dt { color: var(--muted); }
-.dl dd { margin: 0; }
+.dl dd { margin: 0; overflow-wrap: anywhere; min-width: 0; }
 
 /* ── Try-this card ───────────────────────────────────────────────────────── */
 
@@ -396,7 +397,12 @@ tr.hot td { background: var(--warn-soft) !important; }
   main { padding: var(--s4) var(--s3) var(--s5); }
   .topbar { padding: 0 var(--s3); gap: var(--s2); height: 52px; }
   .nav { display: none; }
-  .search { display: none; }
+  .search-toggle { display: grid; place-items: center; width: 34px; height: 34px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); cursor: pointer; padding: 0; }
+  .search { display: none; position: absolute; left: 0; right: 0; top: 52px; padding: 8px var(--s3); background: var(--surface); border-bottom: 1px solid var(--border); }
+  .search-open .search { display: block; }
+  .search input[type="search"] { width: 100%; height: 40px; font-size: 16px; }
+  .search kbd { display: none; }
+  .search-results { position: static; width: auto; margin-top: 8px; box-shadow: none; }
   .role-menu { width: min(280px, calc(100vw - 32px)); }
   .tabbar {
     display: grid; grid-template-columns: repeat(4, 1fr); position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
@@ -409,11 +415,13 @@ tr.hot td { background: var(--warn-soft) !important; }
   .tabbar svg { width: 22px; height: 22px; }
   .role-switch summary .lbl { display: none; }
   .role-switch summary { padding: 0 10px; }
+  .brand-mark { display: none; }
   .tiles { grid-template-columns: repeat(3, 1fr); gap: var(--s2); }
   .tile { padding: 10px 12px; }
   .tile b { font-size: 20px; }
   .tile span { font-size: 12px; }
   .tile .tip { display: none; }
+  .tile-wide { grid-column: 1 / -1; }
   .more > summary { padding: 12px var(--s3); }
   .card-pad { padding: var(--s3); }
   .card-head { padding: var(--s3); }
@@ -422,7 +430,10 @@ tr.hot td { background: var(--warn-soft) !important; }
   .math { padding: var(--s3); gap: 2px; }
   .math .term { min-width: 0; padding: 6px 8px; flex: 1 1 28%; }
   .math .op { display: none; }
-  .try ol { grid-template-columns: 1fr; gap: var(--s2); }
+  .try ol { grid-template-columns: 1fr; gap: 6px; }
+  .try p { display: none; }
+  .try li a { padding: 8px 10px; font-size: 13px; align-items: center; }
+  .try h2 { margin-bottom: 10px; }
   .checks { grid-template-columns: 1fr; }
   .dl { grid-template-columns: 110px 1fr; }
   .stepper li { font-size: 11px; }
@@ -451,5 +462,13 @@ tr.hot td { background: var(--warn-soft) !important; }
   .table.cards tfoot tr { background: var(--surface-2); border-top: 1px solid var(--border-strong); border-bottom: 0; border-radius: 0 0 var(--radius) var(--radius); }
   .table.cards.two tr { grid-template-columns: repeat(2, 1fr); }
 }
+
+.htmx-indicator { display: none; }
+.htmx-request.htmx-indicator, .htmx-request .htmx-indicator { display: block; }
+.skeleton-rows { display: grid; gap: 12px; padding: var(--s3) 0; }
+.skeleton-rows .skeleton:nth-child(2) { width: 70%; }
+.skeleton-rows .skeleton:nth-child(3) { width: 45%; }
+.search input.htmx-request + kbd + .search-results:empty { display: block; padding: 14px; }
+.search input.htmx-request + kbd + .search-results:empty::before { content: ""; display: block; height: 14px; border-radius: 4px; background: var(--border); }
 
 [hidden] { display: none !important; }

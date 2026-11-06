@@ -132,6 +132,10 @@ erDiagram
         int resolved_by FK
         timestamptz resolved_at
     }
+    app_meta {
+        text key PK
+        text value
+    }
     recruiter_coverage {
         int person_id PK
         text job_family
@@ -153,18 +157,32 @@ erDiagram
 | `check_runs` / `check_results` | A run of the data checks and what each found | One result row per org tested. |
 | `exception_resolutions` | Someone marking a data problem as dealt with | Keeps the to-do list honest without hiding the underlying row. |
 | `recruiter_coverage` | Which job family a recruiter hires for | Used for auto-assignment. |
+| `app_meta` | A key and a value | Demo bookkeeping: the date the data was built for, and which person each demo role maps to. |
 
 ## The views
 
 | View | What it answers |
 |---|---|
-| `v_org_closure` | Every org paired with each of its ancestors (and itself). This is what makes roll-ups one join. |
+| `v_org_closure` | Every org paired with each of its ancestors (and itself). This is what makes a roll-up one join. |
 | `v_org_path` | For each org: its SVP, VP and director. |
 | `v_position_status` | Each seat's bucket: filled, committed, open with no request, reserve or negative. **Derived, never stored.** |
+| `v_current_plan` | The most recently locked plan version. |
 | `v_headcount_direct` | Approved headcount and seats by bucket for the seats that sit directly in each org. |
 | `v_usable_open` | The same, rolled up the tree, plus `usable_open`. |
-| `v_exceptions` | A union of five data-quality rules, with an owner and a suggested fix. |
-| `v_check_*` | One view per data check, all with the same columns, unioned in `v_check_all`. |
+| `v_exception_rules` | A union of five data-quality rules, one SELECT per rule. |
+| `v_exceptions` | The rules plus an owner (the VP over the seat), an age, a suggested fix and whether it has been resolved. |
+| `v_recruiter_load` | How many roles each recruiter is carrying. Auto-assignment picks the lowest. |
+| `v_backfill_candidates` | Who can be backfilled: someone with an end date who still holds a seat and has no live request. |
+| `v_backfill_requests` | Each request with names, who it is waiting on, and time in its current status. |
+| `v_backfill_cycle_time` | Days from submitted to an open staffing request, read from the audit trail. |
+| `v_snapshot_days` | The two most recent snapshot dates ("today" and "yesterday"). |
+| `v_check_tieout`, `v_check_rollup`, `v_check_referential`, `v_check_ratio`, `v_check_plan_integrity`, `v_check_open_share` | One view per data check, all with the same six columns. |
+| `v_check_all` | The six checks unioned. Running the checks is one `INSERT ... SELECT` from this. |
+
+Two small things worth knowing:
+
+- `positions.opened_at` means "when the seat was created or last vacated", so a seat's age as an open seat restarts when someone leaves it.
+- `today()` is a SQL function that returns the business date in US Eastern time. Every rule that depends on the date uses it.
 
 ## Four design decisions
 

@@ -115,7 +115,7 @@ def position_detail(request: Request, position_id: int):
 
 
 @router.get("/plan", response_class=HTMLResponse, include_in_schema=False)
-def plan_lines(request: Request, org: int):
+def plan_lines(request: Request, org: int, direct: int = 0):
     """The rows behind "Approved": plan lines for an org and everything below it,
     with the previous plan version alongside."""
     with db.get_conn() as conn:
@@ -134,9 +134,9 @@ def plan_lines(request: Request, org: int):
                    ON prev.org_id = cur.org_id AND prev.job_family = cur.job_family
                   AND prev.plan_version_id = (SELECT id FROM plan_versions WHERE locked_at < cp.locked_at
                                               ORDER BY locked_at DESC LIMIT 1)
-            WHERE c.ancestor_id = %s
-            ORDER BY o.name, cur.job_family""", (org,))
-        ctx.update(org=org_row, rows=rows, crumbs=breadcrumbs(conn, org),
+            WHERE c.ancestor_id = %s AND (c.depth = 0 OR NOT %s)
+            ORDER BY o.name, cur.job_family""", (org, bool(direct)))
+        ctx.update(org=org_row, rows=rows, crumbs=breadcrumbs(conn, org), direct=direct,
                    total=sum(r["approved_headcount"] for r in rows),
                    total_cost=sum(r["approved_cost_usd"] for r in rows),
                    total_previous=sum(r["previous_headcount"] or 0 for r in rows),

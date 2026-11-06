@@ -6,7 +6,7 @@
 <div class="page-head">
   <div>
     {{ m.inbox_title(role, inbox | length) }}
-    <p class="fresh">{% if role in ("vp", "recruiter") %}Where is my backfill? · {% endif %}Viewing as {{ me.full_name }} ({{ role_label }}) · every step is logged</p>
+    <p class="fresh">{% if role in ("vp", "recruiter") %}Where is my backfill? · {% endif %}Viewing as {{ me.full_name }} ({{ role_label }}) · Data as of {{ as_of | dt }} · Plan: <a href="/plan?org=1">{{ plan.name }}</a> (locked)</p>
   </div>
   <a class="btn btn-primary" href="/backfill/new">+ Request a backfill</a>
 </div>
@@ -22,7 +22,7 @@
   {% endif %}
 
   <nav class="tiles" aria-label="Request pipeline">
-    <div class="card tile"><span>Median time, request to open req</span><b>{{ "%.1f" | format(stats.median_days or 0) }} days</b></div>
+    <a class="card tile tile-wide" href="/requests?scope=all&status=opened" {% if status == "opened" %}aria-current="true"{% endif %}><span>Median time from a request to an open staffing request</span><b>{{ "%.1f" | format(stats.median_days or 0) }} days</b></a>
     <a class="card tile" href="/requests?scope=all&status=submitted" {% if status == "submitted" %}aria-current="true"{% endif %}><span>Waiting on a VP</span><b>{{ stats.waiting_vp | num }}</b></a>
     <a class="card tile" href="/requests?scope=all&status=recruiter_assigned" {% if status == "recruiter_assigned" %}aria-current="true"{% endif %}><span>Waiting on a recruiter</span><b>{{ stats.waiting_recruiter | num }}</b></a>
     <a class="card tile" href="/requests?scope=all&status=req_open" {% if status == "req_open" %}aria-current="true"{% endif %}><span>Request open</span><b>{{ stats.req_open | num }}</b></a>
@@ -39,7 +39,7 @@
     </div>
     {% if rows %}
     <table class="table cards two">
-      <thead><tr><th>Request</th><th>Team</th><th>Status</th><th>Waiting on</th><th class="r">In this status</th><th class="r">Submitted</th></tr></thead>
+      <thead><tr><th>Request</th><th>Team</th><th>Status</th><th>Waiting on</th><th class="r">In this status</th><th class="r">Days to open request</th><th class="r">Submitted</th></tr></thead>
       <tbody>
         {% for r in rows %}
         <tr>
@@ -48,6 +48,7 @@
           <td data-label="Status">{{ m.status_chip(r.status) }}</td>
           <td data-label="Waiting on">{{ r.waiting_on or "–" }}</td>
           <td class="r" data-label="In this status">{{ r.time_in_status | ago }}</td>
+          <td class="r" data-label="Days to open request">{{ "%.1f" | format(r.days_to_open) if r.days_to_open is not none else "–" }}</td>
           <td class="r" data-label="Submitted">{{ r.created_at | d }}</td>
         </tr>
         {% endfor %}

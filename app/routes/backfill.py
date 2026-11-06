@@ -12,7 +12,7 @@ router = APIRouter()
 STEPS = ["Submitted", "VP approval", "Recruiter", "Request open", "Filled"]
 # status -> how many steps are done (the next one is "now")
 DONE = {"submitted": 1, "rejected": 1, "vp_approved": 2, "recruiter_assigned": 3, "req_open": 4, "filled": 5}
-STATUS_LABELS = {"submitted": "Waiting on VP", "recruiter_assigned": "Recruiter assigned", "req_open": "Request open",
+STATUS_LABELS = {"opened": "Reached an open staffing request", "submitted": "Waiting on VP", "recruiter_assigned": "Recruiter assigned", "req_open": "Request open",
                  "filled": "Filled", "rejected": "Rejected"}
 MINE = {"vp": "vp_approver_id", "recruiter": "recruiter_id", "requester": "requested_by"}
 
@@ -31,10 +31,15 @@ def requests_page(request: Request, scope: str | None = None, status: str | None
         where, params = ["TRUE"], {"me": me, "status": status}
         if scope == "mine" and mine_col:
             where.append(f"r.{mine_col} = %(me)s")
-        if status in STATUS_LABELS:
+        if status == "opened":                               # the rows behind the median
+            where.append("ct.days_to_open IS NOT NULL")
+        elif status in STATUS_LABELS:
             where.append("r.status = %(status)s")
         rows = db.query(conn, f"""
-            SELECT r.* FROM v_backfill_requests r WHERE {' AND '.join(where)}
+            SELECT r.*, ct.days_to_open
+            FROM v_backfill_requests r
+            LEFT JOIN v_backfill_cycle_time ct ON ct.backfill_request_id = r.id
+            WHERE {' AND '.join(where)}
             ORDER BY (r.status IN ('filled', 'rejected')), r.updated_at DESC""", params)
         inbox = []
         if role == "vp":

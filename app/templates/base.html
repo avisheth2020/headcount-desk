@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>{% block title %}Headcount Desk{% endblock %} · Headcount Desk</title>
   <meta name="description" content="How many people can we actually hire? A working prototype on synthetic data for a fictional AI lab.">
+  <meta property="og:title" content="Headcount Desk">
+  <meta property="og:description" content="How many people can we actually hire? Usable open headcount, a tracked backfill flow and daily data checks. A working prototype on synthetic data.">
+  <meta property="og:type" content="website">
+  <meta name="theme-color" content="#4338ca">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%234338ca'/%3E%3Cpath d='M9 22V10m7 12v-8m7 8V7' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -47,6 +51,9 @@
       {% endfor %}
     </nav>
     <div class="topbar-right">
+      <button class="search-toggle" type="button" aria-label="Find a person or position" aria-controls="q" data-search-toggle>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      </button>
       <div class="search" role="search">
         <label class="sr-only" for="q">Find a person or position</label>
         <input id="q" type="search" name="q" placeholder="Find a person or position" autocomplete="off"
@@ -55,7 +62,7 @@
         <div id="search-results" class="search-results"></div>
       </div>
       <details class="role-switch">
-        <summary aria-label="Switch role. Viewing as {{ role_label }}"><span class="lbl">Viewing as:</span><svg class="narrow-only" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg> <strong>{{ role_label }}</strong> <span aria-hidden="true">▾</span></summary>
+        <summary aria-label="Switch role. Viewing as {{ role_label }}"><span class="lbl">Viewing as:</span><svg class="narrow-only" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg> <strong><span class="wide-only">{{ role_label }}</span><span class="narrow-only">{{ role_label | replace("Manager", "Mgr") }}</span></strong> <span aria-hidden="true">▾</span></summary>
         <form class="role-menu" method="post" action="/role">
           <p>Roles are simulated for the demo. Each one is a named person at Meridian Labs.</p>
           {% for key, (label, _) in ROLES.items() %}
