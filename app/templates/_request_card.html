@@ -1,5 +1,5 @@
 {% import "_macros.html" as m %}
-<article class="card req-card" id="req-{{ r.id }}" tabindex="0" aria-label="Backfill for {{ r.departing_name }}. Press Enter to {{ 'approve' if role == 'vp' else 'open the staffing request' }}.">
+<article class="card req-card" id="req-{{ r.id }}" tabindex="0" aria-label="Backfill for {{ r.departing_name }}. Press Enter to {{ 'approve' if role == 'vp' else 'open the req' }}.">
   <div>
     <h3><a data-drawer href="/requests/{{ r.id }}">Backfill for {{ r.departing_name }}</a> <span class="muted" style="font-weight:400">({{ FAMILY[r.job_family] }}, {{ r.level }})</span></h3>
     <p class="quote">“{{ r.justification }}”</p>
@@ -21,18 +21,18 @@
   <div class="actions">
     {% if role == "vp" %}
     <button class="btn" type="button" data-toggle=".reject-form" data-within=".req-card">Reject</button>
-    <button class="btn btn-primary" data-approve hx-post="/requests/{{ r.id }}/approve" hx-target="#req-{{ r.id }}" hx-swap="outerHTML">Approve ✓</button>
+    <button class="btn btn-primary" data-approve hx-post="/requests/{{ r.id }}/approve" hx-target="#req-{{ r.id }}" hx-swap="outerHTML">Approve</button>
     {% else %}
-    <button class="btn btn-primary" data-approve hx-post="/requests/{{ r.id }}/open" hx-target="#req-{{ r.id }}" hx-swap="outerHTML">Open staffing request</button>
+    <button class="btn btn-primary" data-approve hx-post="/requests/{{ r.id }}/open" hx-target="#req-{{ r.id }}" hx-swap="outerHTML">Open req</button>
     {% endif %}
   </div>
   {% if role == "vp" and r.annual_cost is defined %}
   <div class="money-line">
     <span>This seat costs <strong class="num">{{ r.annual_cost | money }}</strong> a year, already in the budget</span>
     <span>{{ r.vp_name }} is projected at <strong class="num">{{ r.pct_of_budget }}%</strong> of budget</span>
-    {% if r.budget_state == "over" %}<span class="chip chip-bad">▲ Already over by {{ r.variance | abs | money }}</span>
-    {% elif r.budget_state == "watch" %}<span class="chip chip-warn">◔ Close: {{ r.variance | money }} to spare</span>
-    {% else %}<span class="chip chip-good">✓ Stays within budget</span>{% endif %}
+    {% if r.budget_state == "over" %}<span class="chip chip-bad">{{ ico("up") }}Already over by {{ r.variance | abs | money }}</span>
+    {% elif r.budget_state == "watch" %}<span class="chip chip-warn">{{ ico("clock") }}Close: {{ r.variance | money }} to spare</span>
+    {% else %}<span class="chip chip-good">{{ ico("check") }}Stays within budget</span>{% endif %}
   </div>
   {% endif %}
   {% if role == "vp" %}

@@ -17,8 +17,8 @@
     <dl class="dl">
       <dt>Status</dt><dd>{{ BUCKETS[pos.bucket][0] }}<span class="muted"> · {{ BUCKETS[pos.bucket][1] }}</span></dd>
       <dt>Person</dt><dd>{% if pos.full_name %}<a data-drawer href="/people/{{ pos.person_id }}">{{ pos.full_name }}</a> <span class="muted">· started {{ pos.start_date | d }}{% if pos.end_date %} · {{ "left" if pos.end_date < as_of.date() else "last day" }} {{ pos.end_date | d }}{% endif %}</span>{% else %}<span class="muted">Nobody in this seat</span>{% endif %}</dd>
-      <dt>Cost a year</dt><dd>{% if pos.annual_cost %}<strong class="num">{{ pos.annual_cost | money }}</strong> <span class="muted">· loaded cost for {{ FAMILY[pos.job_family] }}, {{ pos.level }}, {{ pos.location }}</span>{% else %}<span class="chip chip-bad">× No cost rate</span>{% endif %}</dd>
-      <dt>Recruiting</dt><dd>{% if pos.staffing_request_id %}{{ "Offer out" if pos.request_status == "offer_out" else "Request open" }} since {{ pos.request_opened_at | d }} · {{ pos.recruiter_name }}{% else %}<span class="muted">No active staffing request</span>{% endif %}</dd>
+      <dt>Cost a year</dt><dd>{% if pos.annual_cost %}<strong class="num">{{ pos.annual_cost | money }}</strong> <span class="muted">· loaded cost for {{ FAMILY[pos.job_family] }}, {{ pos.level }}, {{ pos.location }}</span>{% else %}<span class="chip chip-bad">{{ ico("x") }}No cost rate</span>{% endif %}</dd>
+      <dt>Recruiting</dt><dd>{% if pos.staffing_request_id %}{{ "Offer out" if pos.request_status == "offer_out" else "Req open" }} since {{ pos.request_opened_at | d }} · {{ pos.recruiter_name }}{% else %}<span class="muted">No open req</span>{% endif %}</dd>
       <dt>Seat type</dt><dd>{{ pos.position_type | capitalize }}</dd>
       <dt>Created from</dt><dd>{{ {"plan": "The plan", "backfill": "A backfill", "transfer": "A transfer"}[pos.source] }}</dd>
       <dt>{{ "Open since" if not pos.person_id else "Seat opened" }}</dt><dd>{{ pos.opened_at | d }}</dd>
@@ -31,7 +31,7 @@
     <ul class="todo">
       {% for e in exceptions %}
       <li class="{{ 'done' if e.is_resolved }}">
-        <div><div class="meta"><span class="chip chip-warn">⚠ {{ e.type_label }}</span>{% if e.is_resolved %}<span class="chip chip-good">✓ Resolved</span>{% endif %}</div>
+        <div><div class="meta"><span class="chip chip-warn">{{ ico("alert") }}{{ e.type_label }}</span>{% if e.is_resolved %}<span class="chip chip-good">{{ ico("check") }}Resolved</span>{% endif %}</div>
           <div class="what">{{ e.detail }}</div><div class="fix">Fix: {{ e.suggested_fix }}</div></div>
       </li>
       {% endfor %}

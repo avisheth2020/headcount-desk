@@ -26,7 +26,7 @@
         <p style="margin-top:12px">{{ m.budget_chip(org.state) }}</p>
       </div>
       <div class="bridge">
-        <div class="bridge-title"><span><b class="num">{{ org.projected | money }}</b> projected of <b class="num">{{ org.budget | money }}</b> approved</span><span>The line marks 100%</span></div>
+        <div class="bridge-title"><span><b class="num">{{ org.projected | money }}</b> projected of <b class="num">{{ org.budget | money }}</b> approved</span><span>Tick = 100%</span></div>
         {{ m.meter(org.pct_of_budget, org.state) }}
         <div class="legend" style="margin-top:16px">
           <a href="/plan?org={{ org.org_id }}"><i class="seg-rest"></i><b>{{ org.budget | money }}</b><span>Budget{{ m.hint("Approved cost in the latest locked plan.") }}</span></a>
@@ -40,7 +40,7 @@
 
   {% if over %}
   <div class="banner banner-warn" role="status">
-    <span class="icon" aria-hidden="true">⚠️</span>
+    <span class="icon" aria-hidden="true">{{ ico("alert") }}</span>
     <span>{{ over | length }} VP org{{ "" if over | length == 1 else "s are" }}{{ " is" if over | length == 1 }} projected to finish the year over budget.
       <span class="sub">{% for o in over %}<a href="/budget?org={{ o.org_id }}">{{ o.name }}</a> at {{ o.pct_of_budget }}% ({{ o.variance | abs | money }} over){{ ", " if not loop.last }}{% endfor %}</span></span>
   </div>
@@ -48,7 +48,7 @@
 
   <section class="card" id="breakdown">
     <div class="card-head"><h2>{{ "By org below " ~ org.name if children else "Seats" }}</h2>
-      <div class="table-tools">{% if children %}<a class="btn btn-sm" href="{{ url_with(request, format='csv') }}">↓ CSV</a>{% endif %}</div></div>
+      <div class="table-tools">{% if children %}<a class="btn btn-sm" href="{{ url_with(request, format='csv') }}">{{ ico("download") }}CSV</a>{% endif %}</div></div>
     {% if children %}
     <table class="table cards">
       <thead><tr>
@@ -98,8 +98,13 @@
     {% endif %}
   </section>
 
-  <div class="note-box">
-    <b>How this is worked out.</b> Projected spend = run-rate + committed. Run-rate is the annual loaded cost of the {{ (seats.filled + seats.negative) | num }} seats with a person in them. Committed is the {{ seats.committed | num }} open seats a recruiter is working, costed for the {{ fiscal.months_left }} months left in {{ fiscal.name }}, because a seat costs nothing until someone starts. Cost per seat comes from a rate card by job family, level and location. The rates are synthetic.
-  </div>
+  <details class="math">
+    <summary>Show the math</summary>
+    <ol>
+      <li><b>Run-rate</b> is the annual loaded cost of the {{ (seats.filled + seats.negative) | num }} seats with a person in them.</li>
+      <li><b>Committed</b> is the {{ seats.committed | num }} open seats a recruiter is working, costed for the {{ fiscal.months_left }} months left in {{ fiscal.name }}.</li>
+      <li><b>Projected</b> = run-rate + committed. Seat costs come from a synthetic rate card by job family, level and location.</li>
+    </ol>
+  </details>
 </div>
 {% endblock %}

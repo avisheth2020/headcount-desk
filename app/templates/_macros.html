@@ -3,6 +3,8 @@
 {% macro tip(key) %}<span class="tip" tabindex="0" role="note" aria-label="{{ BUCKETS[key][1] }}" data-tip="{{ BUCKETS[key][1] }}">i</span>{% endmacro %}
 {% macro hint(text) %}<span class="tip" tabindex="0" role="note" aria-label="{{ text }}" data-tip="{{ text }}">i</span>{% endmacro %}
 
+{% macro lock_tip(text) %}<span class="tip tip-left tip-lock" tabindex="0" role="note" aria-label="{{ text }}" data-tip="{{ text }}">{{ ico("lock") }}</span>{% endmacro %}
+
 {% macro crumbs(items, here=None, base="/?org=") %}
 <nav class="crumbs" aria-label="Breadcrumb">
   {% for c in items %}
@@ -24,7 +26,7 @@
 <div class="pager">
   <span>{% if total %}{{ ((page - 1) * size + 1) | num }}–{{ ((page - 1) * size + shown) | num }} of {{ total | num }}{% else %}0 rows{% endif %}</span>
   <span class="row">
-    <a class="btn btn-sm" href="{{ url_with(request, format='csv', page=None) }}" title="Download every row that matches as CSV">↓ CSV</a>
+    <a class="btn btn-sm" href="{{ url_with(request, format='csv', page=None) }}" title="Download every row that matches as CSV">{{ ico("download") }}CSV</a>
     {% if page > 1 %}<a class="btn btn-sm" href="{{ url_with(request, page=page - 1) }}">← Previous</a>{% endif %}
     {% if page < pages %}<a class="btn btn-sm" href="{{ url_with(request, page=page + 1) }}">Next →</a>{% endif %}
   </span>
@@ -32,34 +34,34 @@
 {% endmacro %}
 
 {% macro bucket_chip(bucket) %}
-  {% if bucket == "filled" %}<span class="chip chip-good">● Filled</span>
-  {% elif bucket == "committed" %}<span class="chip chip-accent">◐ Committed</span>
-  {% elif bucket == "open_no_req" %}<span class="chip">○ Open, no request</span>
-  {% elif bucket == "reserve" %}<span class="chip">◇ Reserve</span>
-  {% elif bucket == "negative" %}<span class="chip chip-warn">▲ Negative</span>
+  {% if bucket == "filled" %}<span class="chip chip-good">{{ ico("check") }}Filled</span>
+  {% elif bucket == "committed" %}<span class="chip chip-accent">{{ ico("progress") }}Committed</span>
+  {% elif bucket == "open_no_req" %}<span class="chip">{{ ico("circle") }}Open, no req</span>
+  {% elif bucket == "reserve" %}<span class="chip">{{ ico("diamond") }}Reserve</span>
+  {% elif bucket == "negative" %}<span class="chip chip-warn">{{ ico("up") }}Over-hired</span>
   {% endif %}
 {% endmacro %}
 
 {% macro status_chip(status) %}
-  {% if status == "submitted" %}<span class="chip chip-warn">◔ Waiting on VP</span>
-  {% elif status == "vp_approved" %}<span class="chip chip-accent">✓ VP approved</span>
-  {% elif status == "recruiter_assigned" %}<span class="chip chip-accent">◑ Recruiter assigned</span>
-  {% elif status == "req_open" %}<span class="chip chip-accent">◕ Request open</span>
-  {% elif status == "filled" %}<span class="chip chip-good">✓ Filled</span>
-  {% elif status == "rejected" %}<span class="chip chip-bad">× Rejected</span>
+  {% if status == "submitted" %}<span class="chip chip-warn">{{ ico("clock") }}Waiting on VP</span>
+  {% elif status == "vp_approved" %}<span class="chip chip-accent">{{ ico("check") }}VP approved</span>
+  {% elif status == "recruiter_assigned" %}<span class="chip chip-accent">{{ ico("progress") }}Recruiter assigned</span>
+  {% elif status == "req_open" %}<span class="chip chip-accent">{{ ico("progress") }}Req open</span>
+  {% elif status == "filled" %}<span class="chip chip-good">{{ ico("check") }}Filled</span>
+  {% elif status == "rejected" %}<span class="chip chip-bad">{{ ico("x") }}Rejected</span>
   {% endif %}
 {% endmacro %}
 
 {% macro urgency_chip(urgency) %}
-  {% if urgency == "urgent" %}<span class="chip chip-bad">▲ Urgent</span>
-  {% elif urgency == "low" %}<span class="chip">▽ Low urgency</span>
+  {% if urgency == "urgent" %}<span class="chip chip-bad">{{ ico("up") }}Urgent</span>
+  {% elif urgency == "low" %}<span class="chip">{{ ico("down") }}Low urgency</span>
   {% else %}<span class="chip">Normal urgency</span>{% endif %}
 {% endmacro %}
 
 {% macro budget_chip(state) %}
-  {% if state == "over" %}<span class="chip chip-bad">▲ Over budget</span>
-  {% elif state == "watch" %}<span class="chip chip-warn">◔ Close to budget</span>
-  {% else %}<span class="chip chip-good">✓ Under budget</span>{% endif %}
+  {% if state == "over" %}<span class="chip chip-bad">{{ ico("up") }}Over budget</span>
+  {% elif state == "watch" %}<span class="chip chip-warn">{{ ico("clock") }}Close to budget</span>
+  {% else %}<span class="chip chip-good">{{ ico("check") }}Under budget</span>{% endif %}
 {% endmacro %}
 
 {# Spend against budget. The tick marks 100%; the scale runs to 110% so "over" is visible. #}
@@ -73,7 +75,7 @@
 {% macro inbox_title(role, n, oob=False) %}
 <h1 id="inbox-title" {% if oob %}hx-swap-oob="true"{% endif %}>
   {%- if role == "vp" -%}
-    {%- if n %}{{ n }} request{{ "" if n == 1 else "s" }} need{{ "s" if n == 1 else "" }} your approval{% else %}No requests waiting on you 🎉{% endif -%}
+    {%- if n %}{{ n }} request{{ "" if n == 1 else "s" }} need{{ "s" if n == 1 else "" }} your approval{% else %}No requests waiting on you{% endif -%}
   {%- elif role == "recruiter" -%}
     {%- if n %}{{ n }} new request{{ "" if n == 1 else "s" }} assigned to you{% else %}Your open requests{% endif -%}
   {%- else -%}Where is my backfill?{%- endif -%}
@@ -83,17 +85,17 @@
 {% macro switch_tip(request, role, text) %}
 <form class="banner" method="post" action="/role" style="font-size:13.5px;align-items:center">
   {{ csrf_input(request) }}
-  <span class="icon" aria-hidden="true">💡</span>
+  <span class="icon" aria-hidden="true">{{ ico("bulb") }}</span>
   <span style="flex:1"><strong>Demo tip.</strong> {{ text }}</span>
   <button class="btn btn-sm" name="role" value="{{ role }}">Switch to {{ ROLES[role][0] }}</button>
 </form>
 {% endmacro %}
 
 {% macro plan_chip(status) %}
-  {% if status == "draft" %}<span class="chip">○ Draft</span>
-  {% elif status == "submitted" %}<span class="chip chip-accent">◐ Submitted</span>
-  {% elif status == "sent_back" %}<span class="chip chip-warn">↩ Sent back</span>
-  {% elif status == "approved" %}<span class="chip chip-good">✓ Approved</span>
+  {% if status == "draft" %}<span class="chip">{{ ico("circle") }}Draft</span>
+  {% elif status == "submitted" %}<span class="chip chip-accent">{{ ico("progress") }}Submitted</span>
+  {% elif status == "sent_back" %}<span class="chip chip-warn">{{ ico("undo") }}Sent back</span>
+  {% elif status == "approved" %}<span class="chip chip-good">{{ ico("check") }}Approved</span>
   {% endif %}
 {% endmacro %}
 

@@ -34,12 +34,37 @@ DEFAULT_ROLE = "svp"
 BUCKETS = {
     "approved": ("Approved", "Headcount in the latest locked plan."),
     "filled": ("Filled", "Seats with a person in them."),
-    "committed": ("Committed", "Open seats a recruiter is already working: an open staffing request or an offer out."),
+    "committed": ("Committed", "Open seats a recruiter is already working: an open req or an offer out."),
     "reserve": ("Reserve", "Headcount the SVP holds centrally and hasn't assigned to a team yet."),
-    "negative": ("Negative", "Over-hires: people hired beyond the plan. Each one uses up a seat."),
-    "open_no_req": ("Open, no request", "Empty seats the position tool lists that nobody is recruiting for."),
+    "negative": ("Over-hired", "People hired beyond the plan. Each one uses up a seat."),
+    "open_no_req": ("Open, no req", "Empty seats the position tool lists that nobody is recruiting for."),
     "usable_open": ("Usable open", "What is left after the rest: seats you can start hiring into today."),
 }
+# One icon set. Every status chip, banner and button draws from this list, in the sidebar's line style.
+ICONS = {
+    "check": "M5 12.5l4.5 4.5L19 7.5",
+    "x": "M6 6l12 12M18 6 6 18",
+    "alert": "M12 9v4m0 3.5v.5M10.3 3.9 2.6 17.3A2 2 0 0 0 4.3 20h15.4a2 2 0 0 0 1.7-2.7L13.7 3.9a2 2 0 0 0-3.4 0Z",
+    "up": "M12 19V5m-6 6 6-6 6 6",
+    "down": "M12 5v14m-6-6 6 6 6-6",
+    "clock": "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18ZM12 7v5l3 2",
+    "progress": "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18ZM12 3v18",
+    "circle": "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z",
+    "diamond": "M12 3l9 9-9 9-9-9 9-9Z",
+    "person": "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM4 21c0-4 4-6 8-6s8 2 8 6",
+    "undo": "M9 7 4 12l5 5M4 12h11a5 5 0 0 1 5 5v1",
+    "lock": "M6 11h12v9H6zM8.5 11V7.5a3.5 3.5 0 0 1 7 0V11",
+    "pencil": "M4 20l1-4L16 5l3 3L8 19l-4 1Z",
+    "bulb": "M9 18h6m-5 3h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3Z",
+    "refresh": "M20 11a8 8 0 0 0-14.3-4L4 9m0-5v5h5m-5 4a8 8 0 0 0 14.3 4l1.7-2m0 5v-5h-5",
+    "download": "M12 4v11m-5-5 5 5 5-5M5 20h14",
+}
+
+
+def ico(name: str) -> Markup:
+    return Markup(f'<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{ICONS[name]}"/></svg>')
+
+
 FAMILY_LABELS = {"research": "Research", "eng": "Engineering", "ops": "Operations", "g&a": "G&A"}
 LEVEL_LABELS = {"company": "Company", "svp": "SVP org", "vp": "VP org", "director": "Director org", "team": "Team"}
 
@@ -148,7 +173,7 @@ def csrf_input(request: Request) -> Markup:
 
 templates.env.filters.update(num=fmt_num, money=fmt_money, d=fmt_date, dt=fmt_datetime, ago=fmt_ago, clock=fmt_clock)
 templates.env.globals.update(asset_version=int(time.time()), BUCKETS=BUCKETS, FAMILY=FAMILY_LABELS, LEVELS=LEVEL_LABELS,
-                             ROLES=ROLES, FEATURES=FEATURES, url_with=url_with, csrf_input=csrf_input)
+                             ROLES=ROLES, FEATURES=FEATURES, url_with=url_with, csrf_input=csrf_input, ico=ico)
 
 
 # ── what every page needs ────────────────────────────────────────────────────

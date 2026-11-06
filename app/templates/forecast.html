@@ -2,10 +2,10 @@
 {% import "_macros.html" as m %}
 {% block title %}Forecast{% endblock %}
 
-{% macro flag(f) %}
-  {% if f.over_plan %}<span class="chip chip-bad">▲ Over plan</span>{% endif %}
-  {% if f.over_budget %}<span class="chip chip-bad">▲ Over budget</span>{% endif %}
-  {% if not f.over_plan and not f.over_budget %}<span class="chip chip-good">✓ Within plan</span>{% endif %}
+{% macro flag(f, quiet=False) %}
+  {% if f.over_plan %}<span class="chip chip-bad">{{ ico("up") }}Over plan</span>{% endif %}
+  {% if f.over_budget %}<span class="chip chip-bad">{{ ico("up") }}Over budget</span>{% endif %}
+  {% if not quiet and not f.over_plan and not f.over_budget %}<span class="chip chip-good">{{ ico("check") }}Within plan</span>{% endif %}
 {% endmacro %}
 
 {% block content %}
@@ -30,11 +30,11 @@
         <p style="margin-top:12px">{{ flag(org) }}</p>
       </div>
       <div class="bridge">
-        <div class="bridge-title"><span>How the number is built</span><span>Half of outcomes should land inside the range</span></div>
+        <div class="bridge-title"><span>How the number is built</span><span></span></div>
         <div class="legend" style="margin-top:0">
           <a href="/positions?org={{ org.org_id }}&bucket=filled"><i class="seg-filled"></i><b>{{ org.in_seats | num }}</b><span>In seats today</span></a>
-          <a href="/forecast/requests?org={{ org.org_id }}"><i class="seg-usable"></i><b>+{{ org.expected_hires }}</b><span>Expected hires{{ m.hint("Each open staffing request counts for its chance of being filled by quarter end.") }}</span></a>
-          <a href="/forecast/exits?org={{ attrition.org_id }}"><i class="seg-negative"></i><b>−{{ org.expected_exits }}</b><span>Expected exits{{ m.hint("People in seats × the monthly attrition seen over the last 60 days × the months left in the quarter.") }}</span></a>
+          <a href="/forecast/requests?org={{ org.org_id }}"><i class="seg-usable"></i><b>+{{ org.expected_hires | round | int }}</b><span>Expected hires{{ m.hint("Each open req counts for its chance of being filled by quarter end.") }}</span></a>
+          <a href="/forecast/exits?org={{ attrition.org_id }}"><i class="seg-negative"></i><b>−{{ org.expected_exits | round | int }}</b><span>Expected exits{{ m.hint("People in seats × the monthly attrition seen over the last 60 days × the months left in the quarter.") }}</span></a>
           <a class="result" href="#breakdown"><i class="seg-usable"></i><b>{{ org.projected | num }}</b><span>Projected</span></a>
         </div>
         <div class="hero-facts">
@@ -46,14 +46,14 @@
   </section>
 
   {% if flagged %}
-  <div class="banner banner-warn" role="status"><span class="icon" aria-hidden="true">⚠️</span>
+  <div class="banner banner-warn" role="status"><span class="icon" aria-hidden="true">{{ ico("alert") }}</span>
     <span>{{ flagged | length }} VP org{{ "" if flagged | length == 1 else "s are" }}{{ " is" if flagged | length == 1 }} projected to end the quarter over plan or over budget.
       <span class="sub">{% for f in flagged %}<a href="/forecast?org={{ f.org_id }}">{{ f.name }}</a>: {% if f.over_plan %}{{ f.projected | num }} people against {{ f.approved | num }} approved{% endif %}{% if f.over_plan and f.over_budget %}, {% endif %}{% if f.over_budget %}run-rate {{ f.projected_run_rate | money }} against a {{ f.budget | money }} budget{% endif %}{{ "; " if not loop.last }}{% endfor %}</span></span></div>
   {% endif %}
 
   <section class="card" id="breakdown">
     <div class="card-head"><h2>{{ "By org below " ~ org.name if children else org.name }}</h2>
-      <div class="table-tools">{% if children %}<a class="btn btn-sm" href="{{ url_with(request, format='csv') }}">↓ CSV</a>{% endif %}</div></div>
+      <div class="table-tools">{% if children %}<a class="btn btn-sm" href="{{ url_with(request, format='csv') }}">{{ ico("download") }}CSV</a>{% endif %}</div></div>
     {% if children %}
     <table class="table cards">
       <thead><tr>
@@ -67,13 +67,13 @@
         <tr>
           <td><a class="rowlink" href="/forecast?org={{ c.org_id }}">{{ c.name }} ›</a></td>
           <td class="r" data-label="In seats"><a href="/positions?org={{ c.org_id }}&bucket=filled">{{ c.in_seats | num }}</a></td>
-          <td class="r" data-label="Hires"><a href="/forecast/requests?org={{ c.org_id }}">+{{ c.expected_hires }}</a></td>
-          <td class="r" data-label="Exits"><a href="/forecast/exits?org={{ attrition.org_id }}">−{{ c.expected_exits }}</a></td>
+          <td class="r" data-label="Hires"><a href="/forecast/requests?org={{ c.org_id }}">+{{ c.expected_hires | round | int }}</a></td>
+          <td class="r" data-label="Exits"><a href="/forecast/exits?org={{ attrition.org_id }}">−{{ c.expected_exits | round | int }}</a></td>
           <td class="r strong" data-label="Projected"><a href="/forecast?org={{ c.org_id }}">{{ c.projected | num }}</a></td>
           <td class="r muted" data-label="Likely range">{{ c.projected_low | num }} to {{ c.projected_high | num }}</td>
           <td class="r" data-label="Approved"><a href="/plan?org={{ c.org_id }}">{{ c.approved | num }}</a></td>
           <td class="r" data-label="Run-rate vs budget"><a href="/budget?org={{ c.org_id }}">{{ c.projected_run_rate | money }} of {{ c.budget | money }}</a></td>
-          <td data-label="Flag">{{ flag(c) }}</td>
+          <td data-label="Flag">{{ flag(c, quiet=True) }}</td>
         </tr>
         {% endfor %}
       </tbody>
@@ -83,11 +83,13 @@
     {% endif %}
   </section>
 
-  <div class="note-box">
-    <b>How this is worked out.</b> No model, only arithmetic you can check.
-    <b>Expected hires:</b> {{ org.open_requests | num }} staffing requests are open. Each counts for its chance of being filled by {{ org.quarter_ends_on | d }}: of the {{ history.n | num }} requests filled in the last year, the share that were still open at this request's age and then filled by the age it will be at quarter end. (Half of all requests fill within {{ history.median | round | int }} days; the middle half take {{ history.p25 | round | int }} to {{ history.p75 | round | int }}.)
-    <b>Expected exits:</b> {{ attrition.exits_60d | num }} people left {{ attrition.name }} in the last 60 days out of {{ attrition.headcount | num }}, which is {{ "%.2f" | format(attrition.monthly_rate * 100) }}% a month. That rate is applied to the people in seats for the {{ org.days_left }} days left.
-    <b>The range</b> is the 25th to 75th percentile: hires are treated as independent coin flips with their own odds, and exits as a count of rare events. It does not know about reorgs, freezes or offers already signed, and it treats notice already given the same as any other exit.
-  </div>
+  <details class="math">
+    <summary>Show the math</summary>
+    <ol>
+      <li><b>Expected hires.</b> {{ org.open_requests | num }} reqs are open. Each counts for its odds of filling by {{ org.quarter_ends_on | d }}, taken from the {{ history.n | num }} reqs filled in the last year. Half fill within {{ history.median | round | int }} days.</li>
+      <li><b>Expected exits.</b> {{ attrition.exits_60d | num }} of {{ attrition.headcount | num }} people left {{ attrition.name }} in the last 60 days: {{ "%.2f" | format(attrition.monthly_rate * 100) }}% a month, applied to the {{ org.days_left }} days left.</li>
+      <li><b>Likely range.</b> The 25th to 75th percentile. It does not know about reorgs, freezes, signed offers or notice already given.</li>
+    </ol>
+  </details>
 </div>
 {% endblock %}

@@ -9,7 +9,7 @@
     <h1>{{ person.full_name }}</h1>
     <p class="fresh">{{ FAMILY[person.job_family] }} · {{ person.level }} · {{ person.location }} · <a href="/?org={{ person.org_id }}">{{ person.org_name }}</a></p>
   </div>
-  <div>{% if person.end_date and person.end_date < as_of.date() %}<span class="chip">Left {{ person.end_date | d }}</span>{% elif person.end_date %}<span class="chip chip-warn">◔ Leaving {{ person.end_date | d }}</span>{% else %}<span class="chip chip-good">● Active</span>{% endif %}</div>
+  <div>{% if person.end_date and person.end_date < as_of.date() %}<span class="chip">Left {{ person.end_date | d }}</span>{% elif person.end_date %}<span class="chip chip-warn">{{ ico("clock") }}Leaving {{ person.end_date | d }}</span>{% else %}<span class="chip chip-good">{{ ico("check") }}Active</span>{% endif %}</div>
 </div>
 <div class="stack">
   <section class="card card-pad">
@@ -19,7 +19,7 @@
       <dt>Org</dt><dd>{{ person.org_name }}{% if person.vp_name %} <span class="muted">· {{ person.vp_name }} · {{ person.svp_name }}</span>{% endif %}</dd>
       <dt>Started</dt><dd>{{ person.start_date | d }}</dd>
       <dt>Direct reports</dt><dd class="num">{{ reports | num }}</dd>
-      <dt>Seat</dt><dd>{% for s in seats %}<a class="mono" data-drawer href="/positions/{{ s.position_id }}">{{ s.position_code }}</a> <span class="muted">· {{ s.org_name }}</span>{{ m.bucket_chip(s.bucket) }}{% if not loop.last %}<br>{% endif %}{% else %}<span class="muted">No seat</span>{% endfor %}{% if seats | length > 1 %} <span class="chip chip-warn">⚠ Duplicate seat</span>{% endif %}</dd>
+      <dt>Seat</dt><dd>{% for s in seats %}<a class="mono" data-drawer href="/positions/{{ s.position_id }}">{{ s.position_code }}</a> <span class="muted">· {{ s.org_name }}</span>{{ m.bucket_chip(s.bucket) }}{% if not loop.last %}<br>{% endif %}{% else %}<span class="muted">No seat</span>{% endfor %}{% if seats | length > 1 %} <span class="chip chip-warn">{{ ico("alert") }}Duplicate seat</span>{% endif %}</dd>
     </dl>
   </section>
   {% if backfills %}
