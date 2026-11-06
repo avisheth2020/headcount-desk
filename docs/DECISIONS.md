@@ -49,9 +49,9 @@ A running log. Each entry: the choice, the alternative, and why.
 *Alternative:* compute usable open and exceptions in Python.
 *Why:* anyone who knows SQL can open a view and check the rule. The same view feeds the page, the JSON API and the tests.
 
-**12. The "business day" is defined once, in the SQL function `today()` (US Eastern).**
+**12. The "business day" is defined once, in the SQL function `today()`: US Eastern, starting at 6 AM.**
 *Alternative:* `current_date`, which is UTC on a hosted database.
-*Why:* "90 days old" and "overnight" should not flip at 7 PM Eastern.
+*Why:* "90 days old" and "overnight" should not flip at 7 PM Eastern. The day starts at 6 AM because that is when the snapshot loads, so the page never claims data from a time that has not happened yet.
 
 **13. Each data check is a view with the same six columns.**
 *Alternative:* six Python functions.

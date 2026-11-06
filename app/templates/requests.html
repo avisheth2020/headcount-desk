@@ -22,7 +22,7 @@
   {% endif %}
 
   <nav class="tiles" aria-label="Request pipeline">
-    <a class="card tile" href="/requests?scope=all&status=opened" {% if status == "opened" %}aria-current="true"{% endif %}><span>Median time from request to open staffing request</span><b>{{ "%.1f" | format(stats.median_days or 0) }} days</b></a>
+    <a class="card tile tile-wide" href="/requests?scope=all&status=opened" {% if status == "opened" %}aria-current="true"{% endif %}><span>Median time from a request to an open staffing request</span><b>{{ "%.1f" | format(stats.median_days or 0) }} days</b></a>
     <a class="card tile" href="/requests?scope=all&status=submitted" {% if status == "submitted" %}aria-current="true"{% endif %}><span>Waiting on a VP</span><b>{{ stats.waiting_vp | num }}</b></a>
     <a class="card tile" href="/requests?scope=all&status=recruiter_assigned" {% if status == "recruiter_assigned" %}aria-current="true"{% endif %}><span>Waiting on a recruiter</span><b>{{ stats.waiting_recruiter | num }}</b></a>
     <a class="card tile" href="/requests?scope=all&status=req_open" {% if status == "req_open" %}aria-current="true"{% endif %}><span>Request open</span><b>{{ stats.req_open | num }}</b></a>

@@ -48,3 +48,17 @@ document.body.addEventListener("toast", (e) => {
   box.replaceChildren(toast);
   setTimeout(() => toast.remove(), 6000);
 });
+
+// After an inline action (approve, reject, resolve), move keyboard focus to the
+// next item instead of dropping it back to the top of the page.
+document.body.addEventListener("htmx:afterSwap", (e) => {
+  const swapped = e.detail.target;
+  if (!swapped || !swapped.id) return;
+  const fresh = document.getElementById(swapped.id);
+  if (!fresh) return;
+  if (fresh.matches(".req-card")) {
+    (document.querySelector(".req-card[tabindex]") || fresh.querySelector("a"))?.focus({ preventScroll: true });
+  } else if (fresh.matches(".todo li")) {
+    fresh.querySelector("button")?.focus({ preventScroll: true });
+  }
+});

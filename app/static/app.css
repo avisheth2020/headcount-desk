@@ -240,7 +240,7 @@ a.hero-number:hover { color: var(--accent); text-decoration: none; }
 
 .dl { display: grid; grid-template-columns: 160px 1fr; gap: 10px var(--s3); font-size: 14px; margin: 0; }
 .dl dt { color: var(--muted); }
-.dl dd { margin: 0; }
+.dl dd { margin: 0; overflow-wrap: anywhere; min-width: 0; }
 
 /* ── Try-this card ───────────────────────────────────────────────────────── */
 
@@ -414,6 +414,7 @@ tr.hot td { background: var(--warn-soft) !important; }
   .tile b { font-size: 20px; }
   .tile span { font-size: 12px; }
   .tile .tip { display: none; }
+  .tile-wide { grid-column: 1 / -1; }
   .more > summary { padding: 12px var(--s3); }
   .card-pad { padding: var(--s3); }
   .card-head { padding: var(--s3); }

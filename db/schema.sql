@@ -1,10 +1,12 @@
 -- Headcount Desk schema. Plain Postgres, no ORM.
 -- Applied by scripts/migrate.py. Views live in views.sql and checks.sql.
 
--- The business day, defined once (US Eastern), so "90 days old" and
--- "overnight" do not flip at 7 PM because the server runs on UTC.
+-- The business day, defined once. It runs on US Eastern time and starts at
+-- 6 AM, when the morning snapshot loads. So "90 days old" and "overnight" do
+-- not flip at 7 PM because the server is on UTC, and at 2 AM the data is
+-- still "as of yesterday morning" rather than a time that has not happened.
 CREATE FUNCTION today() RETURNS date
-LANGUAGE sql STABLE AS $$ SELECT (now() AT TIME ZONE 'America/New_York')::date $$;
+LANGUAGE sql STABLE AS $$ SELECT ((now() AT TIME ZONE 'America/New_York') - interval '6 hours')::date $$;
 
 
 -- ── Org chart ───────────────────────────────────────────────────────────────

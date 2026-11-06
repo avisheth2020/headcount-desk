@@ -45,7 +45,11 @@ def pool() -> ConnectionPool:
         if schema:
             url = direct_url(url)
             kwargs["options"] = f"-c search_path={schema}"
-        _pool = ConnectionPool(url, min_size=1, max_size=4, kwargs=kwargs, open=True)
+        # check=: test a connection before handing it out. A serverless database
+        # drops idle connections when it goes to sleep, and this replaces a dead
+        # one quietly instead of failing the first request after a quiet spell.
+        _pool = ConnectionPool(url, min_size=1, max_size=4, max_idle=240, kwargs=kwargs,
+                               check=ConnectionPool.check_connection, open=True)
     return _pool
 
 
