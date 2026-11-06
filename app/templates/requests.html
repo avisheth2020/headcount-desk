@@ -32,10 +32,10 @@
   <section class="card">
     <div class="card-head">
       <h2>{{ "My requests" if scope == "mine" else "All requests" }}{% if org_name %} · {{ org_name }}{% endif %}{% if status %} · {{ STATUS_LABELS[status] }}{% endif %} <span class="count">{{ rows | length }}</span></h2>
-      <nav class="pills" aria-label="Whose requests">
+      <nav class="pills" aria-label="Whose requests" {{ IN_PLACE }}>
         {% if has_mine %}<a class="pill" href="/requests?scope=mine" {% if scope == "mine" and not status %}aria-current="true"{% endif %}>Mine</a>{% endif %}
         <a class="pill" href="/requests?scope=all{{ q_org }}" {% if scope == "all" and not status %}aria-current="true"{% endif %}>Everyone's</a>
-        <a class="btn btn-sm" href="{{ url_with(request, format='csv') }}">{{ ico("download") }}CSV</a>
+        <a class="btn btn-sm" hx-boost="false" href="{{ url_with(request, format='csv') }}">{{ ico("download") }}CSV</a>
       </nav>
     </div>
     {% if rows %}

@@ -9,7 +9,7 @@
     <h1>{{ total | num }} {{ BUCKETS[bucket][0] | lower if bucket else "" }} position{{ "" if total == 1 else "s" }} {{ "held directly at" if direct else "in" }} {{ org.name }}</h1>
     <p class="fresh">{% if bucket %}{{ BUCKETS[bucket][1] }}{% endif %}</p>
   </div>
-  <nav class="pills" aria-label="Filter by status">
+  <nav class="pills" aria-label="Filter by status" {{ IN_PLACE }}>
     <a class="pill" href="{{ url_with(request, bucket=None, page=None) }}" {% if not bucket %}aria-current="true"{% endif %}>All</a>
     {% for b in ["filled", "committed", "open_no_req", "reserve", "negative"] %}
     <a class="pill" href="{{ url_with(request, bucket=b, page=None) }}" {% if bucket == b %}aria-current="true"{% endif %}>{{ BUCKETS[b][0] }}</a>

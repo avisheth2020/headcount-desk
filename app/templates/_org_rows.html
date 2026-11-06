@@ -1,4 +1,5 @@
 {% import "_macros.html" as m %}
+{% import "_charts.html" as ch %}
 {% for r in rows %}
 <tr data-depth="{{ r.depth }}">
   <td style="padding-left: {{ 16 + r.depth * 22 }}px">
@@ -12,6 +13,6 @@
   <td class="r" data-label="Usable open"><a class="usable" href="/?org={{ r.org_id }}">{{ r.usable_open | num }}</a></td>
   <td class="r" data-label="Budget"><a href="/budget?org={{ r.org_id }}">{{ r.budget | money }}</a></td>
   <td class="r" data-label="Projected"><a href="/budget?org={{ r.org_id }}">{{ r.projected | money }}</a></td>
-  <td data-label="Of budget"><div class="row" style="gap:8px;flex-wrap:nowrap">{{ m.meter(r.pct_of_budget or 0, r.state, small=True) }}<span class="num small {{ '' if r.state == 'under' else 'strong' }}">{{ r.pct_of_budget if r.pct_of_budget is not none else "–" }}%</span></div></td>
+  <td data-label="Of budget"><div class="vcell">{{ ch.variance(r.pct_of_budget, r.state) }}<span class="num small {{ '' if r.state == 'under' else 'strong' }}">{{ r.pct_of_budget if r.pct_of_budget is not none else "–" }}%</span></div></td>
 </tr>
 {% endfor %}

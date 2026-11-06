@@ -15,7 +15,7 @@
     <h1>Where will we end the quarter?</h1>
     <p class="fresh">Quarter {{ org.quarter }} ends {{ org.quarter_ends_on | d }} · {{ org.days_left }} days away</p>
   </div>
-  <nav class="pills" aria-label="Choose an org">
+  <nav class="pills" aria-label="Choose an org" {{ IN_PLACE }}>
     {% for s in svps %}<a class="pill" href="/forecast?org={{ s.id }}" {% if s.id == org.org_id %}aria-current="true"{% endif %}>{{ "All of Meridian Labs" if s.id == 1 else s.name }}</a>{% endfor %}
   </nav>
 </div>

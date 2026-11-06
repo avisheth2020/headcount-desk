@@ -18,7 +18,7 @@
 {# A sortable column header. The sort lives in the URL, so it can be shared and survives a reload. #}
 {% macro th(request, label, key, sort, dir, cls="", tip_key=None) %}
 <th class="{{ cls }}" {% if sort == key %}aria-sort="{{ 'descending' if dir == 'desc' else 'ascending' }}"{% endif %}>
-  <a href="{{ url_with(request, sort=key, dir=('desc' if sort == key and dir == 'asc' else 'asc'), page=None) }}" title="Sort by {{ label | lower }}">{{ label }}{% if sort == key %}<span class="dir" aria-hidden="true">{{ "▼" if dir == "desc" else "▲" }}</span>{% endif %}</a>{% if tip_key %}{{ tip(tip_key) }}{% endif %}
+  <a {{ IN_PLACE }} href="{{ url_with(request, sort=key, dir=('desc' if sort == key and dir == 'asc' else 'asc'), page=None) }}" title="Sort by {{ label | lower }}">{{ label }}{% if sort == key %}<span class="dir" aria-hidden="true">{{ "▼" if dir == "desc" else "▲" }}</span>{% endif %}</a>{% if tip_key %}{{ tip(tip_key) }}{% endif %}
 </th>
 {% endmacro %}
 
@@ -56,6 +56,12 @@
   {% if urgency == "urgent" %}<span class="chip chip-bad">{{ ico("up") }}Urgent</span>
   {% elif urgency == "low" %}<span class="chip">{{ ico("down") }}Low urgency</span>
   {% else %}<span class="chip">Normal urgency</span>{% endif %}
+{% endmacro %}
+
+{# The short flag beside a percent. Nothing at all when an org is comfortably under. #}
+{% macro budget_flag(state) %}
+  {% if state == "over" %}<span class="chip chip-bad">{{ ico("up") }}Over</span>
+  {% elif state == "watch" %}<span class="chip chip-warn">{{ ico("clock") }}Close</span>{% endif %}
 {% endmacro %}
 
 {% macro budget_chip(state) %}

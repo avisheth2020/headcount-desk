@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% import "_macros.html" as m %}
+{% import "_charts.html" as ch %}
 {% block title %}Budget{% endblock %}
 
 {% block content %}
@@ -9,7 +10,7 @@
     <h1>Are we on budget?</h1>
     <p class="fresh">{{ fiscal.name }}, quarter {{ fiscal.quarter }} · {{ fiscal.months_left | round | int }} months left</p>
   </div>
-  <nav class="pills" aria-label="Choose an org">
+  <nav class="pills" aria-label="Choose an org" {{ IN_PLACE }}>
     {% for s in svps %}
     <a class="pill" href="/budget?org={{ s.id }}" {% if s.id == org.org_id %}aria-current="true"{% endif %}>{{ "All of Meridian Labs" if s.id == 1 else s.name }}</a>
     {% endfor %}
@@ -26,8 +27,9 @@
         <p style="margin-top:12px">{{ m.budget_chip(org.state) }}</p>
       </div>
       <div class="bridge">
-        <div class="bridge-title"><span><b class="num">{{ org.projected | money }}</b> projected of <b class="num">{{ org.budget | money }}</b> approved</span><span>Tick = 100%</span></div>
-        {{ m.meter(org.pct_of_budget, org.state) }}
+        <div class="bridge-title"><span><b class="num">{{ org.projected | money }}</b> projected of <b class="num">{{ org.budget | money }}</b> approved</span></div>
+        {% set left = org.budget - org.projected %}
+        {{ ch.stack([("seg-filled", org.run_rate, "Run-rate " ~ org.run_rate | money), ("seg-committed", org.committed, "Committed " ~ org.committed | money), ("seg-rest", left, "Left over " ~ left | money)], org.budget, org.pct_of_budget ~ "% of budget: run-rate, committed and what is left") }}
         <div class="legend" style="margin-top:16px">
           <a href="/plan?org={{ org.org_id }}"><i class="seg-rest"></i><b>{{ org.budget | money }}</b><span>Budget{{ m.hint("Approved cost in the latest locked plan.") }}</span></a>
           <a href="/positions?org={{ org.org_id }}&bucket=filled&sort=cost&dir=desc"><i class="seg-filled"></i><b>{{ org.run_rate | money }}</b><span>Run-rate{{ m.hint("The annual loaded cost of every seat with a person in it, including over-hires.") }}</span></a>
@@ -59,7 +61,6 @@
         {{ m.th(request, "Projected", "projected", sort, dir, "r") }}
         {{ m.th(request, "Variance", "variance", sort, dir, "r") }}
         {{ m.th(request, "Of budget", "pct", sort, dir) }}
-        <th>State</th>
       </tr></thead>
       <tbody>
         {% for c in children %}
@@ -70,8 +71,7 @@
           <td class="r" data-label="Committed"><a href="/positions?org={{ c.org_id }}&bucket=committed&sort=cost&dir=desc">{{ c.committed | money }}</a></td>
           <td class="r strong" data-label="Projected"><a href="/budget?org={{ c.org_id }}">{{ c.projected | money }}</a></td>
           <td class="r" data-label="Variance"><a href="/budget?org={{ c.org_id }}" {% if c.variance < 0 %}style="color:var(--bad)"{% endif %}>{{ c.variance | money }}</a></td>
-          <td data-label="Of budget"><div class="row" style="gap:8px;flex-wrap:nowrap">{{ m.meter(c.pct_of_budget or 0, c.state, small=True) }}<span class="num small">{{ c.pct_of_budget }}%</span></div></td>
-          <td data-label="State">{{ m.budget_chip(c.state) }}</td>
+          <td data-label="Of budget" class="wide"><div class="vcell">{{ ch.variance(c.pct_of_budget, c.state, (c.variance | abs | money) ~ (" over" if c.variance < 0 else " to spare")) }}<span class="num small">{{ c.pct_of_budget }}%</span><span class="vflag">{{ m.budget_flag(c.state) }}</span></div></td>
         </tr>
         {% endfor %}
         {% if has_direct %}
@@ -81,7 +81,7 @@
           <td class="r" data-label="Run-rate"><a href="/positions?org={{ org.org_id }}&bucket=filled&direct=1">{{ direct.run_rate | money }}</a></td>
           <td class="r" data-label="Committed">{{ direct.committed | money }}</td>
           <td class="r" data-label="Projected">{{ direct.projected | money }}</td>
-          <td class="r" data-label="Variance">{{ (direct.budget - direct.projected) | money }}</td><td></td><td></td>
+          <td class="r" data-label="Variance">{{ (direct.budget - direct.projected) | money }}</td><td></td>
         </tr>
         {% endif %}
       </tbody>
@@ -89,7 +89,7 @@
         <td>{{ org.name }} total</td>
         <td class="r" data-label="Budget">{{ org.budget | money }}</td><td class="r" data-label="Run-rate">{{ org.run_rate | money }}</td>
         <td class="r" data-label="Committed">{{ org.committed | money }}</td><td class="r" data-label="Projected">{{ org.projected | money }}</td>
-        <td class="r" data-label="Variance">{{ org.variance | money }}</td><td data-label="Of budget" class="num">{{ org.pct_of_budget }}%</td><td data-label="State">{{ m.budget_chip(org.state) }}</td>
+        <td class="r" data-label="Variance">{{ org.variance | money }}</td><td data-label="Of budget" class="num">{{ org.pct_of_budget }}%</td>
       </tr></tfoot>
     </table>
     {% else %}
