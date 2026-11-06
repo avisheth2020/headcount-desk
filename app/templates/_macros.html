@@ -54,8 +54,8 @@
 
 {% macro urgency_chip(urgency) %}
   {% if urgency == "urgent" %}<span class="chip chip-bad">{{ ico("up") }}Urgent</span>
-  {% elif urgency == "low" %}<span class="chip">{{ ico("down") }}Low urgency</span>
-  {% else %}<span class="chip">Normal urgency</span>{% endif %}
+  {% elif urgency == "low" %}<span class="chip">{{ ico("down") }}Low</span>
+  {% else %}<span class="chip">Normal</span>{% endif %}
 {% endmacro %}
 
 {# The short flag beside a percent. Nothing at all when an org is comfortably under. #}
@@ -86,6 +86,29 @@
     {%- if n %}{{ n }} new request{{ "" if n == 1 else "s" }} assigned to you{% else %}Your open requests{% endif -%}
   {%- else -%}Where is my backfill?{%- endif -%}
 </h1>
+{% endmacro %}
+
+{# The org facts every card in a VP's queue shares, said once. Backfills reuse a budgeted seat, so these are context, not a warning. #}
+{% macro queue_context(r) %}
+<div class="queue-context">
+  <strong>{{ r.vp_name }}</strong>
+  <a href="/?org={{ r.vp_id }}"><strong class="num">{{ r.vp_usable_open }}</strong> usable open</a>
+  <a href="/budget?org={{ r.vp_id }}"><strong class="num">{{ r.pct_of_budget }}%</strong> of budget</a>
+  <span><strong class="num">{{ r.variance | abs | money }}</strong> {{ "over" if r.variance < 0 else "to spare" }}</span>
+</div>
+{% endmacro %}
+
+{% macro queue_keys(role) %}<p class="queue-keys"><span class="kbd">J</span> <span class="kbd">K</span> move · <span class="kbd">A</span> {{ "approve" if role == "vp" else "open" }}{% if role == "vp" %} · <span class="kbd">R</span> reject{% endif %}</p>{% endmacro %}
+
+{# A row of dots: how far a backfill has come. #}
+{% macro mini_steps(status) %}
+{% set done = {"submitted": 1, "rejected": 1, "vp_approved": 2, "recruiter_assigned": 3, "req_open": 4, "filled": 5}[status] %}
+<span class="mini-steps {{ 'stopped' if status == 'rejected' }}" role="img" aria-label="Step {{ done }} of 5">{% for i in range(5) %}<i class="{{ 'on' if i < done }}"></i>{% endfor %}</span>
+{% endmacro %}
+
+{# Fourteen morning runs, oldest first. #}
+{% macro run_strip(runs) %}
+<span class="run-strip" role="img" aria-label="Last {{ runs | length }} check runs">{% for h in runs %}<i class="{{ 'fail' if h.failed else ('warn' if h.warned else '') }}" data-chart-tip="{{ h.run_at | dt }}: {{ 'failed' if h.failed else ('needs a look' if h.warned else 'clean') }}"></i>{% endfor %}</span>
 {% endmacro %}
 
 {% macro switch_tip(request, role, text) %}

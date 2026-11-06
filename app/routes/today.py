@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
 
-from app import db, web
+from app import charts, db, trends, web
 from app.checks import CHECKS
 
 router = APIRouter()
@@ -17,6 +17,7 @@ def latest_check(conn) -> dict:
     for f in run["findings"]:
         f["title"] = CHECKS[f["check_name"]][0]
     run["total"] = len(CHECKS)
+    run["history"] = db.query(conn, "SELECT * FROM (SELECT * FROM check_runs ORDER BY run_at DESC, id DESC LIMIT 14) r ORDER BY run_at, id")
     return run
 
 
@@ -51,7 +52,7 @@ def since_yesterday(conn, org_id: int) -> dict:
 
 def org_summary(conn, org_id: int) -> dict:
     return db.one(conn, """
-        SELECT u.org_id, u.name, u.usable_open, u.approved, u.filled, u.open_no_req, b.budget, b.projected, b.variance, b.pct_of_budget, b.state,
+        SELECT u.org_id, u.name, u.usable_open, u.approved, u.filled, u.open_no_req, b.budget, b.run_rate, b.committed, b.projected, b.variance, b.pct_of_budget, b.state,
                (SELECT count(*) FROM v_exceptions e JOIN v_org_closure c ON c.org_id = e.org_id
                  WHERE c.ancestor_id = u.org_id AND NOT e.is_resolved) AS exceptions
         FROM v_usable_open u JOIN v_budget b ON b.org_id = u.org_id WHERE u.org_id = %s""", (org_id,))
@@ -81,6 +82,7 @@ def today(request: Request):
         ctx["plans"] = planning_status(conn, role, me) if web.FEATURES["planning"] else None
         if role == "svp":
             ctx.update(summary=org_summary(conn, me["org_id"]), changes=since_yesterday(conn, me["org_id"]),
+                       trend=trends.seat_history(conn, me["org_id"]),
                        vps=db.query(conn, """
                            SELECT u.org_id, u.name, u.usable_open, b.pct_of_budget, b.state FROM v_usable_open u
                            JOIN v_budget b ON b.org_id = u.org_id WHERE u.parent_id = %s ORDER BY b.pct_of_budget DESC""", (me["org_id"],)),
@@ -88,7 +90,7 @@ def today(request: Request):
                            SELECT count(*) AS n FROM v_backfill_requests r JOIN v_org_closure c ON c.org_id = r.org_id
                            WHERE c.ancestor_id = %s AND r.status = 'submitted'""", (me["org_id"],))["n"])
         elif role == "vp":
-            ctx.update(summary=org_summary(conn, me["org_id"]),
+            ctx.update(summary=org_summary(conn, me["org_id"]), trend=trends.seat_history(conn, me["org_id"]),
                        inbox=db.query(conn, """
                            SELECT r.*, u.usable_open AS vp_usable_open, pc.annual_cost, b.pct_of_budget, b.state AS budget_state, b.variance
                            FROM v_backfill_requests r
@@ -113,14 +115,15 @@ def today(request: Request):
                     ORDER BY s.opened_at LIMIT 100""", (me["id"],)))
             ages = [r["age_days"] for r in ctx["aging"]]
             ctx["age_stats"] = {"total": len(ages), "over60": sum(a > 60 for a in ages), "mid": sum(30 < a <= 60 for a in ages),
-                                "median": sorted(ages)[len(ages) // 2] if ages else 0,
+                                "young": sum(a <= 30 for a in ages), "median": sorted(ages)[len(ages) // 2] if ages else 0,
                                 "offers": sum(r["status"] == "offer_out" for r in ctx["aging"])}
         elif role == "rm":
             ctx.update(
-                summary=org_summary(conn, 1),
-                by_type=db.query(conn, """
-                    SELECT exception_type, type_label, count(*) FILTER (WHERE NOT is_resolved) AS open, count(*) AS total
-                    FROM v_exceptions GROUP BY 1, 2 ORDER BY 3 DESC"""),
+                summary=org_summary(conn, 1), trend=trends.seat_history(conn, 1),
+                by_type=[{**t, "name": t["type_label"], "text": f"{t['open']:,}", "href": f"/exceptions?type={t['exception_type']}"}
+                         for t in charts.share_bars(db.query(conn, """
+                    SELECT exception_type, type_label, count(*) FILTER (WHERE NOT is_resolved) AS open
+                    FROM v_exceptions GROUP BY 1, 2"""), "open")],
                 over=db.query(conn, "SELECT org_id, name, pct_of_budget, variance FROM v_budget WHERE level = 'vp' AND state = 'over' ORDER BY pct_of_budget DESC"),
                 stuck=db.query(conn, """
                     SELECT r.id, r.departing_name, r.status, r.waiting_on, r.time_in_status FROM v_backfill_requests r

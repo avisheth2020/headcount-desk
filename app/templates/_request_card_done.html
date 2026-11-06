@@ -1,5 +1,5 @@
 {% import "_macros.html" as m %}
-<article class="card req-card resolved" id="req-{{ r.id }}">
+<article class="req-card resolved" id="req-{{ r.id }}">
   <p>{{ m.status_chip(r.status) }} <strong>{{ message }}</strong> <a data-drawer href="/requests/{{ r.id }}">Backfill #{{ r.id }} for {{ r.departing_name }} ›</a></p>
   {% if r.status == "recruiter_assigned" and r.recruiter_id == personas.recruiter.id %}
   {{ m.switch_tip(request, "recruiter", "It went to " ~ r.recruiter_name ~ ". Switch to Recruiter to open the req.") }}

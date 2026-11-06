@@ -129,9 +129,17 @@ document.addEventListener("keydown", (e) => {
     if (e.key === "Enter") { e.preventDefault(); $("#palette-results .palette-item.active")?.click(); }
     return;
   }
-  if (e.key === "Enter" && document.activeElement.matches?.(".req-card[tabindex]")) {
-    document.activeElement.querySelector("[data-approve]")?.click();
-  }
+  // The queue: J and K move, A approves, R rejects.
+  if (typing || e.metaKey || e.ctrlKey || e.altKey || document.body.classList.contains("drawer-open")) return;
+  const cards = [...document.querySelectorAll(".req-card[tabindex]")];
+  if (!cards.length) return;
+  const at = cards.indexOf(document.activeElement);
+  if (e.key === "j" || e.key === "k") {
+    e.preventDefault();
+    const next = e.key === "j" ? Math.min(at + 1, cards.length - 1) : Math.max(at - 1, 0);
+    cards[next].focus();
+  } else if (at >= 0 && e.key === "a") document.activeElement.querySelector("[data-approve]")?.click();
+  else if (at >= 0 && e.key === "r") { e.preventDefault(); document.activeElement.querySelector("[data-reject]")?.click(); }
 });
 
 // ── HTMX hooks ───────────────────────────────────────────────────────────────
