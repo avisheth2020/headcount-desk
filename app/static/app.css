@@ -415,6 +415,7 @@ tr.hot td { background: var(--warn-soft) !important; }
   .tabbar svg { width: 22px; height: 22px; }
   .role-switch summary .lbl { display: none; }
   .role-switch summary { padding: 0 10px; }
+  .brand-mark { display: none; }
   .tiles { grid-template-columns: repeat(3, 1fr); gap: var(--s2); }
   .tile { padding: 10px 12px; }
   .tile b { font-size: 20px; }
@@ -429,7 +430,10 @@ tr.hot td { background: var(--warn-soft) !important; }
   .math { padding: var(--s3); gap: 2px; }
   .math .term { min-width: 0; padding: 6px 8px; flex: 1 1 28%; }
   .math .op { display: none; }
-  .try ol { grid-template-columns: 1fr; gap: var(--s2); }
+  .try ol { grid-template-columns: 1fr; gap: 6px; }
+  .try p { display: none; }
+  .try li a { padding: 8px 10px; font-size: 13px; align-items: center; }
+  .try h2 { margin-bottom: 10px; }
   .checks { grid-template-columns: 1fr; }
   .dl { grid-template-columns: 110px 1fr; }
   .stepper li { font-size: 11px; }

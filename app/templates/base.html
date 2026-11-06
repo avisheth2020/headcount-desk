@@ -62,7 +62,7 @@
         <div id="search-results" class="search-results"></div>
       </div>
       <details class="role-switch">
-        <summary aria-label="Switch role. Viewing as {{ role_label }}"><span class="lbl">Viewing as:</span><svg class="narrow-only" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg> <strong>{{ role_label }}</strong> <span aria-hidden="true">▾</span></summary>
+        <summary aria-label="Switch role. Viewing as {{ role_label }}"><span class="lbl">Viewing as:</span><svg class="narrow-only" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg> <strong><span class="wide-only">{{ role_label }}</span><span class="narrow-only">{{ role_label | replace("Manager", "Mgr") }}</span></strong> <span aria-hidden="true">▾</span></summary>
         <form class="role-menu" method="post" action="/role">
           <p>Roles are simulated for the demo. Each one is a named person at Meridian Labs.</p>
           {% for key, (label, _) in ROLES.items() %}
