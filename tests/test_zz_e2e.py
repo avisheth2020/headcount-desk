@@ -157,6 +157,27 @@ def test_plan_steppers_update_dollars_and_room_at_once(browser, base_url):
     assert page.errors == []
 
 
+def test_a_fast_edit_survives_a_late_autosave(browser, base_url):
+    page = new_page(browser, base_url, role="vp")
+    page.goto(base_url + "/planning", wait_until="networkidle")
+    page.locator("a", has_text="Edit your plan").click()
+    page.wait_for_load_state("networkidle")
+    start = int(page.input_value("#change_research"))
+    page.route("**/save", lambda route: (time.sleep(0.6), route.continue_()))     # a slow connection
+    for _ in range(3):
+        page.locator("#inc_change_research").click()
+        page.wait_for_timeout(500)                                  # slower than the save delay, quicker than the reply
+    wait_until(lambda: page.locator("#plan-form tfoot").is_visible() and int(page.input_value("#change_research")) == start + 3)
+    page.wait_for_timeout(1500)
+    assert int(page.input_value("#change_research")) == start + 3
+    page.reload(wait_until="networkidle")
+    assert int(page.input_value("#change_research")) == start + 3   # and it was saved
+    for _ in range(3):
+        page.locator("#dec_change_research").click()
+    page.wait_for_timeout(1500)
+    assert page.errors == []
+
+
 def test_planning_cycle_end_to_end(browser, base_url):
     """VP finishes a draft and submits; the SVP trims and approves it, sends one back, then locks the plan."""
     page = new_page(browser, base_url, role="vp")

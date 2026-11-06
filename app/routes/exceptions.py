@@ -28,7 +28,7 @@ def progress(conn, org_id: int) -> dict:
 
 
 @router.get("/exceptions", response_class=HTMLResponse, include_in_schema=False)
-def exceptions(request: Request, org: int = 1, type: str | None = None, show: str = "open", done: int = 0, batch: str | None = None):
+def exceptions(request: Request, org: int = 1, type: str | None = None, show: str = "open", done: int = 0, skipped: int = 0, batch: str | None = None):
     if type is not None and type not in TYPES:
         raise HTTPException(404, "No such exception type")
     with db.get_conn() as conn:
@@ -62,7 +62,7 @@ def exceptions(request: Request, org: int = 1, type: str | None = None, show: st
         query = lambda key: "/exceptions?" + urlencode({k: v for k, v in {"org": org, "type": None if key == type else key, "show": "all" if show == "all" else None}.items() if v})
         type_bars = charts.share_bars([{"key": key, "name": label, "tip": definition, "n": by_type.get(key, 0)} for key, (label, definition) in TYPES.items()], "n")
         ctx.update(
-            type_bars=[{**t, "text": f"{t['n']:,}", "href": query(t["key"])} for t in type_bars], done=done, batch=batch, shown=sum(g["open"] for g in groups.values()),
+            type_bars=[{**t, "text": f"{t['n']:,}", "href": query(t["key"])} for t in type_bars], done=done, skipped=skipped, batch=batch, shown=sum(g["open"] for g in groups.values()),
             org=org_row, type=type, show=show, TYPES=TYPES, can_resolve=permissions.can_resolve_exceptions(ctx["role"]), by_type=by_type, progress=progress(conn, org),
             groups=sorted(groups.values(), key=lambda g: -g["open"]),
             svps=db.query(conn, "SELECT id, name FROM orgs WHERE level IN ('company', 'svp') ORDER BY id"),
@@ -122,19 +122,26 @@ async def resolve_many(request: Request):
         kind, _, position = str(item).partition(":")
         if kind in TYPES and position.isdigit():
             items.append((kind, int(position)))
-    batch = None
+    done, skipped = 0, 0
     with db.get_conn() as conn:
         ctx = web.page_context(request, conn)
+        if not permissions.can_resolve_exceptions(ctx["role"]):
+            permissions.forbid("Only a resource manager, or the VP or SVP who owns the seat, can resolve an exception.")
         for kind, position in items:
             seat = db.one(conn, "SELECT org_id FROM positions WHERE id = %s", (position,))
             if seat is None:
                 raise HTTPException(404, "No such position")
-            permissions.check_resolve_exception(conn, ctx, seat["org_id"])
+            try:
+                permissions.check_resolve_exception(conn, ctx, seat["org_id"])
+            except HTTPException:               # "Select all" can reach seats this person does not own: leave those alone
+                skipped += 1
+                continue
             conn.execute("""
                 INSERT INTO exception_resolutions (exception_type, position_id, resolved_by) VALUES (%s, %s, %s)
                 ON CONFLICT (exception_type, position_id) DO NOTHING""", (kind, position, ctx["me"]["id"]))
+            done += 1
         batch = db.one(conn, "SELECT now() AS at")["at"].isoformat()
-    return _back(org, form.get("type"), str(form.get("show") or ""), done=len(items), batch=batch)
+    return _back(org, form.get("type"), str(form.get("show") or ""), done=done, skipped=skipped, batch=batch)
 
 
 @router.post("/exceptions/undo-batch", include_in_schema=False)

@@ -25,7 +25,7 @@
         <p class="eyebrow">Usable open · {{ org.name }}{{ m.tip("usable_open") }}</p>
         <div class="hero-row">
           <a class="hero-number" href="#breakdown" aria-label="{{ org.usable_open }} usable open positions. Jump to the breakdown.">{{ org.usable_open | num }}</a>
-          {{ c.spark(trend | map(attribute="usable_open") | list, "Usable open, last 60 days", 110, 36) }}
+          {{ c.spark(trend | map(attribute="usable_open") | list, "Usable open, 60 days to yesterday", 110, 36) }}
         </div>
         <p class="hero-caption">position{{ "" if org.usable_open == 1 else "s" }} <strong>{{ leader.full_name if leader and org.level != "company" else "Meridian Labs" }}</strong> can hire into today</p>
         {% set gap = org.open_no_req - org.usable_open %}
@@ -45,7 +45,7 @@
           {%- for kind in seat_kinds %}{% for _ in range([org[kind], 0] | max) %}<i class="seg-{{ 'usable' if kind == 'usable_open' else kind }}{{ ' on' if kind == focus_key }}"></i>{% endfor %}{% endfor -%}
         </div>
         {% endif %}
-        <nav class="buckets" aria-label="Choose a kind of seat" hx-boost="true" hx-target="#seat-view" hx-select="#seat-view" hx-swap="outerHTML show:none">
+        <nav class="buckets" aria-label="Choose a kind of seat" {{ IN_PLACE }}>
           {% for key, kind in [("committed", "committed"), ("reserve", "reserve"), ("negative", "negative"), ("usable", "usable_open")] %}
           <a href="{{ url_with(request, focus=key) }}" {% if focus == key %}aria-current="true"{% endif %}><b><i class="seg-{{ 'usable' if key == 'usable' else key }}"></i>{{ org[kind] | num }}</b><span>{{ BUCKETS[kind][0] }}{{ m.tip(kind) }}</span></a>
           {% endfor %}

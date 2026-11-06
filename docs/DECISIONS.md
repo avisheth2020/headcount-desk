@@ -218,3 +218,28 @@ A running log. Each entry: the choice, the alternative, and why.
 
 **53. End-to-end tests drive a real browser against a real server, and include axe-core.**
 *Why:* the bugs V2 could introduce are in the wiring (the drawer, the palette, HTMX swaps, the CSP), which unit tests cannot see. Accessibility is checked the same way so it cannot quietly regress.
+
+**54. The Headcount chart starts at the unfilled seats, not at everything approved.**
+*Alternative:* keep the bridge and its zoom.
+*Why:* filled seats are about 93% of approved, so the answer was a sliver that needed a second bar and a sentence to be seen. One square per unfilled seat makes the part people act on the whole picture.
+
+**55. Budget variance is centered on 100% and runs from 95 to 105.**
+*Alternative:* a zero-based meter.
+*Why:* every org sits between about 96% and 103%, so zero-based bars looked identical. This is a deliberately cut axis, which is safe here because the mark is a distance from a target rather than a size, and the exact percent always sits beside it.
+
+**56. Most charts are drawn on the server; the Forecast chart is drawn in the browser.**
+*Why:* server-drawn SVG needs no script and fits the Content Security Policy. The sliders have to redraw the Forecast chart on every move, so that one chart is the exception. What-ifs are arithmetic in the browser, and nothing is saved.
+
+**57. The forecast range is drawn as a straight line from today to quarter end.**
+*Why:* the method produces a range only at quarter end. Drawing the fan implies nothing about the path between, and Show the math says so.
+
+**58. A backfill approval has no undo.**
+*Alternative:* an Undo link on the toast, as Exceptions has.
+*Why:* the request log is append-only, so a mistaken approval is corrected by a new action rather than erased. Exceptions are different: a resolution is a mark on a row, not a step in a workflow.
+
+**59. "Select all" resolves what you own and skips the rest.**
+*Alternative:* refuse the whole batch.
+*Why:* a VP on the all-orgs view would otherwise get an error for a reasonable click. The page says how many were skipped and why. Every seat still goes through the same server-side rule as a single resolve.
+
+**60. Autosave never overwrites what someone has typed since the save left.**
+*Why:* the save returns fresh totals by replacing the form. On a slow connection that could drop a later click. The browser compares the form with what it sent and skips a stale reply, and the next save carries the newer values.

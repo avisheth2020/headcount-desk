@@ -148,9 +148,13 @@ document.body.addEventListener("htmx:configRequest", (e) => { e.detail.headers["
 // Optimistic update: show the result at once, then let the server confirm it.
 document.body.addEventListener("htmx:beforeRequest", (e) => {
   e.detail.elt.closest?.("[data-optimistic]")?.classList.add("optimistic");
+  if (e.detail.target?.id === "main") document.documentElement.classList.add("swapping");   // show that a click landed
 });
+document.body.addEventListener("htmx:afterSettle", () => document.documentElement.classList.remove("swapping"));
+document.body.addEventListener("htmx:sendError", () => document.documentElement.classList.remove("swapping"));
 document.body.addEventListener("htmx:responseError", (e) => {
   e.detail.elt.closest?.("[data-optimistic]")?.classList.remove("optimistic");
+  document.documentElement.classList.remove("swapping");
   let message = "That didn't work. Try again.";
   try { message = JSON.parse(e.detail.xhr.responseText).detail || message; } catch (err) {}
   showToast({ message });
@@ -159,6 +163,7 @@ document.body.addEventListener("htmx:responseError", (e) => {
 document.body.addEventListener("htmx:afterSwap", (e) => {
   const target = e.detail.target;
   if (document.getElementById("forecast")) initForecast();
+  if (document.getElementById("bulk-form")) countSelected();
   if (target.id === "palette-results") target.querySelector(".palette-item")?.classList.add("active");
   if (target.id === "drawer-body") {
     const title = target.querySelector("[data-drawer-title]")?.dataset.drawerTitle;
@@ -319,6 +324,13 @@ function previewPlan(form) {
   form.querySelector("[data-total-next]").textContent = next.toLocaleString("en-US");
   form.querySelector("[data-total-delta]").textContent = `${signed(change)}, ${change ? money(cost) : "$0"}`;
 }
+// An autosave can come back after the person has moved on. Keep what they have since typed: the next save carries it.
+const planValues = (form) => [...form.querySelectorAll("input:not([type=hidden])")].map((i) => i.value).join("|");
+document.body.addEventListener("htmx:beforeRequest", (e) => { if (e.detail.target?.id === "plan-form") e.detail.target.dataset.sent = planValues(e.detail.target); });
+document.body.addEventListener("htmx:beforeSwap", (e) => {
+  const form = e.detail.target;
+  if (form?.id === "plan-form" && planValues(form) !== form.dataset.sent) e.detail.shouldSwap = false;
+});
 document.addEventListener("input", (e) => { const form = e.target.closest?.("#plan-form"); if (form && e.target.type === "number") previewPlan(form); });
 document.addEventListener("click", (e) => {
   const button = e.target.closest?.("[data-step]");
@@ -330,13 +342,17 @@ document.addEventListener("click", (e) => {
 });
 
 // ── Exceptions: pick many, resolve together. ─────────────────────────────────
+function countSelected() {
+  const boxes = [...document.querySelectorAll("input[name='items']")], count = boxes.filter((box) => box.checked).length, bar = $("#bulk-form"), all = $("[data-select-all]");
+  if (!bar) return;
+  if (all) all.checked = boxes.length > 0 && count === boxes.length;
+  bar.hidden = count === 0;
+  $("[data-selected]", bar).textContent = count.toLocaleString("en-US");
+}
 document.addEventListener("change", (e) => {
   const all = e.target.closest?.("[data-select-all]");
   if (all) document.querySelectorAll("input[name='items']").forEach((box) => { box.checked = all.checked; });
-  if (!all && e.target.name !== "items") return;
-  const count = document.querySelectorAll("input[name='items']:checked").length, bar = $("#bulk-form");
-  bar.hidden = count === 0;
-  $("[data-selected]", bar).textContent = count.toLocaleString("en-US");
+  if (all || e.target.name === "items") countSelected();
 });
 
 // ── Deep link: /requests#d=/positions/12 opens that position in the drawer. ──
