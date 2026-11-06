@@ -1,7 +1,7 @@
 # Progress
 
 - **Live URL:** https://headcount-desk-yf5labkepq-ue.a.run.app
-- **Repo:** https://github.com/avisheth2020/headcount-desk (private)
+- **Repo:** https://github.com/avisheth2020/headcount-desk
 
 Last updated: Fri Nov 6, 4:30 AM ET.
 
