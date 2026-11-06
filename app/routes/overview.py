@@ -46,7 +46,7 @@ def headcount(request: Request, org: int | None = None, flash: str | None = None
         exceptions = {r["org_id"]: r["n"] for r in db.query(conn, """
             SELECT c.ancestor_id AS org_id, count(*) AS n
             FROM v_exceptions e JOIN v_org_closure c ON c.org_id = e.org_id
-            WHERE NOT e.is_resolved GROUP BY c.ancestor_id""")} if _has_exceptions(conn) else {}
+            WHERE NOT e.is_resolved GROUP BY c.ancestor_id""")}
         ctx.update(
             org=me, steps=waterfall_steps(me), children=children, direct=direct, exceptions=exceptions, flash=flash,
             crumbs=breadcrumbs(conn, org_id),
@@ -56,10 +56,6 @@ def headcount(request: Request, org: int | None = None, flash: str | None = None
             has_direct=any(direct[k] for k in ("approved", "filled", "committed", "reserve", "negative")) and children,
         )
     return web.render(request, "headcount.html", ctx)
-
-
-def _has_exceptions(conn) -> bool:
-    return db.one(conn, "SELECT to_regclass('v_exceptions') IS NOT NULL AS ok")["ok"]
 
 
 @router.get("/positions", response_class=HTMLResponse, include_in_schema=False)
@@ -109,7 +105,7 @@ def position_detail(request: Request, position_id: int):
             raise HTTPException(404, "No such position")
         ctx.update(
             pos=pos, crumbs=breadcrumbs(conn, pos["org_id"]),
-            exceptions=db.query(conn, "SELECT * FROM v_exceptions WHERE position_id = %s", (position_id,)) if _has_exceptions(conn) else [],
+            exceptions=db.query(conn, "SELECT * FROM v_exceptions WHERE position_id = %s", (position_id,)),
             backfills=db.query(conn, """
                 SELECT b.id, b.status, b.created_at, d.full_name AS departing_name
                 FROM backfill_requests b JOIN people d ON d.id = b.departing_person_id
