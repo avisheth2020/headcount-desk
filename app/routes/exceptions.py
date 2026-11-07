@@ -1,11 +1,13 @@
 """Exceptions: "What's wrong in the data, and who fixes it?" A to-do list, grouped by owner."""
 
 import json
+from datetime import datetime
+from urllib.parse import urlencode
 
 from fastapi import APIRouter, Form, HTTPException, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 
-from app import db, permissions, web
+from app import charts, db, permissions, web
 
 router = APIRouter()
 
@@ -26,7 +28,7 @@ def progress(conn, org_id: int) -> dict:
 
 
 @router.get("/exceptions", response_class=HTMLResponse, include_in_schema=False)
-def exceptions(request: Request, org: int = 1, type: str | None = None, show: str = "open"):
+def exceptions(request: Request, org: int = 1, type: str | None = None, show: str = "open", done: int = 0, batch: str | None = None):
     if type is not None and type not in TYPES:
         raise HTTPException(404, "No such exception type")
     with db.get_conn() as conn:
@@ -57,7 +59,10 @@ def exceptions(request: Request, org: int = 1, type: str | None = None, show: st
                                                   "owner_org_name": r["owner_org_name"], "rows": [], "open": 0})
             g["rows"].append(r)
             g["open"] += not r["is_resolved"]
+        query = lambda key: "/exceptions?" + urlencode({k: v for k, v in {"org": org, "type": None if key == type else key, "show": "all" if show == "all" else None}.items() if v})
+        type_bars = charts.share_bars([{"key": key, "name": label, "tip": definition, "n": by_type.get(key, 0)} for key, (label, definition) in TYPES.items()], "n")
         ctx.update(
+            type_bars=[{**t, "text": f"{t['n']:,}", "href": query(t["key"])} for t in type_bars], done=done, batch=batch, shown=sum(g["open"] for g in groups.values()),
             org=org_row, type=type, show=show, TYPES=TYPES, can_resolve=permissions.can_resolve_exceptions(ctx["role"]), by_type=by_type, progress=progress(conn, org),
             groups=sorted(groups.values(), key=lambda g: -g["open"]),
             svps=db.query(conn, "SELECT id, name FROM orgs WHERE level IN ('company', 'svp') ORDER BY id"),
@@ -99,6 +104,50 @@ def _toggle(request: Request, exception_type: str, position_id: int, org: int, r
 def resolve(request: Request, exception_type: str = Form(...), position_id: int = Form(...), org: int = Form(1)):
     """Mark one exception resolved. Returns just that row, updated in place."""
     return _toggle(request, exception_type, position_id, org, resolve=True)
+
+
+def _back(org: int, type: str | None, show: str, **extra) -> RedirectResponse:
+    """Back to the list, keeping its filters. Only known values go into the URL."""
+    params = {"org": org, "type": type if type in TYPES else None, "show": "all" if show == "all" else None, **extra}
+    return RedirectResponse("/exceptions?" + urlencode({k: v for k, v in params.items() if v}), status_code=303)
+
+
+@router.post("/exceptions/resolve-many", include_in_schema=False)
+async def resolve_many(request: Request):
+    """Mark a selection resolved in one step. Every seat is checked against the same rule as a single resolve."""
+    form = await request.form()
+    org = int(form.get("org") or 1)
+    items = []
+    for item in form.getlist("items")[:500]:
+        kind, _, position = str(item).partition(":")
+        if kind in TYPES and position.isdigit():
+            items.append((kind, int(position)))
+    batch = None
+    with db.get_conn() as conn:
+        ctx = web.page_context(request, conn)
+        for kind, position in items:
+            seat = db.one(conn, "SELECT org_id FROM positions WHERE id = %s", (position,))
+            if seat is None:
+                raise HTTPException(404, "No such position")
+            permissions.check_resolve_exception(conn, ctx, seat["org_id"])
+            conn.execute("""
+                INSERT INTO exception_resolutions (exception_type, position_id, resolved_by) VALUES (%s, %s, %s)
+                ON CONFLICT (exception_type, position_id) DO NOTHING""", (kind, position, ctx["me"]["id"]))
+        batch = db.one(conn, "SELECT now() AS at")["at"].isoformat()
+    return _back(org, form.get("type"), str(form.get("show") or ""), done=len(items), batch=batch)
+
+
+@router.post("/exceptions/undo-batch", include_in_schema=False)
+def undo_batch(request: Request, batch: str = Form(...), org: int = Form(1), type: str = Form(""), show: str = Form("")):
+    """Undo the last selection. It only ever touches rows this person resolved in that one step."""
+    try:
+        at = datetime.fromisoformat(batch)
+    except ValueError:
+        raise HTTPException(404, "No such batch")
+    with db.get_conn() as conn:
+        ctx = web.page_context(request, conn)
+        conn.execute("DELETE FROM exception_resolutions WHERE resolved_by = %s AND resolved_at = %s", (ctx["me"]["id"], at))
+    return _back(org, type, show)
 
 
 @router.post("/exceptions/unresolve", response_class=HTMLResponse, include_in_schema=False)

@@ -218,10 +218,29 @@ def test_exceptions_resolve_and_undo(browser, base_url):
     assert page.errors == []
 
 
+def test_exceptions_resolve_in_bulk_with_undo(browser, base_url):
+    page = new_page(browser, base_url, role="rm")
+    page.goto(base_url + "/exceptions", wait_until="networkidle")
+    before = page.locator("#progress h2").inner_text()
+    page.locator(".bars a", has_text="Ghost fill").click()
+    page.wait_for_url("**type=ghost_fill**")
+    page.wait_for_selector(".check-all input")
+    page.locator(".check-all input").check()
+    assert page.locator("#bulk-form").is_visible()
+    page.locator("#bulk-form button").click()
+    page.wait_for_url("**done=**")
+    page.wait_for_selector("form.flash")
+    page.locator("form.flash button").click()
+    page.wait_for_selector("form.flash", state="detached")
+    page.goto(base_url + "/exceptions", wait_until="networkidle")
+    assert page.locator("#progress h2").inner_text() == before
+    assert page.errors == []
+
+
 def test_a_requester_cannot_resolve_exceptions(browser, base_url):
     page = new_page(browser, base_url, role="requester")
     page.goto(base_url + "/exceptions", wait_until="networkidle")
-    assert page.locator(".todo li button").count() == 0
+    assert page.locator(".todo li button").count() == 0 and page.locator("input[name=items]").count() == 0
 
 
 def test_palette_drawer_and_theme(browser, base_url):

@@ -329,6 +329,16 @@ document.addEventListener("click", (e) => {
   input.dispatchEvent(new Event("change", { bubbles: true }));
 });
 
+// ── Exceptions: pick many, resolve together. ─────────────────────────────────
+document.addEventListener("change", (e) => {
+  const all = e.target.closest?.("[data-select-all]");
+  if (all) document.querySelectorAll("input[name='items']").forEach((box) => { box.checked = all.checked; });
+  if (!all && e.target.name !== "items") return;
+  const count = document.querySelectorAll("input[name='items']:checked").length, bar = $("#bulk-form");
+  bar.hidden = count === 0;
+  $("[data-selected]", bar).textContent = count.toLocaleString("en-US");
+});
+
 // ── Deep link: /requests#d=/positions/12 opens that position in the drawer. ──
 const openFromHash = () => {
   if (location.hash.startsWith("#d=/")) openDrawer(decodeURIComponent(location.hash.slice(3)), false);

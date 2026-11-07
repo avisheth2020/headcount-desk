@@ -49,6 +49,16 @@ def test_mark_resolved_and_undo(manifest):
         with db.get_conn() as conn:
             assert db.one(conn, "SELECT count(*) AS n FROM exception_resolutions")["n"] == before + 1
         undone = client.post(f"/exceptions/unresolve?exception_type={e['exception_type']}&position_id={e['position_id']}")
-        assert undone.status_code == 200 and "Mark resolved" in undone.text
+        assert undone.status_code == 200 and ">Resolve<" in undone.text.replace("</svg>", ">")
         with db.get_conn() as conn:
             assert db.one(conn, "SELECT count(*) AS n FROM exception_resolutions")["n"] == before
+
+
+def test_bulk_resolve_needs_permission(manifest):
+    """A requester cannot resolve in bulk by posting the form directly."""
+    from app.main import app
+    with TestClient(app) as client:
+        client.cookies.set("role", "requester")
+        client.get("/exceptions")
+        response = client.post("/exceptions/resolve-many", data={"items": "stale_open:1", "org": 1}, follow_redirects=False)
+    assert response.status_code == 403
