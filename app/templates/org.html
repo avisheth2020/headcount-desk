@@ -3,15 +3,27 @@
 {% block title %}Org explorer{% endblock %}
 
 {% block content %}
+{% if view == "map" and crumbs | length > 1 %}{{ m.crumbs(crumbs, base="/org?view=map&org=") }}{% endif %}
 <div class="page-head">
   <div>
     <h1>Who sits where, and what does it cost?</h1>
   </div>
+  <nav class="pills" aria-label="Choose a view" {{ IN_PLACE }}>
+    <a class="pill" href="/org" {% if view == "table" %}aria-current="true"{% endif %}>Table</a>
+    <a class="pill" href="/org?view=map" {% if view == "map" %}aria-current="true"{% endif %}>Map</a>
+  </nav>
 </div>
+{% if view == "map" %}
+<section class="card card-pad">
+  {% if blocks %}{% include "_org_map.html" %}
+  {% else %}<div class="empty-state"><b>{{ org.name }} is a team.</b><a class="btn" style="margin-top:12px" href="/?org={{ org.id }}">See its headcount</a></div>{% endif %}
+</section>
+{% else %}
 <section class="card">
     <table class="table cards" id="org-tree">
     <thead><tr><th>Org</th><th>Leader</th><th class="r">Approved</th><th class="r">Filled</th><th class="r">Usable open</th><th class="r">Budget</th><th class="r">Projected</th><th>Of budget</th></tr></thead>
     <tbody>{% include "_org_rows.html" %}</tbody>
   </table>
 </section>
+{% endif %}
 {% endblock %}

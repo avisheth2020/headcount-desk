@@ -32,3 +32,18 @@ def test_share_bars_rank_largest_first_and_ignore_negatives():
     rows = charts.share_bars([{"n": 5}, {"n": 20}, {"n": -3}], "n")
     assert [r["n"] for r in rows] == [20, 5, -3]
     assert [r["bar"] for r in rows] == [100.0, 25.0, 0.0]
+
+
+def test_treemap_fills_the_space_and_each_area_matches_its_value():
+    items = [{"n": 6}, {"n": 6}, {"n": 4}, {"n": 3}, {"n": 2}, {"n": 2}, {"n": 1}]
+    placed = charts.treemap(items, "n", 600, 400)
+    assert sum(p["w"] * p["h"] for p in placed) == 240000
+    for p in placed:
+        assert abs(p["w"] * p["h"] - p["n"] * 240000 / 24) < 1e-6
+        assert p["x"] >= -1e-9 and p["y"] >= -1e-9 and p["x"] + p["w"] <= 600 + 1e-6 and p["y"] + p["h"] <= 400 + 1e-6
+
+
+def test_treemap_skips_empty_items_and_keeps_blocks_reasonable():
+    assert charts.treemap([{"n": 0}], "n", 10, 10) == []
+    placed = charts.treemap([{"n": 533}, {"n": 605}, {"n": 572}, {"n": 432}], "n", 1130, 520)
+    assert max(max(p["w"] / p["h"], p["h"] / p["w"]) for p in placed) < 3
