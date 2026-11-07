@@ -13,11 +13,13 @@
 
 <div class="stack">
   {% if role in ("vp", "recruiter") %}
-  <section class="inbox" aria-label="Waiting on you">
+  <section class="card inbox" aria-label="Waiting on you">
+    {% if inbox and role == "vp" %}{{ m.queue_context(inbox[0]) }}{% endif %}
     {% for r in inbox %}{% include "_request_card.html" %}{% else %}
-    <div class="card empty-state"><b>{{ "No requests waiting on you" if role == "vp" else "Nothing new to open" }}</b>
+    <div class="empty-state"><b>{{ "No requests waiting on you" if role == "vp" else "Nothing new to open" }}</b>
       {{ "Approved and rejected requests are in the list below." if role == "vp" else "Requests you are already working are in the list below." }}</div>
     {% endfor %}
+    {% if inbox %}{{ m.queue_keys(role) }}{% endif %}
   </section>
   {% endif %}
 

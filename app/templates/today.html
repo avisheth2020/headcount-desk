@@ -5,7 +5,7 @@
 
 {% macro check_tile(check) %}
 <a class="card tile" href="/health"><span>Data checks</span><b>{{ check.passed }} of {{ check.total }}</b>
-  <small>{% if check.failed %}<span class="chip chip-bad">{{ ico("x") }}{{ check.failed }} failed</span>{% elif check.warned %}<span class="chip chip-warn">{{ ico("alert") }}{{ check.warned }} need a look</span>{% else %}<span class="chip chip-good">{{ ico("check") }}All passed</span>{% endif %}</small></a>
+  {{ m.run_strip(check.history) }}<small>{% if check.failed %}<span class="chip chip-bad">{{ ico("x") }}{{ check.failed }} failed</span>{% elif check.warned %}<span class="chip chip-warn">{{ ico("alert") }}{{ check.warned }} need a look</span>{% else %}<span class="chip chip-good">{{ ico("check") }}All passed</span>{% endif %}</small></a>
 {% endmacro %}
 {% macro plan_tile(plans, role) %}
 {% if plans %}
@@ -16,7 +16,8 @@
   {% else %}<b>{{ plans.approved }} of {{ plans.total }}</b><small>VP plans approved</small>{% endif %}</a>
 {% endif %}
 {% endmacro %}
-{% macro delta(n) %}<b class="num">{{ "+" if n > 0 }}{{ n | num }}</b>{% endmacro %}
+{% macro delta(n, top=0) %}<b class="num">{{ "+" if n > 0 }}{{ n | num }}</b><span class="delta" aria-hidden="true">{% if top %}<i class="{{ 'down' if n < 0 }}" style="width: {{ ((n | abs) * 50 / top) | round }}%"></i>{% endif %}</span>{% endmacro %}
+{% macro usable_tile(summary, trend) %}<a class="card tile tile-spark" href="/?org={{ summary.org_id }}"><span>Usable open</span><b>{{ summary.usable_open | num }}</b><small>of {{ summary.approved | num }} approved</small>{{ ch.spark(trend | map(attribute="usable_open") | list, "Usable open, last 60 days", 72, 28) }}</a>{% endmacro %}
 
 {% block content %}
 <div class="page-head">
@@ -30,7 +31,7 @@
 <div class="stack">
 {% if role == "svp" %}
   <nav class="tiles" aria-label="Where {{ summary.name }} stands">
-    <a class="card tile" href="/?org={{ summary.org_id }}"><span>Usable open</span><b>{{ summary.usable_open | num }}</b><small>of {{ summary.approved | num }} approved</small></a>
+    {{ usable_tile(summary, trend) }}
     <a class="card tile" href="/budget?org={{ summary.org_id }}"><span>Projected spend</span><b>{{ summary.pct_of_budget }}%</b><small>{{ m.budget_chip(summary.state) }}</small></a>
     <a class="card tile" href="/requests?scope=all&status=submitted&org={{ summary.org_id }}"><span>Backfills waiting on a VP</span><b>{{ pending | num }}</b><small>in {{ summary.name }}</small></a>
     <a class="card tile" href="/exceptions?org={{ summary.org_id }}"><span>Exceptions</span><b>{{ summary.exceptions | num }}</b><small>to fix</small></a>
@@ -40,12 +41,13 @@
   <div class="grid-2">
     <section class="card">
       <div class="card-head"><h2>Since yesterday in {{ summary.name }}</h2><a class="small" href="/health/snapshots?org={{ summary.org_id }}">Daily snapshots ›</a></div>
+      {% set top = [changes.filled | abs, changes.committed | abs, changes.open_no_req | abs, 1] | max %}
       <ul class="changes">
-        <li>{{ delta(changes.filled) }}<span>filled seats <span class="muted">· {{ changes.hires }} started, {{ changes.exits }} left</span></span><a class="small" href="/positions?org={{ summary.org_id }}&bucket=filled&sort=opened&dir=desc">Rows ›</a></li>
-        <li>{{ delta(changes.committed) }}<span>open seats with a recruiter on them</span><a class="small" href="/positions?org={{ summary.org_id }}&bucket=committed">Rows ›</a></li>
-        <li>{{ delta(changes.open_no_req) }}<span>open seats nobody is working</span><a class="small" href="/positions?org={{ summary.org_id }}&bucket=open_no_req">Rows ›</a></li>
-        <li><b class="num">{{ changes.flow.submitted }}</b><span>backfills requested in the last day <span class="muted">· {{ changes.flow.approved }} approved, {{ changes.flow.opened }} opened, {{ changes.flow.filled }} filled</span></span><a class="small" href="/requests?scope=all&org={{ summary.org_id }}">Requests ›</a></li>
-        <li><b class="num">{{ changes.resolved }}</b><span>exceptions resolved in the last day</span><a class="small" href="/exceptions?org={{ summary.org_id }}&show=all">List ›</a></li>
+        <li>{{ delta(changes.filled, top) }}<span>filled seats <span class="muted">· {{ changes.hires }} started, {{ changes.exits }} left</span></span><a class="small" href="/positions?org={{ summary.org_id }}&bucket=filled&sort=opened&dir=desc">Rows ›</a></li>
+        <li>{{ delta(changes.committed, top) }}<span>open seats with a recruiter on them</span><a class="small" href="/positions?org={{ summary.org_id }}&bucket=committed">Rows ›</a></li>
+        <li>{{ delta(changes.open_no_req, top) }}<span>open seats nobody is working</span><a class="small" href="/positions?org={{ summary.org_id }}&bucket=open_no_req">Rows ›</a></li>
+        <li><b class="num">{{ changes.flow.submitted }}</b><span class="delta"></span><span>backfills requested in the last day <span class="muted">· {{ changes.flow.approved }} approved, {{ changes.flow.opened }} opened, {{ changes.flow.filled }} filled</span></span><a class="small" href="/requests?scope=all&org={{ summary.org_id }}">Requests ›</a></li>
+        <li><b class="num">{{ changes.resolved }}</b><span class="delta"></span><span>exceptions resolved in the last day</span><a class="small" href="/exceptions?org={{ summary.org_id }}&show=all">List ›</a></li>
       </ul>
     </section>
     <section class="card">
@@ -65,20 +67,23 @@
   {% endif %}
 
 {% elif role == "vp" %}
-  <section class="inbox" aria-label="Waiting on you">
+  <section class="card inbox" aria-label="Waiting on you">
+    {% if inbox %}{{ m.queue_context(inbox[0]) }}{% endif %}
     {% for r in inbox %}{% include "_request_card.html" %}{% else %}
-    <div class="card empty-state"><b>No requests waiting on you</b>Approved and rejected requests are on the <a href="/requests">Requests</a> page.</div>
+    <div class="empty-state"><b>No requests waiting on you</b>Approved and rejected requests are on the <a href="/requests">Requests</a> page.</div>
     {% endfor %}
+    {% if inbox %}{{ m.queue_keys(role) }}{% endif %}
   </section>
   <div class="grid-2">
     <section class="card card-pad">
       <div class="row spread" style="margin-bottom:12px"><h2>Budget risk · {{ summary.name }}</h2>{{ m.budget_chip(summary.state) }}</div>
       <p class="hero-caption" style="margin-bottom:12px"><strong class="num">{{ summary.projected | money }}</strong> projected of <strong class="num">{{ summary.budget | money }}</strong> ({{ summary.pct_of_budget }}%). {{ summary.variance | abs | money }} {{ "over" if summary.variance < 0 else "to spare" }}.</p>
-      {{ m.meter(summary.pct_of_budget, summary.state) }}
+      {% set left = [summary.budget - summary.projected, 0] | max %}
+      {{ ch.stack([("seg-filled", summary.run_rate, "Run-rate " ~ summary.run_rate | money), ("seg-committed", summary.committed, "Committed " ~ summary.committed | money), ("seg-rest", left, "Left over " ~ left | money)], summary.budget, summary.pct_of_budget ~ "% of budget") }}
       <p class="small" style="margin-top:12px"><a href="/budget?org={{ summary.org_id }}">Open the budget ›</a></p>
     </section>
-    <nav class="tiles" aria-label="Your org" style="align-content:start">
-      <a class="card tile" href="/?org={{ summary.org_id }}"><span>Usable open</span><b>{{ summary.usable_open | num }}</b><small>of {{ summary.approved | num }} approved</small></a>
+    <nav class="tiles tiles-2" aria-label="Your org">
+      {{ usable_tile(summary, trend) }}
       <a class="card tile" href="/exceptions?org={{ summary.org_id }}"><span>Your exceptions</span><b>{{ summary.exceptions | num }}</b><small>to fix</small></a>
       <a class="card tile" href="/backfill/new"><span>People leaving soon</span><b>{{ leaving | num }}</b><small>with no backfill yet</small></a>
       {{ plan_tile(plans, role) }}
@@ -86,16 +91,18 @@
   </div>
 
 {% elif role == "recruiter" %}
-  <section class="inbox" aria-label="Waiting on you">
+  <section class="card inbox" aria-label="Waiting on you">
     {% for r in inbox %}{% include "_request_card.html" %}{% else %}
-    <div class="card empty-state"><b>Nothing new to open</b>The roles you are already working are below.</div>
+    <div class="empty-state"><b>Nothing new to open</b>The roles you are already working are below.</div>
     {% endfor %}
+    {% if inbox %}{{ m.queue_keys(role) }}{% endif %}
   </section>
   <nav class="tiles" aria-label="Your roles">
     <div class="card tile"><span>Roles you are filling</span><b>{{ age_stats.total | num }}</b><small>{{ age_stats.offers }} with an offer out</small></div>
     <div class="card tile"><span>Median age</span><b>{{ age_stats.median }} days</b><small>since the request opened</small></div>
-    <div class="card tile"><span>Open 30 to 60 days</span><b>{{ age_stats.mid | num }}</b><small><span class="chip chip-warn">{{ ico("clock") }}Getting old</span></small></div>
-    <div class="card tile"><span>Open more than 60 days</span><b>{{ age_stats.over60 | num }}</b><small><span class="chip chip-bad">{{ ico("up") }}Aging</span></small></div>
+    <div class="card tile tile-wide"><span>How old your roles are</span>
+      {{ ch.stack([("seg-reserve", age_stats.young, "Under 30 days: " ~ age_stats.young), ("seg-warn", age_stats.mid, "30 to 60 days: " ~ age_stats.mid), ("seg-over", age_stats.over60, "Over 60 days: " ~ age_stats.over60)], age_stats.total, age_stats.young ~ " under 30 days, " ~ age_stats.mid ~ " at 30 to 60, " ~ age_stats.over60 ~ " over 60") }}
+      <small class="stack-key"><span><i class="seg-reserve"></i>{{ age_stats.young }} under 30 days</span><span><i class="seg-warn"></i>{{ age_stats.mid }} at 30 to 60</span><span><i class="seg-over"></i>{{ age_stats.over60 }} over 60</span></small></div>
   </nav>
   <section class="card">
     <div class="card-head"><h2>Your open roles, oldest first</h2></div>
@@ -117,15 +124,13 @@
     <a class="card tile" href="/exceptions"><span>Open exceptions</span><b>{{ summary.exceptions | num }}</b><small>to fix</small></a>
     {{ check_tile(check) }}
     <a class="card tile" href="/budget?org=1"><span>Projected spend</span><b>{{ summary.pct_of_budget }}%</b><small>{{ m.budget_chip(summary.state) }}</small></a>
-    <a class="card tile" href="/?org=1"><span>Usable open</span><b>{{ summary.usable_open | num }}</b><small>vs {{ summary.open_no_req | num }} the tool shows</small></a>
+    {{ usable_tile(summary, trend) }}
     {{ plan_tile(plans, role) }}
   </nav>
   <div class="grid-2">
     <section class="card">
       <div class="card-head"><h2>Exceptions by type</h2><a class="small" href="/exceptions">Work the list ›</a></div>
-      <table class="table"><thead><tr><th>Type</th><th class="r">To fix</th><th class="r">Resolved</th></tr></thead><tbody>
-        {% for t in by_type %}<tr><td><a class="rowlink" href="/exceptions?type={{ t.exception_type }}">{{ t.type_label }}</a></td><td class="r"><a href="/exceptions?type={{ t.exception_type }}">{{ t.open | num }}</a></td><td class="r muted">{{ (t.total - t.open) | num }}</td></tr>{% endfor %}
-      </tbody></table>
+      <div class="card-pad">{{ ch.bars(by_type) }}</div>
     </section>
     <section class="card">
       <div class="card-head"><h2>Checks that need a look</h2><a class="small" href="/health">Data health ›</a></div>
@@ -145,7 +150,7 @@
     <div class="card-head"><h2>My requests <span class="count">{{ mine | length }}</span></h2><a class="small" href="/requests?scope=all">Everyone's ›</a></div>
     {% if mine %}
     <table class="table cards two"><thead><tr><th>Request</th><th>Team</th><th>Status</th><th>Waiting on</th><th class="r">In this status</th></tr></thead><tbody>
-      {% for r in mine %}<tr><td><a class="rowlink" data-drawer href="/requests/{{ r.id }}">#{{ r.id }} · {{ r.departing_name }}</a></td><td data-label="Team">{{ r.team_name }}</td><td data-label="Status">{{ m.status_chip(r.status) }}</td><td data-label="Waiting on">{{ r.waiting_on or "–" }}</td><td class="r" data-label="In this status">{{ r.time_in_status | ago }}</td></tr>{% endfor %}
+      {% for r in mine %}<tr><td><a class="rowlink" data-drawer href="/requests/{{ r.id }}">#{{ r.id }} · {{ r.departing_name }}</a></td><td data-label="Team">{{ r.team_name }}</td><td data-label="Status">{{ m.mini_steps(r.status) }}{{ m.status_chip(r.status) }}</td><td data-label="Waiting on">{{ r.waiting_on or "–" }}</td><td class="r" data-label="In this status">{{ r.time_in_status | ago }}</td></tr>{% endfor %}
     </tbody></table>
     {% else %}<div class="empty-state"><b>No requests yet</b>Ask for a backfill when someone on your team is leaving.</div>{% endif %}
   </section>

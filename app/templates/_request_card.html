@@ -1,44 +1,27 @@
 {% import "_macros.html" as m %}
-<article class="card req-card" id="req-{{ r.id }}" tabindex="0" aria-label="Backfill for {{ r.departing_name }}. Press Enter to {{ 'approve' if role == 'vp' else 'open the req' }}.">
-  <div>
-    <h3><a data-drawer href="/requests/{{ r.id }}">Backfill for {{ r.departing_name }}</a> <span class="muted" style="font-weight:400">({{ FAMILY[r.job_family] }}, {{ r.level }})</span></h3>
+{% set days_left = (r.departing_end_date - as_of.date()).days %}
+<article class="req-card" id="req-{{ r.id }}" tabindex="0" aria-label="Backfill for {{ r.departing_name }}. Press A to {{ 'approve' if role == 'vp' else 'open the req' }}{{ ', R to reject' if role == 'vp' }}.">
+  <div class="req-main">
+    <h3><a data-drawer href="/requests/{{ r.id }}">{{ r.departing_name }}</a>{% if r.urgency != "normal" %} {{ m.urgency_chip(r.urgency) }}{% endif %}</h3>
+    <p class="facts">{{ FAMILY[r.job_family] }}, {{ r.level }} · {{ r.team_name }}{% if role == "vp" and r.annual_cost is defined %} · <strong class="num">{{ r.annual_cost | money }}</strong> a year{% endif %} · {{ "asked by " ~ r.requester_name if role == "vp" else "approved by " ~ r.approver_name }}</p>
     <p class="quote">“{{ r.justification }}”</p>
-    <div class="facts">
-      {{ m.urgency_chip(r.urgency) }}
-      <span>{{ r.team_name }}</span>
-      {% if role == "vp" %}
-      <span><strong style="color:var(--text)">{{ r.time_in_status | ago }}</strong> waiting</span>
-      <span>Asked by {{ r.requester_name }}</span>
-      <span>Last day {{ r.departing_end_date | d }}</span>
-      <a href="/?org={{ r.vp_id }}">{{ r.vp_name }} usable open: <strong class="num">{{ r.vp_usable_open }}</strong></a>
-      {% else %}
-      <span>Assigned to you <strong style="color:var(--text)">{{ r.time_in_status | ago }}</strong> ago</span>
-      <span>Approved by {{ r.approver_name }}</span>
-      <a class="mono" data-drawer href="/positions/{{ r.position_id }}">{{ r.position_code }}</a>
-      {% endif %}
-    </div>
+  </div>
+  <div class="runway {{ 'soon' if days_left < 15 }}" data-chart-tip="Last day {{ r.departing_end_date | d }}">
+    <span>{% if days_left >= 0 %}{{ days_left }} day{{ "" if days_left == 1 else "s" }} left{% else %}Left {{ r.departing_end_date | d }}{% endif %}</span>
+    <i><u style="width: {{ [[100 - days_left * 100 / 30, 4] | max, 100] | min | round }}%"></u></i>
   </div>
   <div class="actions">
     {% if role == "vp" %}
-    <button class="btn" type="button" data-toggle=".reject-form" data-within=".req-card">Reject</button>
+    <button class="btn" type="button" data-reject data-toggle=".reject-form" data-within=".req-card">Reject</button>
     <button class="btn btn-primary" data-approve hx-post="/requests/{{ r.id }}/approve" hx-target="#req-{{ r.id }}" hx-swap="outerHTML">Approve</button>
     {% else %}
     <button class="btn btn-primary" data-approve hx-post="/requests/{{ r.id }}/open" hx-target="#req-{{ r.id }}" hx-swap="outerHTML">Open req</button>
     {% endif %}
   </div>
-  {% if role == "vp" and r.annual_cost is defined %}
-  <div class="money-line">
-    <span>This seat costs <strong class="num">{{ r.annual_cost | money }}</strong> a year, already in the budget</span>
-    <span>{{ r.vp_name }} is projected at <strong class="num">{{ r.pct_of_budget }}%</strong> of budget</span>
-    {% if r.budget_state == "over" %}<span class="chip chip-bad">{{ ico("up") }}Already over by {{ r.variance | abs | money }}</span>
-    {% elif r.budget_state == "watch" %}<span class="chip chip-warn">{{ ico("clock") }}Close: {{ r.variance | money }} to spare</span>
-    {% else %}<span class="chip chip-good">{{ ico("check") }}Stays within budget</span>{% endif %}
-  </div>
-  {% endif %}
   {% if role == "vp" %}
   <form class="reject-form" hidden hx-post="/requests/{{ r.id }}/reject" hx-target="#req-{{ r.id }}" hx-swap="outerHTML">
     <label class="sr-only" for="reason-{{ r.id }}">Reason for rejecting</label>
-    <input type="text" id="reason-{{ r.id }}" name="reason" required placeholder="Reason (the requester will see this)">
+    <input type="text" id="reason-{{ r.id }}" name="reason" required placeholder="Reason the requester will see">
     <button class="btn" type="submit">Send rejection</button>
   </form>
   {% endif %}

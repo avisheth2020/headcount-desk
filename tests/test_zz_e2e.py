@@ -109,7 +109,7 @@ def test_backfill_flow_end_to_end(browser, base_url):
     assert "/today" in page.url
     assert "4 requests need your approval" in page.locator("#inbox-title").inner_text()
     card = page.locator(f"#req-{request_id}")
-    assert "of budget" in card.locator(".money-line").inner_text()
+    assert "of budget" in page.locator(".queue-context").inner_text()
     card.locator("[data-approve]").click()
     page.wait_for_selector(f"#req-{request_id}.resolved")
     assert "3 requests need your approval" in page.locator("#inbox-title").inner_text()
@@ -129,6 +129,17 @@ def test_backfill_flow_end_to_end(browser, base_url):
     page.locator("button", has_text="Mark filled").click()
     page.wait_for_load_state("networkidle")
     assert page.locator(".timeline li").count() == 5 and "Offer accepted by Robin Okafor" in page.content()
+    assert page.errors == []
+
+
+def test_queue_works_from_the_keyboard(browser, base_url):
+    page = new_page(browser, base_url, role="vp")
+    page.goto(base_url + "/today", wait_until="networkidle")
+    page.keyboard.press("j")
+    first = page.locator(".req-card[tabindex]").first
+    assert first.evaluate("el => el === document.activeElement")
+    page.keyboard.press("r")
+    assert first.locator(".reject-form input").is_visible()
     assert page.errors == []
 
 
