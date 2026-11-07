@@ -3,6 +3,8 @@
 from urllib.parse import quote
 
 from fastapi import Depends, FastAPI, Form, Request
+from fastapi.exception_handlers import request_validation_exception_handler
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -39,6 +41,15 @@ async def friendly_http_error(request: Request, exc: StarletteHTTPException):
     message = "The page, org, position or request you asked for doesn't exist. It may have been removed when the demo was reset." \
         if exc.status_code == 404 else str(exc.detail)
     return web.render(request, "error.html", {"code": exc.status_code, "title": title, "message": message}, exc.status_code)
+
+
+@app.exception_handler(RequestValidationError)
+async def friendly_bad_link(request: Request, exc: RequestValidationError):
+    """A mistyped link, like ?org=abc, gets the same page as any other link that goes nowhere."""
+    if not wants_html(request):
+        return await request_validation_exception_handler(request, exc)
+    return web.render(request, "error.html", {"code": 404, "title": "We couldn't find that",
+                                              "message": "That link isn't quite right. Check it, or start again from the menu."}, 404)
 
 
 @app.exception_handler(Exception)

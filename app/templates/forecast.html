@@ -2,10 +2,14 @@
 {% import "_macros.html" as m %}
 {% block title %}Forecast{% endblock %}
 
+{# What the sliders need to redo the sum for one row of the forecast. #}
+{% macro fc_data(f) -%}
+data-seats="{{ f.in_seats }}" data-hires="{{ f.expected_hires }}" data-exits="{{ f.expected_exits }}" data-projected="{{ f.projected }}" data-low="{{ f.projected_low }}" data-high="{{ f.projected_high }}" data-approved="{{ f.approved }}" data-run-rate="{{ f.run_rate }}" data-rr="{{ f.projected_run_rate }}" data-rr-low="{{ f.projected_run_rate_low }}" data-rr-high="{{ f.projected_run_rate_high }}" data-budget="{{ f.budget }}"
+{%- endmacro %}
 {% macro flag(f, quiet=False) %}
-  {% if f.over_plan %}<span class="chip chip-bad">{{ ico("up") }}Over plan</span>{% endif %}
-  {% if f.over_budget %}<span class="chip chip-bad">{{ ico("up") }}Over budget</span>{% endif %}
-  {% if not quiet and not f.over_plan and not f.over_budget %}<span class="chip chip-good">{{ ico("check") }}Within plan</span>{% endif %}
+  <span class="chip chip-bad" data-flag="plan" {{ "hidden" if not f.over_plan }}>{{ ico("up") }}Over plan</span>
+  <span class="chip chip-bad" data-flag="budget" {{ "hidden" if not f.over_budget }}>{{ ico("up") }}Over budget</span>
+  {% if not quiet %}<span class="chip chip-good" data-flag="ok" {{ "hidden" if f.over_plan or f.over_budget }}>{{ ico("check") }}Within plan</span>{% endif %}
 {% endmacro %}
 
 {% block content %}
@@ -23,8 +27,7 @@
 <div class="stack">
   <section class="card card-pad fc" id="forecast" data-chart-live
            data-history="{{ trend | map(attribute='in_seats') | join(',') }}" data-start="{{ trend[0].day if trend else '' }}" data-end="{{ org.quarter_ends_on }}"
-           data-seats="{{ org.in_seats }}" data-hires="{{ org.expected_hires }}" data-exits="{{ org.expected_exits }}"
-           data-projected="{{ org.projected }}" data-low="{{ org.projected_low }}" data-high="{{ org.projected_high }}" data-approved="{{ org.approved }}">
+           {{ fc_data(org) }}>
     <div class="fc-top">
       <div>
         <p class="eyebrow">People in seats on {{ org.quarter_ends_on | d }} · {{ org.name }}</p>
@@ -34,8 +37,8 @@
       </div>
       <div class="legend fc-math">
         <a href="/positions?org={{ org.org_id }}&bucket=filled"><i class="seg-filled"></i><b>{{ org.in_seats | num }}</b><span>In seats today{{ m.hint("On plan plus over-hired.") }}</span></a>
-        <a href="/forecast/requests?org={{ org.org_id }}"><i class="seg-usable"></i><b data-fc="hires">+{{ org.expected_hires | round | int }}</b><span>Expected hires{{ m.hint("Each open req counts for its chance of being filled by quarter end.") }}</span></a>
-        <a href="/forecast/exits?org={{ attrition.org_id }}"><i class="seg-negative"></i><b data-fc="exits">−{{ org.expected_exits | round | int }}</b><span>Expected exits{{ m.hint("People in seats × the monthly attrition seen over the last 60 days × the months left in the quarter.") }}</span></a>
+        <a href="/forecast/requests?org={{ org.org_id }}"><i class="seg-usable"></i><b data-fc="hires">+{{ "%.1f" | format(org.expected_hires) }}</b><span>Expected hires{{ m.hint("Each open req counts for its chance of being filled by quarter end.") }}</span></a>
+        <a href="/forecast/exits?org={{ attrition.org_id }}"><i class="seg-negative"></i><b data-fc="exits">−{{ "%.1f" | format(org.expected_exits) }}</b><span>Expected exits{{ m.hint("People in seats × the monthly attrition seen over the last 60 days × the months left in the quarter.") }}</span></a>
       </div>
     </div>
     {% if trend %}
@@ -47,7 +50,7 @@
     </div>
     {% endif %}
     <div class="hero-facts" data-fc="facts">
-      <a href="/budget?org={{ org.org_id }}"><span>Run-rate at quarter end</span><strong class="num">{{ org.projected_run_rate | money }} <span class="muted" style="font-weight:400">({{ org.projected_run_rate_low | money }} to {{ org.projected_run_rate_high | money }})</span></strong></a>
+      <a href="/budget?org={{ org.org_id }}"><span>Run-rate at quarter end</span><strong class="num"><span data-fc="rr">{{ org.projected_run_rate | money }}</span> <span class="muted" style="font-weight:400">(<span data-fc="rr-range">{{ org.projected_run_rate_low | money }} to {{ org.projected_run_rate_high | money }}</span>)</span></strong></a>
       <a href="/budget?org={{ org.org_id }}"><span>Budget for the year</span><strong class="num">{{ org.budget | money }}</strong></a>
     </div>
   </section>
@@ -71,19 +74,38 @@
       </tr></thead>
       <tbody>
         {% for c in children %}
-        <tr>
+        <tr data-fc-row {{ fc_data(c) }}>
           <td><a class="rowlink" href="/forecast?org={{ c.org_id }}">{{ c.name }} ›</a></td>
           <td class="r" data-label="In seats"><a href="/positions?org={{ c.org_id }}&bucket=filled">{{ c.in_seats | num }}</a></td>
-          <td class="r" data-label="Hires"><a href="/forecast/requests?org={{ c.org_id }}">+{{ c.expected_hires | round | int }}</a></td>
-          <td class="r" data-label="Exits"><a href="/forecast/exits?org={{ attrition.org_id }}">−{{ c.expected_exits | round | int }}</a></td>
-          <td class="r strong keep" data-label="Projected"><a href="/forecast?org={{ c.org_id }}">{{ c.projected | num }}</a></td>
-          <td class="r muted" data-label="Likely range">{{ c.projected_low | num }} to {{ c.projected_high | num }}</td>
+          <td class="r" data-label="Hires"><a href="/forecast/requests?org={{ c.org_id }}" data-c="hires">+{{ "%.1f" | format(c.expected_hires) }}</a></td>
+          <td class="r" data-label="Exits"><a href="/forecast/exits?org={{ attrition.org_id }}" data-c="exits">−{{ "%.1f" | format(c.expected_exits) }}</a></td>
+          <td class="r strong keep" data-label="Projected"><a href="/forecast?org={{ c.org_id }}" data-c="projected">{{ c.projected | num }}</a></td>
+          <td class="r muted" data-label="Likely range" data-c="range">{{ c.projected_low | num }} to {{ c.projected_high | num }}</td>
           <td class="r keep" data-label="Approved"><a href="/plan?org={{ c.org_id }}">{{ c.approved | num }}</a></td>
-          <td class="r" data-label="Run-rate vs budget"><a href="/budget?org={{ c.org_id }}">{{ c.projected_run_rate | money }} of {{ c.budget | money }}</a></td>
+          <td class="r" data-label="Run-rate vs budget"><a href="/budget?org={{ c.org_id }}" data-c="spend">{{ c.projected_run_rate | money }} of {{ c.budget | money }}</a></td>
           <td data-label="Flag">{{ flag(c, quiet=True) }}</td>
         </tr>
         {% endfor %}
+        {% if held %}
+        <tr>
+          <td class="tall">Held at {{ org.name }} level<span class="sub">Leadership seats and central reserve</span></td>
+          <td class="r" data-label="In seats">{{ held.in_seats | num }}</td><td></td><td></td>
+          <td class="r strong keep" data-label="Projected">{{ held.projected | num }}</td><td></td>
+          <td class="r keep" data-label="Approved">{{ held.approved | num }}</td><td></td><td></td>
+        </tr>
+        {% endif %}
       </tbody>
+      <tfoot><tr data-fc-row {{ fc_data(org) }}>
+        <td>{{ org.name }} total</td>
+        <td class="r" data-label="In seats">{{ org.in_seats | num }}</td>
+        <td class="r" data-label="Hires" data-c="hires">+{{ "%.1f" | format(org.expected_hires) }}</td>
+        <td class="r" data-label="Exits" data-c="exits">−{{ "%.1f" | format(org.expected_exits) }}</td>
+        <td class="r keep" data-label="Projected" data-c="projected">{{ org.projected | num }}</td>
+        <td class="r" data-label="Likely range" data-c="range">{{ org.projected_low | num }} to {{ org.projected_high | num }}</td>
+        <td class="r keep" data-label="Approved">{{ org.approved | num }}</td>
+        <td class="r" data-label="Run-rate vs budget" data-c="spend">{{ org.projected_run_rate | money }} of {{ org.budget | money }}</td>
+        <td data-label="Flag">{{ flag(org, quiet=True) }}</td>
+      </tr></tfoot>
     </table>
     {% else %}
     <div class="empty-state"><b>{{ org.name }} is a team.</b><a class="btn" style="margin-top:12px" href="/forecast/requests?org={{ org.org_id }}">See its open requests and their odds</a></div>

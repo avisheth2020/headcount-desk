@@ -9,6 +9,8 @@ Last updated: Fri Nov 6, evening ET.
 
 13 front-end PRs in three waves, plus this docs PR. No schema change; the seed now stores each check's result for the last 13 mornings.
 
+A final QA pass fixed what the suite had not covered: what-ifs now move cost and every row, Submit and Approve save what is on screen first, edits made just after a save are no longer dropped, tables fit from 320px to 1240px, and bulk resolve runs as one write.
+
 | Wave | PRs | Contents |
 |---|---|---|
 | Clear the noise | 1 to 3 | Seven visible defects fixed. One freshness chip, a visible role switcher, a small tour. Explanatory text cut, one SVG icon set, one vocabulary (Over-hired, Exceptions, Req). |

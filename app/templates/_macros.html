@@ -45,7 +45,7 @@
 {% macro status_chip(status) %}
   {% if status == "submitted" %}<span class="chip chip-warn">{{ ico("clock") }}Waiting on VP</span>
   {% elif status == "vp_approved" %}<span class="chip chip-accent">{{ ico("check") }}VP approved</span>
-  {% elif status == "recruiter_assigned" %}<span class="chip chip-accent">{{ ico("progress") }}Recruiter assigned</span>
+  {% elif status == "recruiter_assigned" %}<span class="chip chip-accent">{{ ico("progress") }}With recruiter</span>
   {% elif status == "req_open" %}<span class="chip chip-accent">{{ ico("progress") }}Req open</span>
   {% elif status == "filled" %}<span class="chip chip-good">{{ ico("check") }}Filled</span>
   {% elif status == "rejected" %}<span class="chip chip-bad">{{ ico("x") }}Rejected</span>

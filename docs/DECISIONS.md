@@ -243,3 +243,11 @@ A running log. Each entry: the choice, the alternative, and why.
 
 **60. Autosave never overwrites what someone has typed since the save left.**
 *Why:* the save returns fresh totals by replacing the form. On a slow connection that could drop a later click. The browser compares the form with what it sent and skips a stale reply, and the next save carries the newer values.
+
+**61. A what-if redoes the whole sum, not just the headline.**
+*Alternative:* move the chart and the top number only, and leave cost and the table as they were.
+*Why:* a headcount change that costs nothing reads as a bug. The sliders now move run-rate, the flags and every row, using the same formula as `v_forecast`. At 100% the browser's text matches the server's exactly, and a test holds it there.
+
+**62. Hires and exits show one decimal.**
+*Alternative:* whole numbers, so 566 + 19 − 16 shows as 570.
+*Why:* both are expected values, not head counts. One decimal is what lets a reader check the row by eye.

@@ -314,9 +314,9 @@ a.hero-number:hover { color: var(--accent-ink); text-decoration: none; }
 .fc { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s4); }
 .fc-top { display: flex; justify-content: space-between; gap: var(--s5); flex-wrap: wrap; align-items: flex-start; }
 .fc-flag { margin-top: var(--s2); display: flex; gap: 6px; flex-wrap: wrap; }
-.fc-math { flex: 1; min-width: 0; max-width: 560px; margin: 0; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.fc-math { flex: 1 1 280px; min-width: 0; max-width: 560px; margin: 0; grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .fc-math a { padding: 8px 4px; }
-.fc-math span { font-size: 11.5px; }
+.fc-math span { font-size: 11.5px; white-space: normal; }
 .fan { display: block; width: 100%; height: 280px; touch-action: pan-y; }
 .fan text { fill: var(--muted); font: 400 11.5px var(--font); }
 .fan .end { fill: var(--text); font-weight: 600; font-size: 13px; }
@@ -328,7 +328,6 @@ a.hero-number:hover { color: var(--accent-ink); text-decoration: none; }
 .fc-sliders b { font-weight: 600; font-variant-numeric: tabular-nums; }
 .fc-sliders input { width: 100%; accent-color: var(--accent); margin: 0; }
 .fc .hero-facts { margin-top: 0; }
-.fc.whatif .hero-facts { opacity: .45; }
 
 /* ── Tables ──────────────────────────────────────────────────────────────── */
 
@@ -580,7 +579,6 @@ tr.hot td { background: var(--warn-soft) !important; }
 .warn-text { color: var(--warn); font-weight: 600; }
 .room-wrap { padding: var(--s3) var(--s4); border-bottom: 1px solid var(--border); }
 .saved { display: inline-flex; align-items: center; gap: 4px; font-size: 12.5px; font-weight: 600; color: var(--good); animation: rise var(--med) var(--ease); }
-.plan-foot { position: sticky; bottom: 0; font-size: 13.5px; color: var(--text); }
 
 /* ── Drawer and command palette ──────────────────────────────────────────── */
 
@@ -619,6 +617,16 @@ tr.hot td { background: var(--warn-soft) !important; }
 
 /* ── Narrow containers: tables become cards ──────────────────────────────── */
 
+/* Beside the sidebar on a tablet: the same columns, closer together. Each term's definition is still on the hero above. */
+@container (max-width: 900px) {
+  .table { font-size: 13px; }
+  .table th { white-space: normal; line-height: 1.2; }
+  .table th .tip { display: none; }
+  .table th, .table td { padding-left: 6px; padding-right: 6px; }
+  .table th:first-child, .table td:first-child { padding-left: var(--s3); }
+  .table th:last-child, .table td:last-child { padding-right: var(--s3); }
+}
+
 @container (max-width: 700px) {
   .table.cards thead { display: none; }
   .table.cards, .table.cards tbody, .table.cards tfoot, .table.cards tr, .table.cards td { display: block; width: 100%; }
@@ -637,7 +645,7 @@ tr.hot td { background: var(--warn-soft) !important; }
   .table.cards.compact td:first-child, .table.cards.compact td.wide { grid-column: auto; }
   .table.cards.compact td:not(:first-child):not(.keep) { display: none; }
   .table.cards.compact td.keep { text-align: right !important; }
-  .table.cards.compact.one tr { grid-template-columns: minmax(0, 1fr) 76px; }
+  .table.cards.compact.one tr { grid-template-columns: minmax(0, 1fr) 96px; }
   .table.cards.compact.vwide tr { grid-template-columns: minmax(0, 1fr) 172px; }
   .table.cards.compact.vwide td.keep::before { display: none; }
   .vflag { display: none; }
@@ -647,7 +655,7 @@ tr.hot td { background: var(--warn-soft) !important; }
   .table.cards.compact tr { padding-top: 6px; padding-bottom: 6px; }
   .fc-sliders { grid-template-columns: minmax(0, 1fr); }
   .envelopes { grid-template-columns: minmax(0, 1fr); }
-  .hm { padding: var(--s2); }
+  .hm { padding: var(--s2); grid-template-columns: minmax(58px, 110px) repeat(var(--runs), minmax(0, 1fr)); }
   .hm-day { font-size: 9.5px; }
   .hm-name { font-size: 12px; }
   .tm { height: 480px; }
@@ -676,6 +684,11 @@ tr.hot td { background: var(--warn-soft) !important; }
   .changes li { grid-template-columns: 44px minmax(0, 1fr); }
   .changes li .delta { display: none; }
   .changes li > :last-child { grid-column: 2; }
+}
+/* The narrowest phones: every other date, and the selected one, so the numbers don't run together. */
+@container (max-width: 400px) {
+  .hm-day:nth-child(odd):not(.on) { visibility: hidden; }
+  .hm-cell svg { width: 10px; height: 10px; }
 }
 @container (max-width: 1000px) {
   .hero { grid-template-columns: 1fr; gap: var(--s4); }

@@ -122,24 +122,28 @@ async def resolve_many(request: Request):
         kind, _, position = str(item).partition(":")
         if kind in TYPES and position.isdigit():
             items.append((kind, int(position)))
-    done, skipped = 0, 0
     with db.get_conn() as conn:
         ctx = web.page_context(request, conn)
         if not permissions.can_resolve_exceptions(ctx["role"]):
             permissions.forbid("Only a resource manager, or the VP or SVP who owns the seat, can resolve an exception.")
-        for kind, position in items:
-            seat = db.one(conn, "SELECT org_id FROM positions WHERE id = %s", (position,))
-            if seat is None:
-                raise HTTPException(404, "No such position")
+        wanted = list({position for _, position in items})
+        seats = {r["id"]: r["org_id"] for r in db.query(conn, "SELECT id, org_id FROM positions WHERE id = ANY(%s)", (wanted,))}
+        if len(seats) < len(wanted):
+            raise HTTPException(404, "No such position")
+        allowed = set()
+        for org_id in set(seats.values()):      # "Select all" can reach seats this person does not own: leave those alone
             try:
-                permissions.check_resolve_exception(conn, ctx, seat["org_id"])
-            except HTTPException:               # "Select all" can reach seats this person does not own: leave those alone
-                skipped += 1
-                continue
-            conn.execute("""
-                INSERT INTO exception_resolutions (exception_type, position_id, resolved_by) VALUES (%s, %s, %s)
-                ON CONFLICT (exception_type, position_id) DO NOTHING""", (kind, position, ctx["me"]["id"]))
-            done += 1
+                permissions.check_resolve_exception(conn, ctx, org_id)
+                allowed.add(org_id)
+            except HTTPException:
+                pass
+        mine = [(kind, position) for kind, position in items if seats[position] in allowed]
+        conn.execute("""
+            INSERT INTO exception_resolutions (exception_type, position_id, resolved_by)
+            SELECT kind, position, %s FROM unnest(%s::text[], %s::int[]) AS t (kind, position)
+            ON CONFLICT (exception_type, position_id) DO NOTHING""",
+                     (ctx["me"]["id"], [kind for kind, _ in mine], [position for _, position in mine]))
+        done, skipped = len(mine), len(items) - len(mine)
         batch = db.one(conn, "SELECT now() AS at")["at"].isoformat()
     return _back(org, form.get("type"), str(form.get("show") or ""), done=done, skipped=skipped, batch=batch)
 

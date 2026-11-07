@@ -28,8 +28,10 @@ def forecast(request: Request, org: int | None = None):
                 ("Org", "name"), ("In seats today", "in_seats"), ("Expected hires", "expected_hires"), ("Expected exits", "expected_exits"),
                 ("Projected", "projected"), ("P25", "projected_low"), ("P75", "projected_high"), ("Approved", "approved"),
                 ("Projected run-rate USD", "projected_run_rate"), ("Budget USD", "budget")], children)
+        held = {k: me[k] - sum(c[k] for c in children) for k in ("in_seats", "projected", "approved")} if children else None
         ctx.update(
-            org=me, children=children, sort=sort, dir=direction, crumbs=breadcrumbs(conn, org_id),
+            org=me, children=children, held=held if held and (held["in_seats"] or held["approved"]) else None,
+            sort=sort, dir=direction, crumbs=breadcrumbs(conn, org_id),
             trend=trends.seat_history(conn, org_id),
             svps=db.query(conn, "SELECT id, name FROM orgs WHERE level IN ('company', 'svp') ORDER BY id"),
             history=db.one(conn, """
