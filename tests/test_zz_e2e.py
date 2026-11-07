@@ -186,6 +186,22 @@ def test_planning_cycle_end_to_end(browser, base_url):
     assert page.errors == []
 
 
+def test_plan_steppers_update_dollars_and_room_at_once(browser, base_url):
+    page = new_page(browser, base_url, role="vp")
+    page.goto(base_url + "/planning", wait_until="networkidle")
+    if page.locator("a", has_text="Edit your plan").count() == 0:
+        pytest.skip("this role's plan was already submitted by an earlier test")
+    page.locator("a", has_text="Edit your plan").click()
+    page.wait_for_load_state("networkidle")
+    before = page.locator("[data-room-left-text]").inner_text()
+    page.locator("#inc_change_research").click()
+    assert page.locator("[data-room-left-text]").inner_text() != before
+    page.wait_for_selector(".saved")
+    page.locator("#dec_change_research").click()
+    wait_until(lambda: page.locator("[data-room-left-text]").inner_text() == before)
+    assert page.errors == []
+
+
 def test_exceptions_resolve_and_undo(browser, base_url):
     page = new_page(browser, base_url, role="rm")
     page.goto(base_url + "/exceptions", wait_until="networkidle")

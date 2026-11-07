@@ -165,3 +165,16 @@ def test_planning_pages_and_permissions(manifest):
     from tests.conftest import SEEDED_SCHEMA, TEST_URL
     with db.connect(TEST_URL, schema=SEEDED_SCHEMA) as conn:       # undo the saved edit
         seed(conn)
+
+
+def test_room_to_grow_counts_only_submitted_and_approved():
+    from app.routes.planning import room_to_grow
+    envelope = {"svp_org_id": 2, "headcount_headroom": 62}
+    rows = [{"id": 1, "svp_org_id": 2, "status": "draft", "final_change": 16},
+            {"id": 2, "svp_org_id": 2, "status": "submitted", "final_change": 24},
+            {"id": 3, "svp_org_id": 2, "status": "sent_back", "final_change": 78},
+            {"id": 4, "svp_org_id": 9, "status": "approved", "final_change": 500}]
+    use = room_to_grow(envelope, rows)
+    assert (use["room"], use["left"], use["submitted"], use["draft"], use["sent_back"]) == (86, 62, 24, 16, 78)
+    assert room_to_grow(envelope, rows, leave_out=1)["draft"] == 0
+    assert room_to_grow(envelope, rows, leave_out=2)["left"] == 86           # your own ask is shown separately

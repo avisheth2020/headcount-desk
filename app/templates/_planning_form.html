@@ -1,10 +1,14 @@
 {% import "_macros.html" as m %}
 <form id="plan-form" class="card" method="post" action="/planning/{{ sub.id }}/save"
-      hx-post="/planning/{{ sub.id }}/save" hx-trigger="change delay:100ms" hx-target="#plan-form" hx-swap="outerHTML">
+      hx-post="/planning/{{ sub.id }}/save" hx-trigger="change delay:400ms" hx-target="#plan-form" hx-swap="outerHTML">
   {{ csrf_input(request) }}
   <div class="card-head">
     <h2>{{ sub.vp_name }}: next year by job family</h2>
-    <span class="muted small">{% if can_edit %}Changes save as you go, and the dollars update.{% elif can_review %}Set the number you will approve for each line, or leave it as requested.{% else %}Read only in this role.{% endif %}</span>
+    {% if saved %}<span class="saved" role="status">{{ ico("check") }}Saved</span>{% elif not (can_edit or can_review) %}<span class="muted small">Read only</span>{% endif %}
+  </div>
+  <div class="card-pad room-wrap">
+    <p class="small muted" style="margin-bottom:6px">{{ sub.svp_name }} room to grow</p>
+    {{ m.room_gauge(room, sub.final_change, "This plan") }}
   </div>
   {% if error %}<p class="flash flash-bad" role="alert" style="margin:12px 16px 0">{{ error }}</p>{% endif %}
   <table class="table cards">
@@ -12,21 +16,21 @@
     <tbody>
       {% for l in lines %}
       {% set key = l.job_family %}
-      <tr>
+      <tr data-plan-line data-base="{{ l.base_headcount }}" data-cost="{{ l.cost_per_head }}">
         <td class="strong">{{ FAMILY[l.job_family] }}<span class="sub">{{ l.cost_per_head | money }} a head</span></td>
         <td class="r" data-label="This year">{{ l.base_headcount | num }}</td>
         <td class="r" data-label="Change asked">
-          {% if can_edit %}<span class="stepper-input"><label class="sr-only" for="change_{{ key }}">Change for {{ FAMILY[key] }}</label><input type="number" id="change_{{ key }}" name="change_{{ key }}" value="{{ l.requested_change }}" min="-{{ l.base_headcount }}" max="500" step="1" inputmode="numeric"></span>
+          {% if can_edit %}<span class="stepper-input"><label class="sr-only" for="change_{{ key }}">Change for {{ FAMILY[key] }}</label><button type="button" id="dec_change_{{ key }}" data-step="-1" aria-label="One fewer">−</button><input type="number" id="change_{{ key }}" name="change_{{ key }}" value="{{ l.requested_change }}" min="-{{ l.base_headcount }}" max="500" step="1" inputmode="numeric"><button type="button" id="inc_change_{{ key }}" data-step="1" aria-label="One more">+</button></span>
           {% else %}{{ m.signed(l.requested_change) }}{% endif %}
         </td>
         {% if can_review or sub.status == "approved" %}
         <td class="r" data-label="Change approved">
-          {% if can_review %}<span class="stepper-input"><label class="sr-only" for="approved_{{ key }}">Approved change for {{ FAMILY[key] }}</label><input type="number" id="approved_{{ key }}" name="approved_{{ key }}" value="{{ l.final_change }}" min="-{{ l.base_headcount }}" max="500" step="1" inputmode="numeric"></span>
+          {% if can_review %}<span class="stepper-input"><label class="sr-only" for="approved_{{ key }}">Approved change for {{ FAMILY[key] }}</label><button type="button" id="dec_approved_{{ key }}" data-step="-1" aria-label="One fewer">−</button><input type="number" id="approved_{{ key }}" name="approved_{{ key }}" value="{{ l.final_change }}" min="-{{ l.base_headcount }}" max="500" step="1" inputmode="numeric"><button type="button" id="inc_approved_{{ key }}" data-step="1" aria-label="One more">+</button></span>
           {% else %}{{ m.signed(l.final_change) }}{% endif %}
         </td>
         {% endif %}
-        <td class="r strong" data-label="Next year">{{ (l.base_headcount + l.final_change) | num }}</td>
-        <td class="r" data-label="Cost impact">{{ "+" if l.final_cost > 0 }}{{ l.final_cost | money }}</td>
+        <td class="r strong" data-label="Next year" data-next>{{ (l.base_headcount + l.final_change) | num }}</td>
+        <td class="r" data-label="Cost impact" data-line-cost>{{ "+" if l.final_cost > 0 }}{{ l.final_cost | money }}</td>
         <td class="wide tall" data-label="Why">
           {% if can_edit %}<label class="sr-only" for="why_{{ key }}">Reason for the {{ FAMILY[key] }} change</label><input type="text" id="why_{{ key }}" name="why_{{ key }}" value="{{ l.justification }}" maxlength="300" placeholder="{{ 'Needed before you can submit' if l.requested_change else 'Reason for the change' }}">
           {% else %}<span class="{{ 'muted' if not l.justification }}">{{ l.justification or "–" }}</span>{% endif %}
@@ -42,10 +46,8 @@
       <td class="r" data-label="Cost impact">{{ "+" if sub.final_cost > 0 }}{{ sub.final_cost | money }}</td><td></td>
     </tr></tfoot>
   </table>
-  <div class="card-foot row spread">
-    <span>Next year for {{ sub.vp_name }}: <strong class="num" style="color:var(--text)">{{ sub.proposed_headcount | num }}</strong> positions, <strong class="num" style="color:var(--text)">{{ sub.proposed_cost | money }}</strong> a year
-      ({{ m.signed(sub.final_change) }} positions, {{ "+" if sub.final_cost > 0 }}{{ sub.final_cost | money }}).</span>
-    <span>{{ sub.svp_name }} envelope: <strong class="num" style="color:{{ 'var(--bad)' if envelope.headcount_headroom < 0 else 'var(--text)' }}">{{ m.signed(envelope.headcount_headroom) }}</strong> positions of headroom after every submitted ask.</span>
+  <div class="card-foot plan-foot">
+    <span>Next year: <strong class="num" data-total-next>{{ sub.proposed_headcount | num }}</strong> positions, <strong class="num" data-total-delta>{{ m.signed(sub.final_change) }}, {{ "+" if sub.final_cost > 0 }}{{ sub.final_cost | money }}</strong></span>
   </div>
   <noscript><div class="card-foot"><button class="btn" type="submit">Save changes</button></div></noscript>
 </form>

@@ -55,7 +55,7 @@ def planning_home(request: Request, flash: str | None = None, error: str | None 
                 ("SVP", "svp_name"), ("VP org", "vp_name"), ("Status", "status"), ("This year", "base_headcount"),
                 ("Requested change", "requested_change"), ("Change that counts", "final_change"),
                 ("Cost impact USD", "final_cost"), ("Next year", "proposed_headcount")], rows)
-        envelopes = db.query(conn, "SELECT * FROM v_planning_envelopes WHERE cycle_id = %s ORDER BY svp_org_id", (cycle["id"],))
+        envelopes = [{**e, "use": room_to_grow(e, rows)} for e in db.query(conn, "SELECT * FROM v_planning_envelopes WHERE cycle_id = %s ORDER BY svp_org_id", (cycle["id"],))]
         waiting = [r for r in rows if r["status"] != "approved"]
         ctx.update(
             cycle=cycle, rows=rows, envelopes=envelopes, flash=flash, error=error, sort=sort, dir=direction,
@@ -77,15 +77,30 @@ def planning_home(request: Request, flash: str | None = None, error: str | None 
     return web.render(request, "planning.html", ctx)
 
 
+def room_to_grow(envelope: dict, rows: list[dict], leave_out: int | None = None) -> dict:
+    """How an SVP's room to grow is being used. Room is the envelope minus this
+    year's headcount. Submitted and approved asks count against it; drafts and
+    plans sent back do not count yet, but they are shown so nothing is a surprise."""
+    mine = [r for r in rows if r["svp_org_id"] == envelope["svp_org_id"] and r["id"] != leave_out]
+    total = lambda status: sum(r["final_change"] for r in mine if r["status"] == status)
+    counted_all = sum(r["final_change"] for r in rows if r["svp_org_id"] == envelope["svp_org_id"] and r["status"] in ("submitted", "approved"))
+    room = envelope["headcount_headroom"] + counted_all
+    approved, submitted = total("approved"), total("submitted")
+    return {"room": room, "approved": approved, "submitted": submitted, "draft": total("draft"), "sent_back": total("sent_back"),
+            "left": room - approved - submitted}
+
+
 def _detail(request: Request, conn, submission_id: int) -> dict:
     ctx = web.page_context(request, conn)
     sub = submission(conn, submission_id)
     cycle = current_cycle(conn)
     open_cycle = cycle["status"] == "open"
+    envelope = db.one(conn, "SELECT * FROM v_planning_envelopes WHERE cycle_id = %s AND svp_org_id = %s", (sub["cycle_id"], sub["svp_org_id"]))
+    everyone = db.query(conn, "SELECT id, svp_org_id, status, final_change FROM v_plan_submissions WHERE cycle_id = %s", (sub["cycle_id"],))
     ctx.update(
         sub=sub, cycle=cycle, steps=STEPS, done=DONE[sub["status"]],
         lines=db.query(conn, "SELECT * FROM v_plan_submission_lines WHERE submission_id = %s ORDER BY base_headcount DESC", (submission_id,)),
-        envelope=db.one(conn, "SELECT * FROM v_planning_envelopes WHERE cycle_id = %s AND svp_org_id = %s", (sub["cycle_id"], sub["svp_org_id"])),
+        envelope=envelope, room=room_to_grow(envelope, everyone, leave_out=submission_id),
         events=db.query(conn, """
             SELECT e.*, coalesce(a.full_name, 'Headcount Desk') AS actor_name
             FROM planning_events e LEFT JOIN people a ON a.id = e.actor_id
@@ -132,7 +147,7 @@ async def planning_save(request: Request, submission_id: int):
             conn.rollback()
             error = str(problem)
         ctx = _detail(request, conn, submission_id)
-        ctx["error"] = error
+        ctx.update(error=error, saved=error is None)
     return web.render(request, "_planning_form.html", ctx)
 
 

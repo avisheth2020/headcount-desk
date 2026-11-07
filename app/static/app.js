@@ -296,6 +296,39 @@ function initForecast() {
 }
 initForecast();
 
+// ── Planning: dollars and room move as you change a number; the server saves and confirms. ──
+const money = (n) => { const a = Math.abs(n), s = n < 0 ? "−" : "+"; return s + (a >= 1e6 ? `$${(a / 1e6).toFixed(1)}M` : `$${Math.round(a / 1e3).toLocaleString("en-US")}K`); };
+const signed = (n) => (n > 0 ? "+" : n < 0 ? "−" : "") + Math.abs(n).toLocaleString("en-US");
+function previewPlan(form) {
+  let change = 0, cost = 0, next = 0;
+  form.querySelectorAll("[data-plan-line]").forEach((row) => {
+    const input = row.querySelector("input[name^='approved_']") || row.querySelector("input[name^='change_']");
+    const base = +row.dataset.base, value = input ? parseInt(input.value, 10) || 0 : parseInt(row.querySelector("[data-next]").textContent.replace(/,/g, ""), 10) - base;
+    const dollars = value * +row.dataset.cost;
+    row.querySelector("[data-next]").textContent = (base + value).toLocaleString("en-US");
+    row.querySelector("[data-line-cost]").textContent = value ? money(dollars) : "$0";
+    change += value; cost += dollars; next += base + value;
+  });
+  const room = form.querySelector(".room"), left = +room.dataset.room - +room.dataset.others - change;
+  const mine = room.querySelector("[data-room-mine]");
+  mine.style.flexGrow = Math.max(change, 0);
+  mine.className = left < 0 ? "seg-over" : "seg-usable";
+  room.querySelector("[data-room-left]").style.flexGrow = Math.max(left, 0);
+  room.querySelector("[data-room-mine-text]").textContent = signed(change);
+  room.querySelector("[data-room-left-text]").textContent = left < 0 ? `${-left} over the limit` : `${left} left`;
+  form.querySelector("[data-total-next]").textContent = next.toLocaleString("en-US");
+  form.querySelector("[data-total-delta]").textContent = `${signed(change)}, ${change ? money(cost) : "$0"}`;
+}
+document.addEventListener("input", (e) => { const form = e.target.closest?.("#plan-form"); if (form && e.target.type === "number") previewPlan(form); });
+document.addEventListener("click", (e) => {
+  const button = e.target.closest?.("[data-step]");
+  if (!button) return;
+  const input = button.parentElement.querySelector("input");
+  input.value = Math.min(+input.max, Math.max(+input.min, (parseInt(input.value, 10) || 0) + +button.dataset.step));
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+  input.dispatchEvent(new Event("change", { bubbles: true }));
+});
+
 // ── Deep link: /requests#d=/positions/12 opens that position in the drawer. ──
 const openFromHash = () => {
   if (location.hash.startsWith("#d=/")) openDrawer(decodeURIComponent(location.hash.slice(3)), false);
