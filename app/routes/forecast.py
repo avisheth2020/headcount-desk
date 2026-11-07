@@ -3,7 +3,7 @@
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse
 
-from app import db, web
+from app import db, trends, web
 from app.routes.overview import breadcrumbs, get_org
 
 router = APIRouter()
@@ -30,6 +30,7 @@ def forecast(request: Request, org: int | None = None):
                 ("Projected run-rate USD", "projected_run_rate"), ("Budget USD", "budget")], children)
         ctx.update(
             org=me, children=children, sort=sort, dir=direction, crumbs=breadcrumbs(conn, org_id),
+            trend=trends.seat_history(conn, org_id),
             svps=db.query(conn, "SELECT id, name FROM orgs WHERE level IN ('company', 'svp') ORDER BY id"),
             history=db.one(conn, """
                 SELECT count(*) AS n, percentile_cont(0.5) WITHIN GROUP (ORDER BY days) AS median,

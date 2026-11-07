@@ -150,6 +150,7 @@ document.body.addEventListener("htmx:responseError", (e) => {
 
 document.body.addEventListener("htmx:afterSwap", (e) => {
   const target = e.detail.target;
+  if (document.getElementById("forecast")) initForecast();
   if (target.id === "palette-results") target.querySelector(".palette-item")?.classList.add("active");
   if (target.id === "drawer-body") {
     const title = target.querySelector("[data-drawer-title]")?.dataset.drawerTitle;
@@ -215,6 +216,77 @@ document.addEventListener("focusin", (e) => {
   if (hit) { const box = hit.getBoundingClientRect(); placeTip(hit.dataset.chartTip, box.left, box.top); }
 });
 document.addEventListener("focusout", () => { chartTip.hidden = true; });
+
+// ── Forecast: real history, then the likely range to quarter end. What-ifs stay in this browser. ──
+const fmt = (n) => Math.round(n).toLocaleString("en-US");
+function niceStep(span) {
+  const raw = span / 4, unit = 10 ** Math.floor(Math.log10(raw)), m = raw / unit;
+  return (m <= 1 ? 1 : m <= 2 ? 2 : m <= 5 ? 5 : 10) * unit;
+}
+function initForecast() {
+  const box = document.getElementById("forecast"), svg = document.getElementById("fan");
+  if (!box || !svg || box.dataset.ready) return;
+  box.dataset.ready = "1";
+  const d = box.dataset, history = d.history.split(",").map(Number), last = history.length - 1;
+  const start = new Date(d.start + "T12:00:00"), end = new Date(d.end + "T12:00:00");
+  const stop = last + Math.max(1, Math.round((end - start) / 864e5) - last);
+  const seats = +d.seats, hires = +d.hires, exits = +d.exits, base = +d.projected, approved = +d.approved;
+  const below = base - +d.low, above = +d.high - base;
+  const field = (name) => box.querySelector(`[data-fc="${name}"]`);
+  const hireInput = $("#fc-hires", box), exitInput = $("#fc-exits", box), NS = "http://www.w3.org/2000/svg";
+  const make = (tag, attrs, text) => { const el = document.createElementNS(NS, tag); for (const k in attrs) el.setAttribute(k, attrs[k]); if (text !== undefined) el.textContent = text; return el; };
+  const label = (i) => new Date(start.getTime() + i * 864e5).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  // The scale holds still as the sliders move: it already covers both extremes.
+  const extremes = [seats + hires * 0.7 - exits * 1.3 - below, seats + hires * 1.3 - exits * 0.7 + above];
+  let low = Math.min(...history, ...extremes), high = Math.max(...history, ...extremes);
+  const step = niceStep(Math.max(high - low, 8));
+  low = Math.floor(low / step) * step; high = Math.ceil(high / step) * step;
+  let state = {};
+  function draw() {
+    const H = svg.clientHeight || 280, W = Math.max(280, svg.clientWidth), L = 46, R = 54, T = 10, B = 26;
+    const x = (i) => L + (i / stop) * (W - L - R), y = (v) => T + ((high - v) / (high - low)) * (H - T - B);
+    const hp = +hireInput.value / 100, ep = +exitInput.value / 100;
+    const projected = base + hires * (hp - 1) - exits * (ep - 1), lo = projected - below, hi = projected + above;
+    svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+    svg.replaceChildren();
+    for (let v = low; v <= high; v += step) svg.append(make("line", { x1: L, x2: W - R, y1: y(v), y2: y(v), class: "grid" }), make("text", { x: L - 8, y: y(v) + 4, "text-anchor": "end" }, fmt(v)));
+    [[0, "start"], [last, "middle"], [stop, "end"]].forEach(([i, anchor]) => svg.append(make("text", { x: x(i), y: H - 8, "text-anchor": anchor }, i === last ? "Today" : label(i))));
+    if (approved >= low && approved <= high) svg.append(make("line", { x1: L, x2: W - R, y1: y(approved), y2: y(approved), class: "approved" }), make("text", { x: L + 4, y: y(approved) - 5 }, "Approved"));
+    svg.append(make("path", { d: `M${x(last)} ${y(seats)} L${x(stop)} ${y(hi)} L${x(stop)} ${y(lo)} Z`, fill: "var(--accent)", "fill-opacity": 0.14 }));
+    svg.append(make("path", { d: history.map((v, i) => `${i ? "L" : "M"}${x(i)} ${y(v)}`).join(" "), fill: "none", stroke: "var(--accent)", "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round" }));
+    svg.append(make("path", { d: `M${x(last)} ${y(seats)} L${x(stop)} ${y(projected)}`, fill: "none", stroke: "var(--accent)", "stroke-width": 2, "stroke-linecap": "round" }));
+    [[last, seats], [stop, projected]].forEach(([i, v]) => svg.append(make("circle", { cx: x(i), cy: y(v), r: 4, fill: "var(--accent)", stroke: "var(--surface)", "stroke-width": 2 })));
+    svg.append(make("text", { x: x(stop) + 8, y: y(projected) + 4, class: "end" }, fmt(projected)));
+    const cross = make("line", { y1: T, y2: H - B, stroke: "var(--border-strong)", "stroke-width": 1, visibility: "hidden" });
+    svg.append(cross);
+    state = { cross, x, projected, L, R, W };
+    field("projected").textContent = fmt(projected);
+    field("range").textContent = `${fmt(lo)} to ${fmt(hi)}`;
+    field("gap").textContent = `${fmt(Math.abs(approved - projected))} ${projected > approved ? "over" : "under"}`;
+    field("hires").textContent = "+" + fmt(hires * hp);
+    field("exits").textContent = "−" + fmt(exits * ep);
+    field("hires-pct").textContent = hireInput.value + "%";
+    field("exits-pct").textContent = exitInput.value + "%";
+    const changed = hp !== 1 || ep !== 1;
+    field("whatif").hidden = field("reset").hidden = !changed;
+    box.classList.toggle("whatif", changed);
+  }
+  svg.addEventListener("pointermove", (e) => {
+    const box2 = svg.getBoundingClientRect(), share = (e.clientX - box2.left - state.L) / (state.W - state.L - state.R), i = Math.max(0, Math.min(stop, Math.round(share * stop)));
+    state.cross.setAttribute("x1", state.x(i)); state.cross.setAttribute("x2", state.x(i)); state.cross.setAttribute("visibility", "visible");
+    if (i <= last) return placeTip(`${fmt(history[i])} people, ${label(i)}`, e.clientX, e.clientY);
+    const t = (i - last) / (stop - last), mid = seats + (state.projected - seats) * t;
+    placeTip(`About ${fmt(mid)} (${fmt(mid - below * t)} to ${fmt(mid + above * t)}), ${label(i)}`, e.clientX, e.clientY);
+  });
+  svg.addEventListener("pointerleave", () => { state.cross?.setAttribute("visibility", "hidden"); chartTip.hidden = true; });
+  hireInput.addEventListener("input", draw);
+  exitInput.addEventListener("input", draw);
+  field("reset").addEventListener("click", () => { hireInput.value = exitInput.value = 100; draw(); });
+  field("sliders").hidden = false;
+  draw();
+  new ResizeObserver(draw).observe(svg);
+}
+initForecast();
 
 // ── Deep link: /requests#d=/positions/12 opens that position in the drawer. ──
 const openFromHash = () => {

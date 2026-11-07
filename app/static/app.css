@@ -302,6 +302,23 @@ a.hero-number:hover { color: var(--accent-ink); text-decoration: none; }
 
 #chart-tip { position: fixed; z-index: 95; pointer-events: none; max-width: 240px; padding: 6px 9px; border-radius: 6px; background: #12161c; color: #fff; font-size: 12.5px; box-shadow: var(--e2); }
 
+.fc { display: grid; gap: var(--s4); }
+.fc-top { display: flex; justify-content: space-between; gap: var(--s5); flex-wrap: wrap; align-items: flex-start; }
+.fc-flag { margin-top: var(--s2); display: flex; gap: 6px; flex-wrap: wrap; }
+.fc-math { flex: 1; max-width: 560px; margin: 0; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.fan { display: block; width: 100%; height: 280px; touch-action: pan-y; }
+.fan text { fill: var(--muted); font: 400 11.5px var(--font); }
+.fan .end { fill: var(--text); font-weight: 600; font-size: 13px; }
+.fan .grid { stroke: var(--border); stroke-width: 1; }
+.fan .approved { stroke: var(--border-strong); stroke-width: 1; }
+.fc-sliders { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)) auto; gap: var(--s3) var(--s5); align-items: end; }
+.fc-sliders label { margin: 0; display: grid; gap: 4px; font-weight: 400; }
+.fc-sliders label > span { display: flex; justify-content: space-between; font-size: 13px; }
+.fc-sliders b { font-weight: 600; font-variant-numeric: tabular-nums; }
+.fc-sliders input { width: 100%; accent-color: var(--accent); margin: 0; }
+.fc .hero-facts { margin-top: 0; }
+.fc.whatif .hero-facts { opacity: .45; }
+
 /* ── Tables ──────────────────────────────────────────────────────────────── */
 
 .table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13.5px; }
@@ -481,6 +498,9 @@ tr.hot td { background: var(--warn-soft) !important; }
 
 @media (max-width: 479px) { .topbar .brand { display: none; } .fresh-chip summary span { display: none; } .fresh-chip summary { padding: 0 9px; } .topbar-right { gap: 4px; } }
 
+.fc { grid-template-columns: minmax(0, 1fr); }
+.fc-math a:last-child .tip::after, .fc-math a:nth-last-child(2) .tip::after { left: auto; right: -8px; transform: none; }
+
 /* ── Drawer and command palette ──────────────────────────────────────────── */
 
 .scrim { position: fixed; inset: 0; background: var(--scrim); z-index: 60; opacity: 0; pointer-events: none; transition: opacity var(--med) var(--ease); }
@@ -537,6 +557,8 @@ tr.hot td { background: var(--warn-soft) !important; }
   .table.cards.compact td:not(:first-child):not(.keep) { display: none; }
   .table.cards.compact td.keep { text-align: right !important; }
   .buckets { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .fc-sliders { grid-template-columns: minmax(0, 1fr); }
+  .fan { height: 240px; }
   .bars li { grid-template-columns: minmax(0, 130px) minmax(0, 1fr); }
   .hero { grid-template-columns: 1fr; gap: var(--s4); }
   .grid-2, .grid-3, .sg-themes { grid-template-columns: 1fr; }

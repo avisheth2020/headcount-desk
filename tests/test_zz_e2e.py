@@ -294,3 +294,19 @@ def test_tour_remembers_progress(browser, base_url):
     page.wait_for_load_state("networkidle")
     assert page.locator("[data-tour-label]").inner_text() == "Tour 1 of 4"
     assert page.errors == []
+
+
+def test_forecast_chart_and_what_if(browser, base_url):
+    page = new_page(browser, base_url)
+    page.goto(base_url + "/forecast", wait_until="networkidle")
+    assert page.locator("#fan path").count() == 3                                # range, history, projection
+    before = page.locator("[data-fc=projected]").inner_text()
+    page.locator("#fc-exits").fill("130")
+    assert page.locator("[data-fc=projected]").inner_text() != before            # moves at once, nothing saved
+    assert page.locator("[data-fc=whatif]").is_visible()
+    page.locator("[data-fc=reset]").click()
+    assert page.locator("[data-fc=projected]").inner_text() == before
+    page.locator(".pills a", has_text="Engineering").click()                     # an in-place swap redraws the chart
+    page.wait_for_url("**org=**")
+    wait_until(lambda: page.locator("#fan path").count() == 3)
+    assert page.errors == []
