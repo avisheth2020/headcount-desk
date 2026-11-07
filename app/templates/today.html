@@ -32,7 +32,7 @@
   <nav class="tiles" aria-label="Where {{ summary.name }} stands">
     <a class="card tile" href="/?org={{ summary.org_id }}"><span>Usable open</span><b>{{ summary.usable_open | num }}</b><small>of {{ summary.approved | num }} approved</small></a>
     <a class="card tile" href="/budget?org={{ summary.org_id }}"><span>Projected spend</span><b>{{ summary.pct_of_budget }}%</b><small>{{ m.budget_chip(summary.state) }}</small></a>
-    <a class="card tile" href="/requests?scope=all&status=submitted"><span>Backfills waiting on a VP</span><b>{{ pending | num }}</b><small>in {{ summary.name }}</small></a>
+    <a class="card tile" href="/requests?scope=all&status=submitted&org={{ summary.org_id }}"><span>Backfills waiting on a VP</span><b>{{ pending | num }}</b><small>in {{ summary.name }}</small></a>
     <a class="card tile" href="/exceptions?org={{ summary.org_id }}"><span>Data problems to fix</span><b>{{ summary.exceptions | num }}</b><small>open exceptions</small></a>
     {{ plan_tile(plans, role) }}
     {{ check_tile(check) }}
@@ -44,7 +44,7 @@
         <li>{{ delta(changes.filled) }}<span>filled seats <span class="muted">· {{ changes.hires }} started, {{ changes.exits }} left</span></span><a class="small" href="/positions?org={{ summary.org_id }}&bucket=filled&sort=opened&dir=desc">Rows ›</a></li>
         <li>{{ delta(changes.committed) }}<span>open seats with a recruiter on them</span><a class="small" href="/positions?org={{ summary.org_id }}&bucket=committed">Rows ›</a></li>
         <li>{{ delta(changes.open_no_req) }}<span>open seats nobody is working</span><a class="small" href="/positions?org={{ summary.org_id }}&bucket=open_no_req">Rows ›</a></li>
-        <li><b class="num">{{ changes.flow.submitted }}</b><span>backfills requested in the last day <span class="muted">· {{ changes.flow.approved }} approved, {{ changes.flow.opened }} opened, {{ changes.flow.filled }} filled</span></span><a class="small" href="/requests?scope=all">Requests ›</a></li>
+        <li><b class="num">{{ changes.flow.submitted }}</b><span>backfills requested in the last day <span class="muted">· {{ changes.flow.approved }} approved, {{ changes.flow.opened }} opened, {{ changes.flow.filled }} filled</span></span><a class="small" href="/requests?scope=all&org={{ summary.org_id }}">Requests ›</a></li>
         <li><b class="num">{{ changes.resolved }}</b><span>data problems resolved in the last day</span><a class="small" href="/exceptions?org={{ summary.org_id }}&show=all">List ›</a></li>
       </ul>
     </section>

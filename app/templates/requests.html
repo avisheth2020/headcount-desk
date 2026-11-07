@@ -3,6 +3,7 @@
 {% block title %}Requests{% endblock %}
 
 {% block content %}
+{% set q_org = ("&org=" ~ org) if org else "" %}
 <div class="page-head">
   <div>
     {{ m.inbox_title(role, inbox | length) }}
@@ -22,19 +23,19 @@
   {% endif %}
 
   <nav class="tiles" aria-label="Request pipeline">
-    <a class="card tile tile-wide" href="/requests?scope=all&status=opened" {% if status == "opened" %}aria-current="true"{% endif %}><span>Median time from a request to an open staffing request</span><b>{{ "%.1f" | format(stats.median_days or 0) }} days</b></a>
-    <a class="card tile" href="/requests?scope=all&status=submitted" {% if status == "submitted" %}aria-current="true"{% endif %}><span>Waiting on a VP</span><b>{{ stats.waiting_vp | num }}</b></a>
-    <a class="card tile" href="/requests?scope=all&status=recruiter_assigned" {% if status == "recruiter_assigned" %}aria-current="true"{% endif %}><span>Waiting on a recruiter</span><b>{{ stats.waiting_recruiter | num }}</b></a>
-    <a class="card tile" href="/requests?scope=all&status=req_open" {% if status == "req_open" %}aria-current="true"{% endif %}><span>Request open</span><b>{{ stats.req_open | num }}</b></a>
-    <a class="card tile" href="/requests?scope=all&status=filled" {% if status == "filled" %}aria-current="true"{% endif %}><span>Filled</span><b>{{ stats.filled | num }}</b></a>
+    <a class="card tile tile-wide" href="/requests?scope=all&status=opened{{ q_org }}" {% if status == "opened" %}aria-current="true"{% endif %}><span>Median time from a request to an open staffing request</span><b>{{ "%.1f" | format(stats.median_days or 0) }} days</b></a>
+    <a class="card tile" href="/requests?scope=all&status=submitted{{ q_org }}" {% if status == "submitted" %}aria-current="true"{% endif %}><span>Waiting on a VP</span><b>{{ stats.waiting_vp | num }}</b></a>
+    <a class="card tile" href="/requests?scope=all&status=recruiter_assigned{{ q_org }}" {% if status == "recruiter_assigned" %}aria-current="true"{% endif %}><span>Waiting on a recruiter</span><b>{{ stats.waiting_recruiter | num }}</b></a>
+    <a class="card tile" href="/requests?scope=all&status=req_open{{ q_org }}" {% if status == "req_open" %}aria-current="true"{% endif %}><span>Request open</span><b>{{ stats.req_open | num }}</b></a>
+    <a class="card tile" href="/requests?scope=all&status=filled{{ q_org }}" {% if status == "filled" %}aria-current="true"{% endif %}><span>Filled</span><b>{{ stats.filled | num }}</b></a>
   </nav>
 
   <section class="card">
     <div class="card-head">
-      <h2>{{ "My requests" if scope == "mine" else "All requests" }}{% if status %} · {{ STATUS_LABELS[status] }}{% endif %} <span class="count">{{ rows | length }}</span></h2>
+      <h2>{{ "My requests" if scope == "mine" else "All requests" }}{% if org_name %} · {{ org_name }}{% endif %}{% if status %} · {{ STATUS_LABELS[status] }}{% endif %} <span class="count">{{ rows | length }}</span></h2>
       <nav class="pills" aria-label="Whose requests">
         {% if has_mine %}<a class="pill" href="/requests?scope=mine" {% if scope == "mine" and not status %}aria-current="true"{% endif %}>Mine</a>{% endif %}
-        <a class="pill" href="/requests?scope=all" {% if scope == "all" and not status %}aria-current="true"{% endif %}>Everyone's</a>
+        <a class="pill" href="/requests?scope=all{{ q_org }}" {% if scope == "all" and not status %}aria-current="true"{% endif %}>Everyone's</a>
         <a class="btn btn-sm" href="{{ url_with(request, format='csv') }}">↓ CSV</a>
       </nav>
     </div>

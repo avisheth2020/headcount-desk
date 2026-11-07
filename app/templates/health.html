@@ -26,7 +26,7 @@
     <span>
       {{ run.passed }} of {{ total }} checks passed at {{ run.run_at | dt }}.
       {% if attention %}{{ attention }} need{{ "s" if attention == 1 else "" }} a look.{% else %}Nothing needs a look.{% endif %}
-      <span class="sub">{% if run.failed %}A failed check means a number on the other pages may be wrong.{% elif run.warned %}The headcount numbers tie out. One thing looks unusual and is worth a minute.{% else %}Every number on the other pages ties out to the stored data.{% endif %}</span>
+      <span class="sub">{% if run.failed %}A failed check means a number on the other pages may be wrong.{% elif run.warned %}The headcount numbers tie out. {{ problems | length }} finding{{ "" if problems | length == 1 else "s" }} worth a minute.{% else %}Every number on the other pages ties out to the stored data.{% endif %}</span>
     </span>
   </div>
 

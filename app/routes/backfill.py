@@ -22,13 +22,16 @@ def usable_open_for(conn, org_id: int) -> int:
 
 
 @router.get("/requests", response_class=HTMLResponse, include_in_schema=False)
-def requests_page(request: Request, scope: str | None = None, status: str | None = None):
+def requests_page(request: Request, scope: str | None = None, status: str | None = None, org: int | None = None):
     with db.get_conn() as conn:
         ctx = web.page_context(request, conn)
         role, me = ctx["role"], ctx["me"]["id"]
         mine_col = MINE.get(role)
         scope = scope or ("mine" if mine_col else "all")
-        where, params = ["TRUE"], {"me": me, "status": status}
+        where, params = ["TRUE"], {"me": me, "status": status, "org": org}
+        in_org = "r.org_id IN (SELECT org_id FROM v_org_closure WHERE ancestor_id = %(org)s)"
+        if org is not None:                                  # a number on Today opens exactly its rows
+            where.append(in_org)
         if scope == "mine" and mine_col:
             where.append(f"r.{mine_col} = %(me)s")
         if status == "opened":                               # the rows behind the median
@@ -63,14 +66,15 @@ def requests_page(request: Request, scope: str | None = None, status: str | None
             inbox = db.query(conn, """
                 SELECT r.* FROM v_backfill_requests r
                 WHERE r.status = 'recruiter_assigned' AND r.recruiter_id = %s ORDER BY r.updated_at""", (me,))
-        stats = db.one(conn, """
+        stats = db.one(conn, f"""
             SELECT (SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY days_to_open) FROM v_backfill_cycle_time) AS median_days,
-                   count(*) FILTER (WHERE status = 'submitted') AS waiting_vp,
-                   count(*) FILTER (WHERE status IN ('vp_approved', 'recruiter_assigned')) AS waiting_recruiter,
-                   count(*) FILTER (WHERE status = 'req_open') AS req_open,
-                   count(*) FILTER (WHERE status = 'filled') AS filled
-            FROM backfill_requests""")
-        ctx.update(rows=rows, inbox=inbox, stats=stats, scope=scope, status=status, has_mine=bool(mine_col),
+                   count(*) FILTER (WHERE r.status = 'submitted') AS waiting_vp,
+                   count(*) FILTER (WHERE r.status IN ('vp_approved', 'recruiter_assigned')) AS waiting_recruiter,
+                   count(*) FILTER (WHERE r.status = 'req_open') AS req_open,
+                   count(*) FILTER (WHERE r.status = 'filled') AS filled
+            FROM v_backfill_requests r WHERE {in_org if org is not None else 'TRUE'}""", params)
+        ctx.update(rows=rows, inbox=inbox, stats=stats, scope=scope, status=status, has_mine=bool(mine_col), org=org,
+                   org_name=db.one(conn, "SELECT name FROM orgs WHERE id = %s", (org,))["name"] if org else None,
                    STATUS_LABELS=STATUS_LABELS, sort=sort if "sort" in request.query_params else None, dir=direction,
                    can_request=permissions.can_request_backfill(role))
     return web.render(request, "requests.html", ctx)

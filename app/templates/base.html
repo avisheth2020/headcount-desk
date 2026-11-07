@@ -49,7 +49,8 @@
   <div class="demo-banner" role="note">
     <span><strong>Demo</strong> · synthetic data<span class="wide-only"> for a fictional 6,000-person AI lab · roles are simulated</span></span>
     <span class="sep">·</span>
-    <form method="post" action="/reset">{{ csrf_input(request) }}<button type="submit" title="Rebuild the demo data so you start clean">Reset demo</button></form>
+    <button type="button" data-toggle="#reset-confirm" data-within=".demo-banner">Reset demo</button>
+    <form class="confirm" id="reset-confirm" method="post" action="/reset" hidden>{{ csrf_input(request) }}<span>This rebuilds the data for everyone.</span><button type="submit">Yes, reset</button><button type="button" data-toggle="#reset-confirm" data-within=".demo-banner">Cancel</button></form>
     <span class="sep">·</span>
     <a href="/about">About</a>
   </div>
@@ -126,7 +127,7 @@
   <div class="scrim" data-close></div>
   <aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title" aria-hidden="true">
     <div class="drawer-bar">
-      <strong id="drawer-title">Details</strong>
+      <strong class="sr-only" id="drawer-title">Details</strong>
       <span class="row">
         <a class="btn btn-sm" id="drawer-full" href="/">Open full page</a>
         <button class="icon-btn" id="drawer-close" type="button" data-close aria-label="Close details">{{ icon("M6 6l12 12M18 6 6 18") }}</button>
