@@ -239,6 +239,22 @@ a.hero-number:hover { color: var(--accent-ink); text-decoration: none; }
 .bar.slim { height: 14px; }
 .seg-filled { background: var(--seg-filled); } .seg-committed { background: var(--seg-committed); } .seg-reserve { background: var(--seg-reserve); }
 .seg-negative { background: var(--seg-negative); } .seg-usable { background: var(--seg-usable); } .seg-over { background: var(--bad); } .seg-rest { background: var(--surface-3); }
+.hero-row { display: flex; align-items: center; gap: var(--s4); }
+.seat-view { display: grid; gap: var(--s3); min-width: 0; align-content: start; }
+.seat-title { font-size: 13px; }
+.seat-title b { font-weight: 600; }
+.seat-title a { color: var(--text); }
+.seats { display: grid; grid-template-columns: repeat(auto-fill, 11px); gap: 3px; }
+.seats i { width: 11px; height: 11px; border-radius: 2px; opacity: .18; transition: opacity var(--med) var(--ease); }
+.seats i.on { opacity: 1; }
+.buckets { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s2); }
+.buckets a { display: grid; padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--r); color: var(--text); min-width: 0; }
+.buckets a:hover { border-color: var(--border-strong); text-decoration: none; }
+.buckets a[aria-current="true"] { border-color: var(--accent); background: var(--accent-soft); }
+.buckets b { display: flex; align-items: center; gap: 6px; font-size: 18px; font-weight: 600; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.buckets b i { width: 9px; height: 9px; border-radius: 2px; flex: none; }
+.buckets span { font-size: 12px; color: var(--muted); white-space: nowrap; }
+.bar-track i.seg-usable { background: var(--seg-usable); } .bar-track i.seg-negative { background: var(--seg-negative); } .bar-track i.seg-reserve { background: var(--seg-reserve); }
 .zoom { height: 18px; display: block; width: 100%; color: var(--border-strong); }
 .legend { display: grid; grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); gap: var(--s2); margin-top: var(--s2); }
 .legend a { display: grid; grid-template-columns: 10px 1fr; column-gap: 8px; padding: 8px 10px; border-radius: var(--r); color: var(--text); border: 1px solid transparent; }
@@ -494,6 +510,7 @@ tr.hot td { background: var(--warn-soft) !important; }
 .swatch { font-size: 11.5px; color: var(--muted); }
 .swatch i { display: block; height: 36px; border-radius: 6px; border: 1px solid var(--border); margin-bottom: 4px; }
 
+@media (max-width: 479px) { .topbar .brand { display: none; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
 
 /* ── Narrow containers: tables become cards ──────────────────────────────── */
@@ -510,6 +527,14 @@ tr.hot td { background: var(--warn-soft) !important; }
   .table.cards td:empty, .table.cards td.row-actions { display: none; }
   .table.cards tfoot tr { background: var(--surface-2); border-top: 1px solid var(--border-strong); border-bottom: 0; border-radius: 0 0 var(--r) var(--r); }
   .table.cards.two tr { grid-template-columns: repeat(2, 1fr); }
+  /* A compact table keeps the name and the two numbers people came for. Tap a row for the rest. */
+  .table.cards.compact tr { grid-template-columns: minmax(0, 1fr) 76px 64px; align-items: center; }
+  .table.cards.compact td[data-label]::before { white-space: nowrap; }
+  .table.cards.compact td:first-child { grid-column: auto; }
+  .table.cards.compact td:not(:first-child):not(.keep) { display: none; }
+  .table.cards.compact td.keep { text-align: right !important; }
+  .buckets { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .bars li { grid-template-columns: minmax(0, 130px) minmax(0, 1fr); }
   .hero { grid-template-columns: 1fr; gap: var(--s4); }
   .grid-2, .grid-3, .sg-themes { grid-template-columns: 1fr; }
   .checks { grid-template-columns: 1fr 1fr; }
@@ -538,10 +563,11 @@ tr.hot td { background: var(--warn-soft) !important; }
   body { padding-bottom: 64px; }
   .wide-only { display: none !important; }
   .narrow-only { display: initial; }
-  .shell { grid-template-columns: minmax(0, 1fr); }
+  .shell { grid-template-columns: minmax(0, 1fr); background: none; }
   .sidebar { display: none; }
   .topbar { padding: 0 var(--s4); gap: var(--s2); }
   .topbar .brand { display: flex; padding: 0; }
+  .tour summary { padding: 0 10px; }
   .topbar .crumbs-top { display: none; }
   .search-btn { min-width: 0; width: 32px; padding: 0; justify-content: center; }
   .search-btn span, .search-btn kbd { display: none; }

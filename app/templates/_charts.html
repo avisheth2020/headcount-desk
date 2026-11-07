@@ -5,7 +5,7 @@
 {# A small trend line with its last point marked. #}
 {% macro spark(values, label, width=96, height=28) %}
 {% set s = sparkline(values, width, height) %}
-{% if s %}<svg class="spark-line" viewBox="0 0 {{ s.width }} {{ s.height }}" width="{{ s.width }}" height="{{ s.height }}" role="img" aria-label="{{ label }}: {{ s.first | num }} to {{ s.last | num }}"><path class="area" d="{{ s.area }}"/><path class="line" d="{{ s.line }}"/><circle cx="{{ s.x }}" cy="{{ s.y }}" r="3"/></svg>{% endif %}
+{% if s %}<svg class="spark-line" data-chart-tip="{{ label }}: {{ s.first | num }} to {{ s.last | num }}" viewBox="0 0 {{ s.width }} {{ s.height }}" width="{{ s.width }}" height="{{ s.height }}" role="img" aria-label="{{ label }}: {{ s.first | num }} to {{ s.last | num }}"><path class="area" d="{{ s.area }}"/><path class="line" d="{{ s.line }}"/><circle cx="{{ s.x }}" cy="{{ s.y }}" r="3"/></svg>{% endif %}
 {% endmacro %}
 
 {# Percent of budget as a bar leaving a line at 100%. Under runs left, over runs right. #}

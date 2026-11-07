@@ -223,8 +223,11 @@ def test_palette_drawer_and_theme(browser, base_url):
     page.wait_for_selector("body.drawer-open #drawer-body h1")
     assert "Dana Lee" in page.locator("#drawer-body h1").inner_text()
 
-    page.goto(base_url + "/", wait_until="networkidle")        # a bridge segment opens its rows
-    page.locator(".bar a.seg-committed").first.click()
+    page.goto(base_url + "/", wait_until="networkidle")        # a seat type updates in place, then opens its rows
+    page.locator(".buckets a", has_text="Committed").click()
+    page.wait_for_url("**focus=committed**")
+    assert page.locator(".seats i.on").count() > 0 and page.locator(".buckets a[aria-current=true]").inner_text().startswith(page.locator(".seats i.on").count().__str__())
+    page.locator(".seat-view a", has_text="See these").click()
     page.wait_for_url("**/positions?**bucket=committed**")
     page.locator("thead a", has_text="Cost a year").click()    # sorting lives in the URL
     page.wait_for_url("**sort=cost**")
