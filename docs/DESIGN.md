@@ -8,9 +8,12 @@ Headcount Desk is a planning instrument. It should feel **precise, calm and dens
 2. **Ink, paper and one accent.** A cool neutral scale does almost all the work. A single teal accent marks what you can act on. Green, amber and red mean status and nothing else, and always come with an icon and a word.
 3. **Dense, not cramped.** Rows are 40px. Whitespace separates groups, not every element. A 1440px screen should show a whole decision without scrolling.
 4. **Never lose your place.** Detail opens in a side drawer. Filters and sort live in the URL. Back always works.
-5. **Show the work.** Every number links to its rows. Every state has a sentence. Loading, empty and error states are designed.
+5. **Show the work.** Every number links to its rows. Loading, empty and error states are designed.
 6. **Quiet motion.** 120 to 200ms, ease-out, only to show where something came from. None at all if the system asks for reduced motion.
 7. **Dark is designed, not inverted.** Dark surfaces get lighter as they rise; borders do the separating; the accent is lighter and less saturated.
+8. **If a sentence explains a chart, fix the chart.** Labels sit on the marks. Method notes stay one click away under "Show the math."
+9. **Say a repeated fact once.** It moves up a level: freshness to the top bar, org facts above a queue, the fix above a group of rows.
+10. **A click changes the view in place.** Filters, sorting and chart choices swap the content and keep the URL in sync.
 
 ## Tokens
 
@@ -36,7 +39,7 @@ All tokens are CSS custom properties. Light is the default; `[data-theme="dark"]
 | `--warn` / `--warn-soft` | `#9a5a00` / `#fdf2dc` | `#f0b451` / `#3a2a0c` | Needs a look, watch |
 | `--bad` / `--bad-soft` | `#b42318` / `#fdecea` | `#ff8a80` / `#3d1714` | Failed, rejected, over budget |
 
-Chart segments use ink steps for what is spent (`--seg-filled`, `--seg-committed`, `--seg-reserve`, `--seg-negative`) and the accent for what is left (`--seg-usable`). Identity never depends on color alone: every segment has a label and a value.
+Chart segments use ink steps for what is spent (`--seg-filled`, `--seg-committed`, `--seg-reserve`, `--seg-negative`) and the accent for what is left (`--seg-usable`). The Committed and Reserve steps are far enough apart to separate in both themes, for all common kinds of color vision. Identity never depends on color alone: every segment has a label and a value.
 
 ### Type
 
@@ -56,11 +59,12 @@ One family, Inter (self-hosted variable font), with tabular figures and a slashe
 - **Space:** a 4px base. `--s1` 4, `--s2` 8, `--s3` 12, `--s4` 16, `--s5` 24, `--s6` 32, `--s7` 48.
 - **Radius:** `--r-sm` 4 (chips, inputs), `--r` 8 (cards, buttons), `--r-lg` 12 (drawer, dialogs).
 - **Elevation:** `--e1` hairline shadow for cards, `--e2` for menus, `--e3` for the drawer and palette. In dark, elevation is mostly a lighter surface plus a border.
+- **Banner:** `--banner` 29px, the demo strip above the shell.
 - **Motion:** `--fast` 120ms, `--med` 200ms, `cubic-bezier(.2, .8, .2, 1)`. Wrapped in `prefers-reduced-motion`.
 
 ## Layout
 
-- **Desktop (900px and up):** a 216px sidebar with the nav, a 52px top bar (breadcrumb, search, theme, role), and a content column capped at 1180px.
+- **Desktop (900px and up):** a 216px sidebar with the nav, a 52px top bar (tour, search, freshness, theme, role), and a content column capped at 1180px.
 - **Phone (under 900px):** the sidebar becomes a bottom tab bar with four destinations and a "More" sheet. Tables collapse to cards. The drawer is full width.
 - Content uses container queries, so a table collapses the same way inside the drawer as it does on a phone.
 
@@ -68,13 +72,23 @@ One family, Inter (self-hosted variable font), with tabular figures and a slashe
 
 | Component | Spec |
 |---|---|
-| **Page head** | The page's question as `h1`, a freshness line under it, actions on the right. |
+| **Page head** | The page's question as `h1`, page-specific context if any, actions on the right. Freshness lives in the top bar chip. |
+| **Show the math** | A closed control with numbered steps, in place of a paragraph. |
 | **Stat / hero** | Eyebrow, hero number, one caption sentence. The number is a link. |
-| **Bridge** | A full-width segmented bar (filled, committed, reserve, negative, usable) and under it a zoomed bar of only the unfilled seats. Every segment is a link with a label, a value and a share. No canvas, no chart library. |
-| **Meter** | A single bar for "spent of budget", with a tick at 100%. State by color plus a chip. |
+| **Seat map** | One square per unfilled seat, grouped by kind. Bucket buttons highlight a kind and rank the orgs below in place. |
+| **Variance bar** | Percent of budget on a 95 to 105 scale, centered on 100%. Under runs left, over runs right. The number beside it stays exact when a value is past the end of the scale. |
+| **Stacked bar** | One total split into labeled parts: run-rate, committed, what is left. |
+| **Ranked bars** | A sorted list of thin bars with the value at the tip. Used when magnitude is the point, as with exception types. |
+| **Sparkline** | A small line with its last point marked. Hover or focus gives the range. |
+| **Fan chart** | Daily history into a likely range at quarter end. Drawn in the browser because the what-if sliders redraw it. Nothing a slider does is saved. |
+| **Pipeline** | Stages in order, each as wide as its count, each a filter. |
+| **Room gauge** | Only the room to grow is drawn, because this year's headcount would swamp it. Submitted, this plan, and what is left. |
+| **Check grid** | Checks by day. A bad night is a column, a flaky check is a row. Cells open that run. |
+| **Treemap** | Two levels below an org. Area is approved seats, shading is budget position. Click to zoom. The table stays the default view. |
+| **Chart tooltip** | One shared tooltip on hover and focus. It adds detail and never holds the only copy of a value. |
 | **Card** | Surface, 1px border, `--r`, `--e1`. Optional header row with title and actions. |
-| **Table** | 40px rows, sticky header, right-aligned tabular numbers, sortable headers (`aria-sort`), row actions revealed on hover or focus, pagination footer, CSV link. Collapses to cards in a narrow container. |
-| **Chip** | 20px tall pill. Neutral, accent, good, warn, bad. Always icon plus word. |
+| **Table** | 40px rows, sticky header, right-aligned tabular numbers, sortable headers (`aria-sort`) that sort in place, row actions revealed on hover or focus, pagination footer, CSV link. Collapses to cards in a narrow container, or to name and the key numbers when marked compact. |
+| **Chip** | 20px tall pill. Neutral, accent, good, warn, bad. Always an icon from the one SVG set plus a word. Shown only when it says something: no "fine" flags on every row. |
 | **Button** | 32px. Primary (accent), default (bordered), quiet (text). 28px small size. |
 | **Drawer** | 520px from the right, `--e3`, focus moves in and returns on close, Esc closes, deep-linkable through the URL hash. |
 | **Command palette** | ⌘K or `/`. One input, grouped results (go to, people and positions, orgs, actions), arrow keys and Enter. |

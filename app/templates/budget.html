@@ -52,7 +52,7 @@
     <div class="card-head"><h2>{{ "By org below " ~ org.name if children else "Seats" }}</h2>
       <div class="table-tools">{% if children %}<a class="btn btn-sm" href="{{ url_with(request, format='csv') }}">{{ ico("download") }}CSV</a>{% endif %}</div></div>
     {% if children %}
-    <table class="table cards">
+    <table class="table cards compact one vwide">
       <thead><tr>
         {{ m.th(request, LEVELS[children[0].level], "name", sort, dir) }}
         {{ m.th(request, "Budget", "budget", sort, dir, "r") }}
@@ -71,7 +71,7 @@
           <td class="r" data-label="Committed"><a href="/positions?org={{ c.org_id }}&bucket=committed&sort=cost&dir=desc">{{ c.committed | money }}</a></td>
           <td class="r strong" data-label="Projected"><a href="/budget?org={{ c.org_id }}">{{ c.projected | money }}</a></td>
           <td class="r" data-label="Variance"><a href="/budget?org={{ c.org_id }}" {% if c.variance < 0 %}style="color:var(--bad)"{% endif %}>{{ c.variance | money }}</a></td>
-          <td data-label="Of budget" class="wide"><div class="vcell">{{ ch.variance(c.pct_of_budget, c.state, (c.variance | abs | money) ~ (" over" if c.variance < 0 else " to spare")) }}<span class="num small">{{ c.pct_of_budget }}%</span><span class="vflag">{{ m.budget_flag(c.state) }}</span></div></td>
+          <td data-label="Of budget" class="wide keep"><div class="vcell">{{ ch.variance(c.pct_of_budget, c.state, (c.variance | abs | money) ~ (" over" if c.variance < 0 else " to spare")) }}<span class="num small">{{ c.pct_of_budget }}%</span><span class="vflag">{{ m.budget_flag(c.state) }}</span></div></td>
         </tr>
         {% endfor %}
         {% if has_direct %}
@@ -89,7 +89,7 @@
         <td>{{ org.name }} total</td>
         <td class="r" data-label="Budget">{{ org.budget | money }}</td><td class="r" data-label="Run-rate">{{ org.run_rate | money }}</td>
         <td class="r" data-label="Committed">{{ org.committed | money }}</td><td class="r" data-label="Projected">{{ org.projected | money }}</td>
-        <td class="r" data-label="Variance">{{ org.variance | money }}</td><td data-label="Of budget" class="num">{{ org.pct_of_budget }}%</td>
+        <td class="r" data-label="Variance">{{ org.variance | money }}</td><td data-label="Of budget" class="num keep">{{ org.pct_of_budget }}%</td>
       </tr></tfoot>
     </table>
     {% else %}

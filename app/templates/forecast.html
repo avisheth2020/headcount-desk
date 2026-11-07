@@ -62,7 +62,7 @@
     <div class="card-head"><h2>{{ "By org below " ~ org.name if children else org.name }}</h2>
       <div class="table-tools">{% if children %}<a class="btn btn-sm" href="{{ url_with(request, format='csv') }}">{{ ico("download") }}CSV</a>{% endif %}</div></div>
     {% if children %}
-    <table class="table cards">
+    <table class="table cards compact">
       <thead><tr>
         {{ m.th(request, LEVELS[children[0].level], "name", sort, dir) }}{{ m.th(request, "In seats", "now", sort, dir, "r") }}
         {{ m.th(request, "Hires", "hires", sort, dir, "r") }}{{ m.th(request, "Exits", "exits", sort, dir, "r") }}
@@ -76,9 +76,9 @@
           <td class="r" data-label="In seats"><a href="/positions?org={{ c.org_id }}&bucket=filled">{{ c.in_seats | num }}</a></td>
           <td class="r" data-label="Hires"><a href="/forecast/requests?org={{ c.org_id }}">+{{ c.expected_hires | round | int }}</a></td>
           <td class="r" data-label="Exits"><a href="/forecast/exits?org={{ attrition.org_id }}">−{{ c.expected_exits | round | int }}</a></td>
-          <td class="r strong" data-label="Projected"><a href="/forecast?org={{ c.org_id }}">{{ c.projected | num }}</a></td>
+          <td class="r strong keep" data-label="Projected"><a href="/forecast?org={{ c.org_id }}">{{ c.projected | num }}</a></td>
           <td class="r muted" data-label="Likely range">{{ c.projected_low | num }} to {{ c.projected_high | num }}</td>
-          <td class="r" data-label="Approved"><a href="/plan?org={{ c.org_id }}">{{ c.approved | num }}</a></td>
+          <td class="r keep" data-label="Approved"><a href="/plan?org={{ c.org_id }}">{{ c.approved | num }}</a></td>
           <td class="r" data-label="Run-rate vs budget"><a href="/budget?org={{ c.org_id }}">{{ c.projected_run_rate | money }} of {{ c.budget | money }}</a></td>
           <td data-label="Flag">{{ flag(c, quiet=True) }}</td>
         </tr>

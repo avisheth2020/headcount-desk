@@ -29,6 +29,8 @@
 
   <h2>Charts</h2>
   <div style="display:grid;gap:12px">
+    <div class="seats" aria-hidden="true">{% for k in ["committed", "committed", "committed", "committed", "reserve", "reserve", "negative", "usable", "usable", "usable"] %}<i class="seg-{{ k }} on"></i>{% endfor %}</div>
+    <div class="flow"><a class="stage-submitted" style="flex:8 1 0" href="#"><b>8</b><span>Waiting on VP</span></a><a class="stage-req_open" style="flex:12 1 0" href="#"><b>12</b><span>Req open</span></a><a class="stage-filled" style="flex:14 1 0" href="#"><b>14</b><span>Filled</span></a></div>
     <div class="row">{{ c.spark([2016, 2018, 2012, 2010, 2008, 2009, 2013, 2012], "People in seats") }}<span class="small muted">Sparkline: trend with the latest point marked</span></div>
     <div class="row" style="flex-wrap:nowrap">{{ c.variance(96.8, "under") }}<span class="num small">96.8%</span></div>
     <div class="row" style="flex-wrap:nowrap">{{ c.variance(99.3, "watch") }}<span class="num small">99.3%</span></div>
@@ -36,15 +38,6 @@
     {{ c.stack([("seg-filled", 731, "Run-rate"), ("seg-committed", 23, "Committed"), ("seg-rest", 25, "Left")], 779, "Spend by part") }}
     {{ c.bars([{"name": "Applied Research", "text": "22", "bar": 100}, {"name": "Foundations Research", "text": "11", "bar": 50}, {"name": "Research Platforms", "text": "10", "bar": 45}], "seg-usable") }}
   </div>
-
-  <h2>Bridge and meter</h2>
-  <div class="bridge">
-    <div class="bridge-title"><span><b class="num">2,163</b> approved positions</span><span>each segment is a link</span></div>
-    <div class="bar"><a class="seg-filled" style="flex:2008 0 0" href="#" aria-label="Filled"></a><a class="seg-committed" style="flex:76 0 0" href="#" aria-label="Committed"></a><a class="seg-reserve" style="flex:20 0 0" href="#" aria-label="Reserve"></a><a class="seg-negative" style="flex:4 0 0" href="#" aria-label="Negative"></a><a class="seg-usable" style="flex:55 0 0" href="#" aria-label="Usable open"></a></div>
-    <div class="bridge-title"><span>Zoomed in: the <b class="num">155</b> with nobody in them</span></div>
-    <div class="bar"><a class="seg-committed" style="flex:76 0 0" href="#" aria-label="Committed"></a><a class="seg-reserve" style="flex:20 0 0" href="#" aria-label="Reserve"></a><a class="seg-negative" style="flex:4 0 0" href="#" aria-label="Negative"></a><a class="seg-usable" style="flex:55 0 0" href="#" aria-label="Usable open"></a></div>
-  </div>
-  <div style="display:grid;gap:14px">{{ m.meter(96.8, "under") }}{{ m.meter(99.3, "watch") }}{{ m.meter(102.4, "over") }}</div>
 
   <h2>Tiles and banner</h2>
   <div class="tiles"><div class="card tile"><span>Usable open</span><b>55</b><small>of 2,163 approved</small></div><div class="card tile" aria-current="true"><span>Selected tile</span><b>99.3%</b><small>{{ m.budget_chip("watch") }}</small></div></div>
@@ -59,7 +52,7 @@
   </div>
 
   <h2>Workflow</h2>
-  <div class="card card-pad"><ol class="stepper"><li class="done">Submitted</li><li class="now">VP approval</li><li>Recruiter</li><li>Request open</li><li>Filled</li></ol></div>
+  <div class="card card-pad"><ol class="stepper"><li class="done">Submitted</li><li class="now">VP approval</li><li>Recruiter</li><li>Req open</li><li>Filled</li></ol></div>
   <div class="card inbox"><div class="req-card"><div class="req-main"><h3>Dana Lee {{ m.urgency_chip("urgent") }}</h3><p class="facts">Research, L5 · Language Models · <strong>$414K</strong> a year</p><p class="quote">“Critical for the Q1 evaluation roadmap”</p></div><div class="runway soon"><span>12 days left</span><i><u style="width:60%"></u></i></div><div class="actions"><button class="btn" type="button">Reject</button><button class="btn btn-primary" type="button">Approve</button></div></div></div>
 
   <h2>Forms and states</h2>
@@ -74,7 +67,7 @@
 <div class="page-head">
   <div>
     <h1>Styleguide</h1>
-    <p class="fresh">Every component in both themes. The spec is <code>docs/DESIGN.md</code>; this page is the proof that the app follows it.</p>
+    <p class="fresh">Every component in both themes. The spec is <code>docs/DESIGN.md</code>.</p>
   </div>
   <div class="row"><button class="btn" type="button" data-palette-open>Open the command palette <span class="kbd">⌘K</span></button><a class="btn" data-drawer href="/positions/12">Open a drawer</a></div>
 </div>
