@@ -1,0 +1,34 @@
+{# Charts, drawn on the server. The geometry is in app/charts.py and the spec is in docs/DESIGN.md.
+   Text is never the only thing a chart needs: each macro carries an accessible name, and any value
+   a tooltip shows is also on the page in a table or a label. #}
+
+{# A small trend line with its last point marked. #}
+{% macro spark(values, label, width=96, height=28) %}
+{% set s = sparkline(values, width, height) %}
+{% if s %}<svg class="spark-line" viewBox="0 0 {{ s.width }} {{ s.height }}" width="{{ s.width }}" height="{{ s.height }}" role="img" aria-label="{{ label }}: {{ s.first | num }} to {{ s.last | num }}"><path class="area" d="{{ s.area }}"/><path class="line" d="{{ s.line }}"/><circle cx="{{ s.x }}" cy="{{ s.y }}" r="3"/></svg>{% endif %}
+{% endmacro %}
+
+{# Percent of budget as a bar leaving a line at 100%. Under runs left, over runs right. #}
+{% macro variance(pct, state, money=None) %}
+{% set v = variance_bar(pct) %}
+<span class="vbar" role="img" aria-label="{{ pct }}% of budget" data-chart-tip="{{ pct }}% of budget{% if money %}, {{ money }}{% endif %}">{% if v %}<i class="{{ state }}{{ ' clipped' if v.clipped }}" style="left: {{ v.left }}%; width: {{ v.width }}%"></i>{% endif %}</span>
+{% endmacro %}
+
+{# One bar split into parts. segments: (class, value, label). #}
+{% macro stack(segments, total, label) %}
+<div class="stack-bar" role="img" aria-label="{{ label }}">
+  {% for cls, value, name in segments %}{% if value > 0 %}<i class="{{ cls }}" style="flex: {{ value }} 0 0" data-chart-tip="{{ name }}"></i>{% endif %}{% endfor %}
+</div>
+{% endmacro %}
+
+{# A ranked list of bars. rows: name, value text, width in percent, href. #}
+{% macro bars(rows, cls="", current=None) %}
+<ul class="bars">
+  {% for r in rows %}
+  <li {% if current and r.key == current %}aria-current="true"{% endif %}>
+    {% if r.href %}<a class="bar-name" href="{{ r.href }}">{{ r.name }}</a>{% else %}<span class="bar-name">{{ r.name }}</span>{% endif %}
+    <span class="bar-track"><i class="{{ cls }}" style="width: {{ r.bar }}%"></i><b>{{ r.text }}</b></span>
+  </li>
+  {% endfor %}
+</ul>
+{% endmacro %}
