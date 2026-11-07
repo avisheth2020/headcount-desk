@@ -3,9 +3,9 @@
 {% block title %}Data health{% endblock %}
 
 {% macro status_chip(status) %}
-  {% if status == "pass" %}<span class="chip chip-good">✓ Passed</span>
-  {% elif status == "warn" %}<span class="chip chip-warn">⚠ Needs a look</span>
-  {% else %}<span class="chip chip-bad">× Failed</span>{% endif %}
+  {% if status == "pass" %}<span class="chip chip-good">{{ ico("check") }}Passed</span>
+  {% elif status == "warn" %}<span class="chip chip-warn">{{ ico("alert") }}Needs a look</span>
+  {% else %}<span class="chip chip-bad">{{ ico("x") }}Failed</span>{% endif %}
 {% endmacro %}
 
 {% block content %}
@@ -14,14 +14,14 @@
   <div>
     <h1>Can I trust these numbers?</h1>
   </div>
-  {% if role == "rm" %}<form method="post" action="/health/run">{{ csrf_input(request) }}<button class="btn" type="submit">↻ Run checks now</button></form>{% endif %}
+  {% if role == "rm" %}<form method="post" action="/health/run">{{ csrf_input(request) }}<button class="btn" type="submit">{{ ico("refresh") }}Run checks now</button></form>{% endif %}
 </div>
 
 <div class="stack">
   {% if flash %}<p class="flash" role="status">{{ flash }}</p>{% endif %}
 
   <div class="banner {{ 'banner-bad' if run.failed else ('banner-warn' if run.warned else 'banner-good') }}" role="status">
-    <span class="icon" aria-hidden="true">{{ "⛔" if run.failed else ("⚠️" if run.warned else "✅") }}</span>
+    <span class="icon" aria-hidden="true">{{ ico("x" if run.failed else ("alert" if run.warned else "check")) }}</span>
     <span>
       {{ run.passed }} of {{ total }} checks passed at {{ run.run_at | dt }}.
       {% if attention %}{{ attention }} need{{ "s" if attention == 1 else "" }} a look.{% else %}Nothing needs a look.{% endif %}

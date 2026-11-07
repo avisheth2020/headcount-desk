@@ -185,6 +185,11 @@ main { max-width: 1180px; margin: 0 auto; padding: var(--s5) var(--s5) var(--s7)
 .btn[disabled] { opacity: .5; cursor: not-allowed; }
 .htmx-request.btn, .htmx-request .btn { opacity: .6; pointer-events: none; }
 
+.ico { width: 12px; height: 12px; flex: none; vertical-align: -1px; }
+.btn .ico { width: 14px; height: 14px; }
+.banner .icon .ico { width: 18px; height: 18px; vertical-align: -3px; }
+.tip-lock { border: 0; background: none; }
+.tip-lock .ico { width: 13px; height: 13px; }
 .chip { display: inline-flex; align-items: center; gap: 4px; height: 20px; padding: 0 8px; border-radius: 999px; font-size: 11.5px; font-weight: 600; white-space: nowrap; background: var(--surface-3); color: var(--muted); }
 .chip-good { background: var(--good-soft); color: var(--good); }
 .chip-warn { background: var(--warn-soft); color: var(--warn); }
@@ -419,8 +424,12 @@ a.check:hover { border-color: var(--accent); text-decoration: none; }
 tr.hot td { background: var(--warn-soft) !important; }
 .prose { max-width: 720px; }
 .prose p + p { margin-top: var(--s3); }
-.note-box { padding: var(--s4); border-radius: var(--r); background: var(--surface-2); border: 1px solid var(--border); font-size: 13px; color: var(--muted); }
-.note-box b { color: var(--text); }
+.math > summary { list-style: none; cursor: pointer; font-size: 13px; font-weight: 500; color: var(--accent-ink); width: fit-content; }
+.math > summary::-webkit-details-marker { display: none; }
+.math > summary::before { content: "›"; display: inline-block; width: 14px; transition: transform var(--fast); }
+.math[open] > summary::before { transform: rotate(90deg); }
+.math ol { margin: var(--s2) 0 0; padding: var(--s3) var(--s4) var(--s3) var(--s6); border-radius: var(--r); background: var(--surface-2); border: 1px solid var(--border); font-size: 13px; color: var(--muted); display: grid; gap: 6px; }
+.math b { color: var(--text); }
 .stepper-input { display: inline-flex; align-items: center; }
 .stepper-input input { width: 76px; text-align: right; padding: 5px 8px; font-variant-numeric: tabular-nums; }
 

@@ -9,10 +9,10 @@ from app import db, permissions, web, workflow
 
 router = APIRouter()
 
-STEPS = ["Submitted", "VP approval", "Recruiter", "Request open", "Filled"]
+STEPS = ["Submitted", "VP approval", "Recruiter", "Req open", "Filled"]
 # status -> how many steps are done (the next one is "now")
 DONE = {"submitted": 1, "rejected": 1, "vp_approved": 2, "recruiter_assigned": 3, "req_open": 4, "filled": 5}
-STATUS_LABELS = {"opened": "Reached an open staffing request", "submitted": "Waiting on VP", "recruiter_assigned": "Recruiter assigned", "req_open": "Request open",
+STATUS_LABELS = {"opened": "Reached an open req", "submitted": "Waiting on VP", "recruiter_assigned": "Recruiter assigned", "req_open": "Req open",
                  "filled": "Filled", "rejected": "Rejected"}
 MINE = {"vp": "vp_approver_id", "recruiter": "recruiter_id", "requester": "requested_by"}
 
@@ -164,7 +164,7 @@ def open_request(request: Request, request_id: int):
     def action(conn, me, ctx):
         permissions.check_recruit(ctx, _request_row(conn, request_id))
         workflow.open_request(conn, request_id, me)
-        return "Staffing request opened. Nobody had to re-enter the role."
+        return "Req opened. Nobody had to re-enter the role."
     return _act(request, request_id, action, card="hx-request" in request.headers)
 
 

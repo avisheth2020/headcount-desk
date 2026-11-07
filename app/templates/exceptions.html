@@ -34,16 +34,16 @@
   </nav>
 
   <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap">
-    <p class="muted small">Grouped by the VP who owns the seats. {% if can_resolve %}Marking one resolved records who cleared it; it does not hide the row.{% else %}Only a resource manager, or the VP or SVP who owns the seat, can mark one resolved.{% endif %}</p>
+    <span></span>
     <span class="row"><a class="small" href="/exceptions?{{ q_org }}{{ q_type }}{{ '' if show == 'all' else '&show=all' }}">{{ "Hide resolved" if show == "all" else "Show resolved too" }}</a>
-      <a class="btn btn-sm" href="{{ url_with(request, format='csv') }}">↓ CSV</a></span>
+      <a class="btn btn-sm" href="{{ url_with(request, format='csv') }}">{{ ico("download") }}CSV</a></span>
   </div>
 
   {% for g in groups %}
   <details class="card group" {% if loop.first %}open{% endif %}>
     <summary>
       <h2>{{ g.owner_name }}<span class="sub">{{ g.owner_org_name }}</span></h2>
-      <span class="chip {{ 'chip-warn' if g.open else 'chip-good' }}">{{ g.open ~ " to fix" if g.open else "✓ All clear" }}</span>
+      <span class="chip {{ 'chip-warn' if g.open else 'chip-good' }}">{% if g.open %}{{ g.open }} to fix{% else %}{{ ico("check") }}All clear{% endif %}</span>
     </summary>
     <ul class="todo">
       {% for e in g.rows[:6] %}{% include "_exception_row.html" %}{% endfor %}
@@ -58,7 +58,7 @@
     {% endif %}
   </details>
   {% else %}
-  <div class="card empty-state"><b>Nothing to fix here 🎉</b>No open exceptions match this filter.</div>
+  <div class="card empty-state"><b>Nothing to fix here</b>No open exceptions match this filter.</div>
   {% endfor %}
 </div>
 {% endblock %}

@@ -1,7 +1,7 @@
 <li id="exc-{{ e.exception_type }}-{{ e.position_id }}" class="{{ 'done' if e.is_resolved }}" data-optimistic>
   <div>
     <div class="meta">
-      <span class="chip {{ 'chip-good' if e.is_resolved else 'chip-warn' }}">{{ "✓ Resolved" if e.is_resolved else "⚠ " ~ e.type_label }}</span>
+      <span class="chip {{ 'chip-good' if e.is_resolved else 'chip-warn' }}">{{ ico("check" if e.is_resolved else "alert") }}{{ "Resolved" if e.is_resolved else e.type_label }}</span>
       <a class="mono" data-drawer href="/positions/{{ e.position_id }}">{{ e.position_code }}</a>
       <span class="muted small">{{ e.org_name }}{% if e.age_days is not none %} · {{ e.age_days | num }} days{% endif %}</span>
     </div>
@@ -17,7 +17,7 @@
     <input type="hidden" name="exception_type" value="{{ e.exception_type }}">
     <input type="hidden" name="position_id" value="{{ e.position_id }}">
     <input type="hidden" name="org" value="{{ org.id }}">
-    <button class="btn btn-sm" type="submit" aria-label="Mark {{ e.position_code }} resolved">✓ Mark resolved</button>
+    <button class="btn btn-sm" type="submit" aria-label="Mark {{ e.position_code }} resolved">{{ ico("check") }}Mark resolved</button>
   </form>
   {% endif %}
 </li>

@@ -36,7 +36,7 @@
     <p class="muted small" style="margin-bottom:16px">{{ r.vp_name }} has <a href="/?org={{ r.vp_id }}">{{ vp_usable_open }} usable open</a>. A backfill reuses the seat, so that number does not change.
       The seat costs <strong class="num">{{ money.annual_cost | money }}</strong> a year and is already in the budget; {{ r.vp_name }} is projected at <a href="/budget?org={{ r.vp_id }}">{{ money.pct_of_budget }}% of budget</a>{% if money.state == "over" %}, which is <strong>over by {{ money.variance | abs | money }}</strong>{% endif %}.</p>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start">
-      <form method="post" action="/requests/{{ r.id }}/approve">{{ csrf_input(request) }}<button class="btn btn-primary">Approve ✓</button></form>
+      <form method="post" action="/requests/{{ r.id }}/approve">{{ csrf_input(request) }}<button class="btn btn-primary">Approve</button></form>
       <form method="post" action="/requests/{{ r.id }}/reject" style="display:flex;gap:8px;flex:1;min-width:260px">{{ csrf_input(request) }}
         <label class="sr-only" for="reason">Reason for rejecting</label>
         <input type="text" id="reason" name="reason" required placeholder="Reason (required to reject)">
@@ -47,8 +47,7 @@
   {% elif can_open %}
   <section class="card card-pad" aria-label="Your next step">
     <h2 style="margin-bottom:4px">This one is yours</h2>
-    <p class="muted small" style="margin-bottom:16px">Opening the staffing request creates it in the position data for you. Nothing to re-type.</p>
-    <form method="post" action="/requests/{{ r.id }}/open">{{ csrf_input(request) }}<button class="btn btn-primary">Open staffing request</button></form>
+        <form method="post" action="/requests/{{ r.id }}/open">{{ csrf_input(request) }}<button class="btn btn-primary">Open req</button></form>
   </section>
   {% elif can_fill %}
   <section class="card card-pad" aria-label="Your next step">
@@ -67,7 +66,7 @@
   {% endif %}
 
   <section class="card">
-    <div class="card-head"><h2>Timeline</h2><span class="muted small">Every change, who made it and when. This log cannot be edited.</span></div>
+    <div class="card-head"><h2>Timeline</h2>{{ m.lock_tip("Every change, who made it and when. This log cannot be edited.") }}</div>
     <div class="card-pad">
       <ol class="timeline">
         {% for e in events %}
@@ -78,7 +77,7 @@
             {%- elif e.to_status == "vp_approved" %}Approved by {{ e.actor_name }}
             {%- elif e.to_status == "rejected" %}Rejected by {{ e.actor_name }}
             {%- elif e.to_status == "recruiter_assigned" %}Recruiter assigned automatically
-            {%- elif e.to_status == "req_open" %}Staffing request opened by {{ e.actor_name }}
+            {%- elif e.to_status == "req_open" %}Req opened by {{ e.actor_name }}
             {%- elif e.to_status == "filled" %}Filled, recorded by {{ e.actor_name }}{% endif -%}
           </strong>
           {% if e.note %}<div class="note">{% if e.to_status in ("submitted", "rejected") %}“{{ e.note }}”{% else %}{{ e.note }}{% endif %}</div>{% endif %}
@@ -97,7 +96,7 @@
       <dt>Requested by</dt><dd>{{ r.requester_name }} <span class="muted">· {{ r.created_at | dt }}</span></dd>
       <dt>Approver</dt><dd>{{ r.approver_name }} <span class="muted">· VP, {{ r.vp_name }}</span></dd>
       <dt>Recruiter</dt><dd>{{ r.recruiter_name or "Assigned automatically on approval" }}</dd>
-      <dt>Staffing request</dt><dd>{% if staffing %}#{{ staffing.id }} · opened {{ staffing.opened_at | d }} · {{ staffing.status | replace("_", " ") }}{% else %}<span class="muted">Created automatically when the recruiter starts</span>{% endif %}</dd>
+      <dt>Req</dt><dd>{% if staffing %}#{{ staffing.id }} · opened {{ staffing.opened_at | d }} · {{ staffing.status | replace("_", " ") }}{% else %}<span class="muted">Not open yet</span>{% endif %}</dd>
       <dt>Cost</dt><dd><strong class="num">{{ money.annual_cost | money }}</strong> a year, already in the plan · <a href="/budget?org={{ r.vp_id }}">{{ r.vp_name }} at {{ money.pct_of_budget }}% of budget</a></dd>
       <dt>Headcount impact</dt><dd>None. The seat is reused; <a href="/?org={{ r.vp_id }}">{{ r.vp_name }} usable open</a> stays at {{ vp_usable_open }}.</dd>
     </dl>

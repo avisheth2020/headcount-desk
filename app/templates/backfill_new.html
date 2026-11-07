@@ -6,13 +6,12 @@
 <div class="page-head">
   <div>
     <h1>Request a backfill</h1>
-    <p class="fresh">Two questions. The seat, team, level and approver are filled in for you. · Requesting as {{ me.full_name }}</p>
   </div>
 </div>
 
 {% if request.query_params.get("flash") %}<p class="flash flash-bad" role="alert" style="margin-bottom:16px;max-width:720px">{{ request.query_params.get("flash") }}</p>{% endif %}
 
-{% if not can_request %}<div class="banner banner-warn" style="max-width:720px;margin-bottom:16px"><span class="icon" aria-hidden="true">⚠️</span><span>Recruiters cannot request a backfill.<span class="sub">Switch to Requester, VP, SVP or Resource Manager in the top right.</span></span></div>{% endif %}
+{% if not can_request %}<div class="banner banner-warn" style="max-width:720px;margin-bottom:16px"><span class="icon" aria-hidden="true">{{ ico("alert") }}</span><span>Recruiters cannot request a backfill.<span class="sub">Switch to Requester, VP, SVP or Resource Manager in the top right.</span></span></div>{% endif %}
 <section class="card card-pad" style="max-width:720px">
   <div class="field">
     <label for="who">1. Who is leaving?</label>

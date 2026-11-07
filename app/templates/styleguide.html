@@ -23,7 +23,7 @@
 
   <h2>Buttons and chips</h2>
   <div class="row"><button class="btn btn-primary" type="button">Primary</button><button class="btn" type="button">Default</button><button class="btn btn-quiet" type="button">Quiet</button><button class="btn btn-sm" type="button">Small</button><button class="btn" type="button" disabled>Disabled</button></div>
-  <div class="row"><span class="chip">○ Neutral</span><span class="chip chip-accent">◐ Committed</span><span class="chip chip-good">✓ Passed</span><span class="chip chip-warn">⚠ Needs a look</span><span class="chip chip-bad">× Failed</span></div>
+  <div class="row"><span class="chip">{{ ico("circle") }}Neutral</span><span class="chip chip-accent">{{ ico("progress") }}Committed</span><span class="chip chip-good">{{ ico("check") }}Passed</span><span class="chip chip-warn">{{ ico("alert") }}Needs a look</span><span class="chip chip-bad">{{ ico("x") }}Failed</span></div>
   <div class="pills"><span class="pill" aria-current="true">Selected</span><span class="pill">Pill</span><span class="pill">Filter <span class="count">12</span></span></div>
 
   <h2>Bridge and meter</h2>
@@ -37,7 +37,7 @@
 
   <h2>Tiles and banner</h2>
   <div class="tiles"><div class="card tile"><span>Usable open</span><b>55</b><small>of 2,163 approved</small></div><div class="card tile" aria-current="true"><span>Selected tile</span><b>99.3%</b><small>{{ m.budget_chip("watch") }}</small></div></div>
-  <div class="banner banner-warn"><span class="icon" aria-hidden="true">⚠️</span><span>6 of 8 checks passed. 2 need a look.<span class="sub">A verdict in one sentence, with what to do next.</span></span></div>
+  <div class="banner banner-warn"><span class="icon" aria-hidden="true">{{ ico("alert") }}</span><span>6 of 8 checks passed. 2 need a look.<span class="sub">A verdict in one sentence, with what to do next.</span></span></div>
 
   <h2>Table</h2>
   <div class="card">
@@ -49,12 +49,12 @@
 
   <h2>Workflow</h2>
   <div class="card card-pad"><ol class="stepper"><li class="done">Submitted</li><li class="now">VP approval</li><li>Recruiter</li><li>Request open</li><li>Filled</li></ol></div>
-  <div class="card req-card"><div><h3>Backfill for Dana Lee <span class="muted" style="font-weight:400">(Research, L5)</span></h3><p class="quote">“Critical for the Q1 evaluation roadmap”</p><div class="facts">{{ m.urgency_chip("urgent") }}<span><strong>2 days</strong> waiting</span></div></div><div class="actions"><button class="btn" type="button">Reject</button><button class="btn btn-primary" type="button">Approve ✓</button></div></div>
+  <div class="card req-card"><div><h3>Backfill for Dana Lee <span class="muted" style="font-weight:400">(Research, L5)</span></h3><p class="quote">“Critical for the Q1 evaluation roadmap”</p><div class="facts">{{ m.urgency_chip("urgent") }}<span><strong>2 days</strong> waiting</span></div></div><div class="actions"><button class="btn" type="button">Reject</button><button class="btn btn-primary" type="button">Approve</button></div></div>
 
   <h2>Forms and states</h2>
   <div><label for="sg-{{ theme }}">Label</label><input id="sg-{{ theme }}" type="text" placeholder="Placeholder text"></div>
   <div class="skeleton-rows" style="padding:0"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
-  <div class="card empty-state" style="padding:24px"><b>Nothing to fix here 🎉</b>An empty state says what is true and offers one next step.</div>
+  <div class="card empty-state" style="padding:24px"><b>Nothing to fix here</b>An empty state says what is true and offers one next step.</div>
   <div><span class="toast" style="display:inline-flex;animation:none">P-06668 marked resolved. <button type="button">Undo</button></span></div>
 </div>
 {% endmacro %}

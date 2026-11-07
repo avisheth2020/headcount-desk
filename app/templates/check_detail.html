@@ -16,7 +16,7 @@
       {% for r in rows %}
       <tr>
         <td>{{ r.message }}</td>
-        <td data-label="Result">{% if r.severity == "pass" %}<span class="chip chip-good">✓ Passed</span>{% elif r.severity == "warn" %}<span class="chip chip-warn">⚠ Needs a look</span>{% else %}<span class="chip chip-bad">× Failed</span>{% endif %}</td>
+        <td data-label="Result">{% if r.severity == "pass" %}<span class="chip chip-good">{{ ico("check") }}Passed</span>{% elif r.severity == "warn" %}<span class="chip chip-warn">{{ ico("alert") }}Needs a look</span>{% else %}<span class="chip chip-bad">{{ ico("x") }}Failed</span>{% endif %}</td>
         <td class="r" data-label="Expected">{{ "{:,.10g}".format(r.expected) if r.expected is not none else "–" }}</td>
         <td class="r" data-label="Actual">{{ "{:,.10g}".format(r.actual) if r.actual is not none else "–" }}</td>
         <td class="r" data-label="Rows" style="white-space:nowrap"><a href="{{ r.link }}">See rows</a></td>

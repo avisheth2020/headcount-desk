@@ -64,7 +64,7 @@
       <h2>{{ child_label or "Positions" }}</h2>
       <div class="table-tools">
         <a class="btn btn-sm" href="/positions?org={{ org.org_id }}">All {{ (org.filled + org.committed + org.reserve + org.negative + org.open_no_req) | num }} positions</a>
-        {% if children %}<a class="btn btn-sm" href="{{ url_with(request, format='csv') }}">↓ CSV</a>{% endif %}
+        {% if children %}<a class="btn btn-sm" href="{{ url_with(request, format='csv') }}">{{ ico("download") }}CSV</a>{% endif %}
       </div>
     </div>
     {% if children %}
@@ -76,7 +76,7 @@
           {{ m.th(request, "Filled", "filled", sort, dir, "r", "filled") }}
           {{ m.th(request, "Committed", "committed", sort, dir, "r", "committed") }}
           {{ m.th(request, "Reserve", "reserve", sort, dir, "r", "reserve") }}
-          {{ m.th(request, "Negative", "negative", sort, dir, "r", "negative") }}
+          {{ m.th(request, BUCKETS.negative[0], "negative", sort, dir, "r", "negative") }}
           {{ m.th(request, "Usable open", "usable", sort, dir, "r", "usable_open") }}
           {{ m.th(request, "Of budget", "budget", sort, dir, "r") }}
           <th class="r">To fix</th>
@@ -90,10 +90,10 @@
           <td class="r" data-label="Filled"><a href="/positions?org={{ c.org_id }}&bucket=filled">{{ c.filled | num }}</a></td>
           <td class="r" data-label="Committed"><a href="/positions?org={{ c.org_id }}&bucket=committed">{{ c.committed | num }}</a></td>
           <td class="r" data-label="Reserve"><a href="/positions?org={{ c.org_id }}&bucket=reserve">{{ c.reserve | num }}</a></td>
-          <td class="r" data-label="Negative"><a href="/positions?org={{ c.org_id }}&bucket=negative">{{ c.negative | num }}</a></td>
+          <td class="r" data-label="Over-hired"><a href="/positions?org={{ c.org_id }}&bucket=negative">{{ c.negative | num }}</a></td>
           <td class="r" data-label="Usable open"><a class="usable" href="/?org={{ c.org_id }}">{{ c.usable_open | num }}</a></td>
           <td class="r" data-label="Of budget"><a href="/budget?org={{ c.org_id }}" class="{{ 'chip chip-bad' if c.state == 'over' else ('chip chip-warn' if c.state == 'watch' else '') }}">{{ c.pct_of_budget }}%</a></td>
-          <td class="r" data-label="To fix">{% if exceptions.get(c.org_id) %}<a class="chip chip-warn" href="/exceptions?org={{ c.org_id }}">⚠ {{ exceptions[c.org_id] }}</a>{% endif %}</td>
+          <td class="r" data-label="To fix">{% if exceptions.get(c.org_id) %}<a class="chip chip-warn" href="/exceptions?org={{ c.org_id }}">{{ ico("alert") }}{{ exceptions[c.org_id] }}</a>{% endif %}</td>
         </tr>
         {% endfor %}
         {% if has_direct %}
@@ -103,7 +103,7 @@
           <td class="r" data-label="Filled"><a href="/positions?org={{ org.org_id }}&bucket=filled&direct=1">{{ direct.filled | num }}</a></td>
           <td class="r" data-label="Committed"><a href="/positions?org={{ org.org_id }}&bucket=committed&direct=1">{{ direct.committed | num }}</a></td>
           <td class="r" data-label="Reserve"><a href="/positions?org={{ org.org_id }}&bucket=reserve&direct=1">{{ direct.reserve | num }}</a></td>
-          <td class="r" data-label="Negative"><a href="/positions?org={{ org.org_id }}&bucket=negative&direct=1">{{ direct.negative | num }}</a></td>
+          <td class="r" data-label="Over-hired"><a href="/positions?org={{ org.org_id }}&bucket=negative&direct=1">{{ direct.negative | num }}</a></td>
           <td class="r" data-label="Usable open"><a href="/positions?org={{ org.org_id }}&direct=1">{{ direct.usable_open | num }}</a></td>
           <td class="r"></td><td class="r"></td>
         </tr>
@@ -130,6 +130,5 @@
     {% endif %}
   </section>
 
-  <p class="muted small">Usable open = approved − filled − committed − reserve − negative. Plan version {{ plan.name }}, locked {{ plan.locked_at | d }}.</p>
 </div>
 {% endblock %}

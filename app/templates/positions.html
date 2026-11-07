@@ -7,7 +7,7 @@
 <div class="page-head">
   <div>
     <h1>{{ total | num }} {{ BUCKETS[bucket][0] | lower if bucket else "" }} position{{ "" if total == 1 else "s" }} {{ "held directly at" if direct else "in" }} {{ org.name }}</h1>
-    <p class="fresh">{% if bucket %}{{ BUCKETS[bucket][1] }} {% endif %}These are the rows behind the number.</p>
+    <p class="fresh">{% if bucket %}{{ BUCKETS[bucket][1] }}{% endif %}</p>
   </div>
   <nav class="pills" aria-label="Filter by status">
     <a class="pill" href="{{ url_with(request, bucket=None, page=None) }}" {% if not bucket %}aria-current="true"{% endif %}>All</a>
