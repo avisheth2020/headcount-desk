@@ -31,11 +31,26 @@ def latest_run(conn) -> dict:
     return db.one(conn, "SELECT * FROM check_runs ORDER BY run_at DESC, id DESC LIMIT 1")
 
 
+def share_history(conn, org_id: int) -> list[float]:
+    """An org's share of company headcount over the last 14 snapshots, oldest first."""
+    rows = db.query(conn, """
+        SELECT * FROM (
+            SELECT s.snapshot_date, 100.0 * s.total_people / company.total_people AS share
+            FROM daily_snapshots s
+            JOIN daily_snapshots company ON company.snapshot_date = s.snapshot_date AND company.org_id = 1
+            WHERE s.org_id = %s ORDER BY s.snapshot_date DESC LIMIT 14) recent ORDER BY snapshot_date""", (org_id,))
+    return [float(r["share"]) for r in rows]
+
+
 @router.get("/health", response_class=HTMLResponse, include_in_schema=False)
-def health(request: Request, flash: str | None = None):
+def health(request: Request, flash: str | None = None, run: int | None = None):
     with db.get_conn() as conn:
         ctx = web.page_context(request, conn)
-        run = latest_run(conn)
+        newest = latest_run(conn)
+        chosen = db.one(conn, "SELECT * FROM check_runs WHERE id = %s", (run,)) if run else None
+        if run and chosen is None:
+            raise HTTPException(404, "No such run")
+        run = chosen or newest
         results = db.query(conn, """
             SELECT r.*, o.name AS org_name FROM check_results r LEFT JOIN orgs o ON o.id = r.org_id
             WHERE r.check_run_id = %s ORDER BY r.id""", (run["id"],))
@@ -45,11 +60,17 @@ def health(request: Request, flash: str | None = None):
             status = max((r["severity"] for r in rows), key=WORST.get, default="pass")
             cards.append({"name": name, "title": title, "asserts": asserts, "status": status, "tested": len(rows),
                           "problems": sum(r["severity"] != "pass" for r in rows)})
-        problems = [{**r, "title": CHECKS[r["check_name"]][0], "link": rows_link(r["check_name"], r["org_id"])}
+        problems = [{**r, "title": CHECKS[r["check_name"]][0], "link": rows_link(r["check_name"], r["org_id"]),
+                     "trend": share_history(conn, r["org_id"]) if r["check_name"] == "ratio" and r["org_id"] else None}
                     for r in results if r["severity"] != "pass"]
         history = db.query(conn, """
             SELECT * FROM (SELECT * FROM check_runs ORDER BY run_at DESC, id DESC LIMIT 14) recent ORDER BY run_at, id""")
-        ctx.update(run=run, cards=cards, problems=problems, history=history, total=len(CHECKS), flash=flash,
+        cells = {(c["check_run_id"], c["check_name"]): c["status"] for c in db.query(conn, """
+            SELECT check_run_id, check_name,
+                   CASE WHEN bool_or(severity = 'fail') THEN 'fail' WHEN bool_or(severity = 'warn') THEN 'warn' ELSE 'pass' END AS status
+            FROM check_results WHERE check_run_id = ANY(%s) GROUP BY 1, 2""", ([h["id"] for h in history],))}
+        ctx.update(run=run, cards=sorted(cards, key=lambda c: -WORST[c["status"]]), problems=problems, history=history, cells=cells,
+                   newest=newest, total=len(CHECKS), flash=flash,
                    clean_runs=sum(1 for h in history if h["warned"] == 0 and h["failed"] == 0))
     return web.render(request, "health.html", ctx)
 

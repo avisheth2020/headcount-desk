@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% import "_macros.html" as m %}
+{% import "_charts.html" as ch %}
 {% block title %}Data health{% endblock %}
 
 {% macro status_chip(status) %}
@@ -23,7 +24,7 @@
   <div class="banner {{ 'banner-bad' if run.failed else ('banner-warn' if run.warned else 'banner-good') }}" role="status">
     <span class="icon" aria-hidden="true">{{ ico("x" if run.failed else ("alert" if run.warned else "check")) }}</span>
     <span>
-      {{ run.passed }} of {{ total }} checks passed at {{ run.run_at | dt }}.
+      {{ run.passed }} of {{ run.passed + run.warned + run.failed }} checks passed at {{ run.run_at | dt }}.
       {% if attention %}{{ attention }} need{{ "s" if attention == 1 else "" }} a look.{% else %}Nothing needs a look.{% endif %}
       <span class="sub">{% if run.failed %}A failed check means a number on the other pages may be wrong.{% elif run.warned %}The headcount numbers tie out. {{ problems | length }} finding{{ "" if problems | length == 1 else "s" }} worth a minute.{% else %}Every number on the other pages ties out to the stored data.{% endif %}</span>
     </span>
@@ -34,40 +35,31 @@
     <div class="card-head"><h2>What needs a look</h2></div>
     {% for p in problems %}
     <div class="finding">
-      <div style="margin-bottom:6px">{{ status_chip(p.severity) }} <span class="muted small">{{ p.title }} check</span></div>
-      <p>{{ p.message }}</p>
-      <p class="small" style="margin-top:6px"><a href="{{ p.link }}">See the rows behind this ›</a></p>
+      <div class="finding-body">
+        <div>
+          <div style="margin-bottom:6px">{{ status_chip(p.severity) }} <span class="muted small">{{ p.title }} check</span></div>
+          <p>{{ p.message }}</p>
+          <p class="small" style="margin-top:6px"><a href="{{ p.link }}">See the rows behind this ›</a></p>
+        </div>
+        {% if p.trend %}{{ ch.spark(p.trend, "Share of company headcount, last 14 days", 140, 44) }}{% endif %}
+      </div>
     </div>
     {% endfor %}
   </section>
   {% endif %}
 
-  <section aria-label="All checks">
-    <div class="checks">
+  <section class="card health-grid-card" aria-label="All checks, last {{ history | length }} runs">
+    <div class="card-head"><h2>Last {{ history | length }} runs</h2><span class="small muted">{{ clean_runs }} clean, {{ history | length - clean_runs }} with something to look at</span></div>
+    <div class="hm" style="--runs: {{ history | length }}" {{ IN_PLACE }}>
+      <span class="hm-corner"></span>
+      {% for h in history %}<a class="hm-day {{ 'on' if h.id == run.id }}" href="{{ '/health' if h.id == newest.id else '/health?run=' ~ h.id }}" aria-label="Show the run of {{ h.run_at | dt }}" data-chart-tip="{{ h.run_at | dt }}">{{ h.run_at.astimezone(ET).day }}</a>{% endfor %}
       {% for c in cards %}
-      <a class="card check" href="/health/check/{{ c.name }}">
-        {{ status_chip(c.status) }}
-        <h3>{{ c.title }}</h3>
-        <p>{{ c.asserts }}</p>
-        <p style="margin-top:10px"><span class="num" style="color:var(--text);font-weight:600">{{ c.tested }}</span> tested{% if c.problems %} · <span class="num" style="color:var(--warn);font-weight:600">{{ c.problems }}</span> to look at{% else %} · all passed{% endif %} ›</p>
-      </a>
+      <a class="hm-name" href="/health/check/{{ c.name }}" data-chart-tip="{{ c.asserts }}">{{ c.title }}</a>
+      {% for h in history %}
+      {% set state = cells.get((h.id, c.name)) %}
+      <a class="hm-cell {{ state or 'none' }} {{ 'on' if h.id == run.id }}" href="{{ '/health' if h.id == newest.id else '/health?run=' ~ h.id }}" aria-label="{{ c.title }}, {{ h.run_at | dt }}: {{ {'pass': 'passed', 'warn': 'needs a look', 'fail': 'failed'}.get(state, 'no detail') }}" data-chart-tip="{{ c.title }}, {{ h.run_at | d }}: {{ {'pass': 'passed', 'warn': 'needs a look', 'fail': 'failed'}.get(state, 'no detail') }}">{% if state == "warn" %}{{ ico("alert") }}{% elif state == "fail" %}{{ ico("x") }}{% endif %}</a>
       {% endfor %}
-    </div>
-  </section>
-
-  <section class="card card-pad" aria-label="History">
-    <div style="display:flex;justify-content:space-between;gap:16px;align-items:flex-end;flex-wrap:wrap">
-      <div>
-        <h2>Last {{ history | length }} runs</h2>
-        <p class="muted small" style="margin-top:4px">{{ clean_runs }} clean, {{ history | length - clean_runs }} with something to look at. Checks run every morning after the snapshot loads.</p>
-      </div>
-      <div class="spark" role="img" style="width:min(100%, 360px)"
-           aria-label="Checks passed per run, oldest to newest: {% for h in history %}{{ h.passed }}{{ ', ' if not loop.last }}{% endfor %}">
-        {% for h in history %}
-        <i class="{{ 'fail' if h.failed else ('warn' if h.warned else '') }}" style="height: {{ (100 * h.passed / total) | round }}%"
-           title="{{ h.run_at | dt }}: {{ h.passed }} of {{ total }} passed"></i>
-        {% endfor %}
-      </div>
+      {% endfor %}
     </div>
   </section>
 </div>

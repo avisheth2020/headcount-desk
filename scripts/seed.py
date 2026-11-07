@@ -783,10 +783,17 @@ def load(conn, b: Builder) -> None:
 
 def load_check_history(conn, as_of: date) -> None:
     """Two weeks of earlier check runs (counts only), then this morning's run for real."""
-    from app.checks import run_checks
+    from app.checks import CHECKS, run_checks
     at = lambda days: datetime.combine(as_of - timedelta(days=days), time(6, 2), ET)
-    history = [(at(days), 5 if days == 9 else 6, 1 if days == 9 else 0, 0) for days in range(13, 0, -1)]
-    conn.cursor().executemany("INSERT INTO check_runs (run_at, passed, warned, failed) VALUES (%s, %s, %s, %s)", history)
+    for days in range(13, 0, -1):
+        warned = 1 if days == 9 else 0                  # one bad morning, so the history has something to show
+        run_id = db.one(conn, "INSERT INTO check_runs (run_at, passed, warned, failed) VALUES (%s, %s, %s, 0) RETURNING id",
+                        (at(days), len(CHECKS) - warned, warned))["id"]
+        for name in CHECKS:
+            slipped = warned and name == "open_share"
+            conn.execute("INSERT INTO check_results (check_run_id, check_name, severity, message) VALUES (%s, %s, %s, %s)",
+                         (run_id, name, "warn" if slipped else "pass",
+                          "One VP org passed 8% of its seats open with nobody recruiting. It cleared the next morning." if slipped else "Passed."))
     run_checks(conn, run_at=at(0))
 
 

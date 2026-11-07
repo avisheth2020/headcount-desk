@@ -110,3 +110,11 @@ def test_health_pages(manifest):
         assert again.status_code == 303
         with db.get_conn() as conn:
             conn.execute("DELETE FROM check_runs WHERE id = (SELECT max(id) FROM check_runs)")
+
+
+def test_every_seeded_run_has_a_result_for_every_check(seeded_db):
+    from app.checks import CHECKS
+    rows = db.query(seeded_db, """
+        SELECT r.id, count(DISTINCT c.check_name) AS checks, r.passed + r.warned + r.failed AS total
+        FROM check_runs r JOIN check_results c ON c.check_run_id = r.id GROUP BY r.id""")
+    assert len(rows) == 14 and all(r["checks"] == len(CHECKS) == r["total"] for r in rows)
