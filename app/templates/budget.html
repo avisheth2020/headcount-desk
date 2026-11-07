@@ -7,7 +7,7 @@
 <div class="page-head">
   <div>
     <h1>Are we on budget?</h1>
-    <p class="fresh">{{ fiscal.name }}, quarter {{ fiscal.quarter }} · {{ fiscal.months_left }} months left · Data as of {{ as_of | dt }} · Plan: <a href="/plan?org=1">{{ plan.name }}</a></p>
+    <p class="fresh">{{ fiscal.name }}, quarter {{ fiscal.quarter }} · {{ fiscal.months_left | round | int }} months left</p>
   </div>
   <nav class="pills" aria-label="Choose an org">
     {% for s in svps %}

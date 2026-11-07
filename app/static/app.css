@@ -95,7 +95,6 @@ code, .mono { font-family: var(--mono); font-size: .93em; }
 .nav-link:hover { background: var(--surface-3); color: var(--text); text-decoration: none; }
 .nav-link[aria-current="page"] { background: var(--accent-soft); color: var(--accent-ink); }
 .nav-link .count { margin-left: auto; }
-.sidebar-foot { margin-top: auto; font-size: 12px; color: var(--muted); padding: 0 8px; display: grid; gap: 6px; }
 
 .topbar {
   position: sticky; top: 0; z-index: 30; height: var(--topbar); display: flex; align-items: center; gap: var(--s3);
@@ -104,7 +103,7 @@ code, .mono { font-family: var(--mono); font-size: .93em; }
 .topbar .brand { display: none; }
 .topbar-right { margin-left: auto; display: flex; align-items: center; gap: var(--s2); }
 .search-btn {
-  display: flex; align-items: center; gap: 8px; height: 32px; min-width: 260px; padding: 0 10px; border: 1px solid var(--border); border-radius: var(--r);
+  display: flex; align-items: center; gap: 8px; height: 32px; min-width: 176px; padding: 0 10px; border: 1px solid var(--border); border-radius: var(--r);
   background: var(--surface); color: var(--muted); font: inherit; font-size: 13px; cursor: pointer; text-align: left;
 }
 .search-btn:hover { border-color: var(--border-strong); }
@@ -115,13 +114,36 @@ code, .mono { font-family: var(--mono); font-size: .93em; }
 .icon-btn svg { width: 16px; height: 16px; }
 [data-theme="dark"] .theme-sun, :root:not([data-theme="dark"]) .theme-moon { display: none; }
 
-.role-switch { position: relative; }
+.popover { position: relative; }
+.popover > summary { list-style: none; cursor: pointer; }
+.popover > summary::-webkit-details-marker { display: none; }
+.pop { position: absolute; top: 38px; right: 0; width: 300px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); box-shadow: var(--e2); padding: var(--s4); z-index: 40; display: grid; gap: var(--s3); }
+.fresh-chip summary { height: 32px; display: flex; align-items: center; gap: 6px; padding: 0 10px; border: 1px solid var(--border); border-radius: var(--r); background: var(--surface); font-size: 12.5px; color: var(--muted); white-space: nowrap; }
+.fresh-chip summary i { width: 7px; height: 7px; border-radius: 50%; background: var(--good); }
+.fresh-chip .dl { grid-template-columns: 84px 1fr; font-size: 13px; }
+.tour summary { height: 28px; display: flex; align-items: center; padding: 0 12px; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: 12.5px; font-weight: 600; white-space: nowrap; }
+.tour.started summary { background: var(--accent-soft); color: var(--accent-ink); }
+.tour-pop { left: 0; right: auto; width: 320px; }
+.tour-pop ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; counter-reset: step; }
+.tour-pop li { counter-increment: step; }
+.tour-pop li a { display: flex; gap: 10px; align-items: center; padding: 7px 6px; border-radius: 6px; color: var(--text); font-size: 13px; }
+.tour-pop li a:hover { background: var(--surface-3); text-decoration: none; }
+.tour-pop li a::before { content: counter(step); flex: none; width: 20px; height: 20px; border-radius: 50%; background: var(--surface-3); color: var(--muted); font-size: 11px; font-weight: 700; display: grid; place-items: center; }
+.tour-pop li.done a::before { content: "✓"; background: var(--good); color: var(--surface); }
+.tour-close { position: absolute; top: 8px; right: 8px; width: 24px; height: 24px; display: grid; place-items: center; border: 0; background: none; color: var(--muted); cursor: pointer; border-radius: 6px; padding: 0; }
+.tour-close:hover { background: var(--surface-3); }
+.tour-close svg { width: 14px; height: 14px; }
+html.try-dismissed .tour { display: none; }
+.role-seg { display: flex; gap: 2px; margin: 0; padding: 2px; border: 1px solid var(--border); border-radius: var(--r); background: var(--surface); }
+.role-seg button { height: 26px; padding: 0 8px; border: 0; border-radius: 6px; background: none; color: var(--muted); font: 500 12.5px var(--font); cursor: pointer; white-space: nowrap; }
+.role-seg button:hover { background: var(--surface-3); color: var(--text); }
+.role-seg button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent-ink); font-weight: 600; }
+.role-switch { display: none; position: relative; }
+@media (max-width: 1239px) { .role-seg { display: none; } .role-switch { display: block; } }
 .role-switch summary { list-style: none; cursor: pointer; height: 32px; display: flex; align-items: center; gap: 6px; padding: 0 10px; border: 1px solid var(--border); border-radius: var(--r); background: var(--surface); font-size: 13px; white-space: nowrap; }
 .role-switch summary::-webkit-details-marker { display: none; }
-.role-switch summary .lbl { color: var(--muted); }
 .role-switch[open] summary { border-color: var(--accent); }
 .role-menu { position: absolute; right: 0; top: 38px; width: 280px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); box-shadow: var(--e2); padding: 6px; z-index: 40; }
-.role-menu p { padding: 8px 10px 6px; font-size: 12px; color: var(--muted); }
 .role-menu button { display: flex; flex-direction: column; width: 100%; text-align: left; background: none; border: 0; padding: 7px 10px; border-radius: 6px; font: inherit; cursor: pointer; color: var(--text); }
 .role-menu button:hover { background: var(--surface-3); }
 .role-menu button[aria-current="true"] { background: var(--accent-soft); }
@@ -273,17 +295,6 @@ tr:hover .row-actions > *, tr:focus-within .row-actions > * { opacity: 1; }
 
 /* ── Feedback: flash, toast, banner, tiles, progress, skeleton ───────────── */
 
-.try { border-color: color-mix(in srgb, var(--accent) 35%, var(--border)); background: linear-gradient(180deg, var(--accent-soft), var(--surface)); position: relative; padding: var(--s4) var(--s5); }
-.try h2 { margin-bottom: 2px; }
-.try ol { margin: var(--s3) 0 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--s3); counter-reset: step; }
-.try li { counter-increment: step; }
-.try li a { display: flex; gap: 10px; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--r); background: var(--surface); color: var(--text); height: 100%; font-size: 13px; }
-.try li a:hover { border-color: var(--accent); text-decoration: none; }
-.try li a::before { content: counter(step); flex: none; width: 20px; height: 20px; border-radius: 50%; background: var(--accent); color: var(--on-accent); font-size: 11px; font-weight: 700; display: grid; place-items: center; }
-.try .close { position: absolute; right: 10px; top: 10px; border: 0; background: none; font-size: 18px; line-height: 1; color: var(--muted); cursor: pointer; padding: 6px; border-radius: 6px; }
-.try .close:hover { background: var(--surface-3); }
-html.try-dismissed .try { display: none; }
-
 .flash { padding: 9px 12px; border-radius: var(--r); background: var(--good-soft); color: var(--good); font-weight: 500; font-size: 13.5px; }
 .flash-bad { background: var(--bad-soft); color: var(--bad); }
 #toasts { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 80; display: grid; gap: 8px; }
@@ -413,6 +424,8 @@ tr.hot td { background: var(--warn-soft) !important; }
 .stepper-input { display: inline-flex; align-items: center; }
 .stepper-input input { width: 76px; text-align: right; padding: 5px 8px; font-variant-numeric: tabular-nums; }
 
+@media (max-width: 479px) { .topbar .brand { display: none; } .fresh-chip summary span { display: none; } .fresh-chip summary { padding: 0 9px; } .topbar-right { gap: 4px; } }
+
 /* ── Drawer and command palette ──────────────────────────────────────────── */
 
 .scrim { position: fixed; inset: 0; background: var(--scrim); z-index: 60; opacity: 0; pointer-events: none; transition: opacity var(--med) var(--ease); }
@@ -471,15 +484,9 @@ tr.hot td { background: var(--warn-soft) !important; }
   .todo li { grid-template-columns: 1fr; }
   .todo li .btn { justify-self: start; }
   .stepper li { font-size: 11px; }
-  /* On a phone the card is a compact list, so the answer below it stays on the first screen. */
-  .try { padding: var(--s3) var(--s4); }
-  .try ol { grid-template-columns: 1fr; gap: 0; margin-top: 6px; }
-  .try li a { padding: 6px 4px; border: 0; background: none; font-size: 13px; line-height: 1.35; }
-  .try p { display: none; }
   .changes li { grid-template-columns: 56px 1fr; }
   .changes li > :last-child { grid-column: 2; }
 }
-@container (min-width: 701px) and (max-width: 1000px) { .try ol { grid-template-columns: 1fr 1fr; } }
 @container (max-width: 1000px) {
   .checks { grid-template-columns: 1fr 1fr; }
   .hero { grid-template-columns: 1fr; gap: var(--s4); }
@@ -502,8 +509,10 @@ tr.hot td { background: var(--warn-soft) !important; }
   .topbar .crumbs-top { display: none; }
   .search-btn { min-width: 0; width: 32px; padding: 0; justify-content: center; }
   .search-btn span, .search-btn kbd { display: none; }
-  .role-switch summary .lbl { display: none; }
   .role-menu { width: min(280px, calc(100vw - 32px)); }
+  .topbar { padding: 0 var(--s3); gap: 6px; }
+  .tour-pop { position: fixed; left: 12px; right: 12px; top: 90px; width: auto; }
+  .fresh-chip .pop { position: fixed; left: 12px; right: 12px; top: 90px; width: auto; }
   main { padding: var(--s4) var(--s4) var(--s6); }
   h1 { font-size: 20px; }
   .hero-number { font-size: 56px; }

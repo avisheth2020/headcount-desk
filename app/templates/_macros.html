@@ -3,10 +3,6 @@
 {% macro tip(key) %}<span class="tip" tabindex="0" role="note" aria-label="{{ BUCKETS[key][1] }}" data-tip="{{ BUCKETS[key][1] }}">i</span>{% endmacro %}
 {% macro hint(text) %}<span class="tip" tabindex="0" role="note" aria-label="{{ text }}" data-tip="{{ text }}">i</span>{% endmacro %}
 
-{% macro fresh(as_of, plan) %}
-<p class="fresh">Data as of {{ as_of | dt }} · Plan: <a href="/plan?org=1">{{ plan.name }}</a> (locked {{ plan.locked_at | d }})</p>
-{% endmacro %}
-
 {% macro crumbs(items, here=None, base="/?org=") %}
 <nav class="crumbs" aria-label="Breadcrumb">
   {% for c in items %}

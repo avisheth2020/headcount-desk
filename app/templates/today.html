@@ -22,7 +22,6 @@
   <div>
     {% if role in ("vp", "recruiter") %}{{ m.inbox_title(role, inbox | length) }}
     {% else %}<h1>{{ {"svp": "What changed since yesterday?", "rm": "What needs fixing today?", "requester": "Where is my backfill?"}[role] }}</h1>{% endif %}
-    <p class="fresh">Today for {{ me.full_name }} ({{ role_label }}, {{ me.org_name }}) · Data as of {{ as_of | dt }} · Plan: <a href="/plan?org=1">{{ plan.name }}</a></p>
   </div>
   {% if role in ("requester", "vp", "rm") %}<a class="btn btn-primary" href="/backfill/new">+ Request a backfill</a>{% endif %}
 </div>

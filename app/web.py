@@ -78,6 +78,10 @@ def fmt_datetime(value) -> str:
     return f"{local:%a %b} {local.day}, {local:%I:%M %p}".replace(", 0", ", ")
 
 
+def fmt_clock(value) -> str:
+    return f"{value.astimezone(ET):%I:%M %p}".lstrip("0")
+
+
 def fmt_ago(value) -> str:
     """How long since a timestamp or date, in words: '3 hours', '2 days'."""
     if value is None:
@@ -142,7 +146,7 @@ def csrf_input(request: Request) -> Markup:
     return Markup(f'<input type="hidden" name="csrf_token" value="{request.state.csrf}">')
 
 
-templates.env.filters.update(num=fmt_num, money=fmt_money, d=fmt_date, dt=fmt_datetime, ago=fmt_ago)
+templates.env.filters.update(num=fmt_num, money=fmt_money, d=fmt_date, dt=fmt_datetime, ago=fmt_ago, clock=fmt_clock)
 templates.env.globals.update(asset_version=int(time.time()), BUCKETS=BUCKETS, FAMILY=FAMILY_LABELS, LEVELS=LEVEL_LABELS,
                              ROLES=ROLES, FEATURES=FEATURES, url_with=url_with, csrf_input=csrf_input)
 
