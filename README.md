@@ -13,14 +13,14 @@ All data is synthetic. The company ("Meridian Labs"), the people, the cost rates
 | Page | The question it answers | What you see |
 |---|---|---|
 | **Today** | What needs me? | A home page per role: what changed since yesterday (SVP), approvals and budget risk (VP), aging roles (recruiter), exceptions and failing checks (resource manager). |
-| **Headcount** | How many people can we actually hire? | Usable open for any org, a bridge chart of where approved headcount goes, and the same numbers for each org below. |
+| **Headcount** | How many people can we actually hire? | Usable open for any org, a seat map of every unfilled seat, and the same numbers for each org below. |
 | **Budget** | Are we on budget? | Projected spend against the plan: run-rate plus committed seats for the months left. Over, close or under, for every org. |
 | **Planning** | What does each org need next year? | The FY28 cycle: VPs propose adds and cuts with a live dollar impact, the SVP reviews against an envelope, and locking writes a new plan version. |
-| **Forecast** | Where will we end the quarter? | Projected people in seats and run-rate, as a range, with the method written on the page. |
-| **Org explorer** | Who sits where, and what does it cost? | The hierarchy from company to team, with seats and dollars at each level. |
+| **Forecast** | Where will we end the quarter? | Projected people in seats drawn from real history into a likely range, with what-if sliders and the method one click away. |
+| **Org explorer** | Who sits where, and what does it cost? | The hierarchy from company to team, as a table or a zoomable map, with seats and dollars at each level. |
 | **Requests** | Where is my backfill? | A two-question form, a one-click approval inbox with the cost shown, an auto-assigned recruiter, and a full audit trail. |
-| **Exceptions** | What's wrong in the data, and who fixes it? | Stale opens, duplicates, ghost fills, mis-coded seats and misplaced reserve, as a to-do list by owner. |
-| **Data health** | Can I trust these numbers? | Eight daily checks in plain sentences, with links to the rows. |
+| **Exceptions** | What's wrong in the data, and who fixes it? | Stale opens, duplicates, ghost fills, mis-coded seats and misplaced reserve, as a to-do list by owner, with bulk resolve and undo. |
+| **Data health** | Can I trust these numbers? | Eight daily checks by day in one grid, in plain sentences, with links to the rows. |
 
 Every number opens the rows behind it. Detail opens in a side drawer, so you never lose your place. Press **⌘K** (or `/`) to jump to any person, position or org.
 

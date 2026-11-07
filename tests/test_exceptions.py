@@ -62,3 +62,22 @@ def test_bulk_resolve_needs_permission(manifest):
         client.get("/exceptions")
         response = client.post("/exceptions/resolve-many", data={"items": "stale_open:1", "org": 1}, follow_redirects=False)
     assert response.status_code == 403
+
+
+def test_select_all_skips_seats_the_person_does_not_own(manifest):
+    from app.main import app
+    with db.get_conn() as conn:
+        vp = db.one(conn, "SELECT p.org_id FROM app_meta m JOIN people p ON p.id = m.value::int WHERE m.key = 'persona_vp'")["org_id"]
+        mine = db.one(conn, """
+            SELECT e.exception_type, e.position_id FROM v_exceptions e JOIN v_org_closure c ON c.org_id = e.org_id
+            WHERE c.ancestor_id = %s AND NOT e.is_resolved ORDER BY e.position_id LIMIT 1""", (vp,))
+        other = db.one(conn, """
+            SELECT e.exception_type, e.position_id FROM v_exceptions e
+            WHERE NOT e.is_resolved AND e.org_id NOT IN (SELECT org_id FROM v_org_closure WHERE ancestor_id = %s) ORDER BY e.position_id LIMIT 1""", (vp,))
+    with TestClient(app) as client:
+        client.cookies.set("role", "vp")
+        client.get("/exceptions")
+        items = [f"{mine['exception_type']}:{mine['position_id']}", f"{other['exception_type']}:{other['position_id']}"]
+        page = client.post("/exceptions/resolve-many", data={"items": items, "org": 1})
+        assert page.status_code == 200 and "1 marked resolved." in page.text and "1 skipped" in page.text
+        client.post(f"/exceptions/unresolve?exception_type={mine['exception_type']}&position_id={mine['position_id']}")

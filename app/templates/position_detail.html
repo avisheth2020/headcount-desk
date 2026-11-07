@@ -32,7 +32,7 @@
       {% for e in exceptions %}
       <li class="{{ 'done' if e.is_resolved }}">
         <div><div class="meta"><span class="chip chip-warn">{{ ico("alert") }}{{ e.type_label }}</span>{% if e.is_resolved %}<span class="chip chip-good">{{ ico("check") }}Resolved</span>{% endif %}</div>
-          <div class="what">{{ e.detail }}</div><div class="fix">Fix: {{ e.suggested_fix }}</div></div>
+          <div class="what">{{ e.detail | replace("staffing request", "req") }}</div><div class="fix">Fix: {{ e.suggested_fix | replace("a staffing request", "a req") }}</div></div>
       </li>
       {% endfor %}
     </ul>

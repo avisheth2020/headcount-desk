@@ -15,9 +15,9 @@ WORST = {"pass": 0, "warn": 1, "fail": 2}
 def rows_link(check_name: str, org_id: int | None) -> str:
     """Where to see the rows behind one finding."""
     if check_name == "open_share":
-        return f"/positions?org={org_id}&bucket=open_no_req"
+        return f"/positions?org={org_id or 1}&bucket=open_no_req"
     if check_name == "budget":
-        return f"/budget?org={org_id}"
+        return f"/budget?org={org_id or 1}"
     if check_name == "cost_rates":
         return "/positions?org=1&sort=cost"
     if check_name == "plan_integrity":

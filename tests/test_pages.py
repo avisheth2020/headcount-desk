@@ -132,6 +132,17 @@ def test_headcount_seat_map_adds_up(client):
     assert seats.count("<i ") == total and seats.count(" on\"") == committed
 
 
+def test_a_mistyped_link_gets_a_page_and_the_api_keeps_its_error(client):
+    page = client.get("/?org=abc")
+    assert page.status_code == 404 and "find that" in page.text
+    assert client.get("/api/requests/abc/events").status_code == 422
+
+
+def test_forecast_table_totals_match_the_hero(client):
+    page = client.get("/forecast?org=2").text
+    assert " total</td>" in page and "Held at" in page
+
+
 def test_seat_history_ends_near_today(seeded_db):
     from app import trends
     history = trends.seat_history(seeded_db, 1)

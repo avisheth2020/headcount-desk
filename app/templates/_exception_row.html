@@ -6,7 +6,7 @@
       <a class="mono" data-drawer href="/positions/{{ e.position_id }}">{{ e.position_code }}</a>
       <span class="muted small">{{ e.org_name }}</span>
     </div>
-    <div class="what">{{ e.detail }}</div>
+    <div class="what">{{ e.detail | replace("staffing request", "req") }}</div>
     {% if e.is_resolved %}<div class="fix">Resolved {{ e.resolved_at | ago }} ago</div>{% endif %}
   </div>
   {% if e.age_days is not none %}<span class="ex-age" data-chart-tip="Open {{ e.age_days | num }} days"><i style="width: {{ [e.age_days * 100 / 500, 100] | min | round }}%"></i><span>{{ e.age_days | num }} days</span></span>{% else %}<span></span>{% endif %}

@@ -12,7 +12,7 @@ router = APIRouter()
 STEPS = ["Submitted", "VP approval", "Recruiter", "Req open", "Filled"]
 # status -> how many steps are done (the next one is "now")
 DONE = {"submitted": 1, "rejected": 1, "vp_approved": 2, "recruiter_assigned": 3, "req_open": 4, "filled": 5}
-STATUS_LABELS = {"opened": "Reached an open req", "submitted": "Waiting on VP", "recruiter_assigned": "Recruiter assigned", "req_open": "Req open",
+STATUS_LABELS = {"opened": "Reached an open req", "submitted": "Waiting on VP", "recruiter_assigned": "With recruiter", "req_open": "Req open",
                  "filled": "Filled", "rejected": "Rejected"}
 MINE = {"vp": "vp_approver_id", "recruiter": "recruiter_id", "requester": "requested_by"}
 

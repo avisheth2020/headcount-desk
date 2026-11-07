@@ -40,14 +40,12 @@
     </tbody>
     <tfoot><tr>
       <td>Total</td><td class="r" data-label="This year">{{ sub.base_headcount | num }}</td>
-      <td class="r" data-label="Change asked">{{ m.signed(sub.requested_change) }}</td>
-      {% if can_review or sub.status == "approved" %}<td class="r" data-label="Change approved">{{ m.signed(sub.final_change) }}</td>{% endif %}
-      <td class="r" data-label="Next year">{{ sub.proposed_headcount | num }}</td>
-      <td class="r" data-label="Cost impact">{{ "+" if sub.final_cost > 0 }}{{ sub.final_cost | money }}</td><td></td>
+      {% if can_review or sub.status == "approved" %}<td class="r" data-label="Change asked">{{ m.signed(sub.requested_change) }}</td>
+      <td class="r" data-label="Change approved" data-total-change>{{ m.signed(sub.final_change) }}</td>
+      {% else %}<td class="r" data-label="Change asked" data-total-change>{{ m.signed(sub.requested_change) }}</td>{% endif %}
+      <td class="r" data-label="Next year" data-total-next>{{ sub.proposed_headcount | num }}</td>
+      <td class="r" data-label="Cost impact" data-total-cost>{{ "+" if sub.final_cost > 0 }}{{ sub.final_cost | money }}</td><td></td>
     </tr></tfoot>
   </table>
-  <div class="card-foot plan-foot">
-    <span>Next year: <strong class="num" data-total-next>{{ sub.proposed_headcount | num }}</strong> positions, <strong class="num" data-total-delta>{{ m.signed(sub.final_change) }}, {{ "+" if sub.final_cost > 0 }}{{ sub.final_cost | money }}</strong></span>
-  </div>
   <noscript><div class="card-foot"><button class="btn" type="submit">Save changes</button></div></noscript>
 </form>

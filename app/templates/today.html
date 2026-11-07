@@ -17,7 +17,7 @@
 {% endif %}
 {% endmacro %}
 {% macro delta(n, top=0) %}<b class="num">{{ "+" if n > 0 }}{{ n | num }}</b><span class="delta" aria-hidden="true">{% if top %}<i class="{{ 'down' if n < 0 }}" style="width: {{ ((n | abs) * 50 / top) | round }}%"></i>{% endif %}</span>{% endmacro %}
-{% macro usable_tile(summary, trend) %}<a class="card tile tile-spark" href="/?org={{ summary.org_id }}"><span>Usable open</span><b>{{ summary.usable_open | num }}</b><small>of {{ summary.approved | num }} approved</small>{{ ch.spark(trend | map(attribute="usable_open") | list, "Usable open, last 60 days", 72, 28) }}</a>{% endmacro %}
+{% macro usable_tile(summary, trend) %}<a class="card tile tile-spark" href="/?org={{ summary.org_id }}"><span>Usable open</span><b>{{ summary.usable_open | num }}</b><small>of {{ summary.approved | num }} approved</small>{{ ch.spark(trend | map(attribute="usable_open") | list, "Usable open, 60 days to yesterday", 72, 28) }}</a>{% endmacro %}
 
 {% block content %}
 <div class="page-head">

@@ -157,6 +157,45 @@ def test_plan_steppers_update_dollars_and_room_at_once(browser, base_url):
     assert page.errors == []
 
 
+def test_a_fast_edit_survives_a_late_autosave(browser, base_url):
+    page = new_page(browser, base_url, role="vp")
+    page.goto(base_url + "/planning", wait_until="networkidle")
+    page.locator("a", has_text="Edit your plan").click()
+    page.wait_for_load_state("networkidle")
+    start = int(page.input_value("#change_research"))
+    page.route("**/save", lambda route: (time.sleep(0.6), route.continue_()))     # a slow connection
+    for _ in range(3):
+        page.locator("#inc_change_research").click()
+        page.wait_for_timeout(500)                                  # slower than the save delay, quicker than the reply
+    wait_until(lambda: page.locator("#plan-form tfoot").is_visible() and int(page.input_value("#change_research")) == start + 3)
+    page.wait_for_timeout(1500)
+    assert int(page.input_value("#change_research")) == start + 3
+    page.reload(wait_until="networkidle")
+    assert int(page.input_value("#change_research")) == start + 3   # and it was saved
+    for _ in range(3):
+        page.locator("#dec_change_research").click()
+    page.wait_for_timeout(1500)
+    assert page.errors == []
+
+
+def test_a_plan_value_out_of_range_is_corrected_out_loud(browser, base_url):
+    page = new_page(browser, base_url, role="vp")
+    page.goto(base_url + "/planning", wait_until="networkidle")
+    page.locator("a", has_text="Edit your plan").click()
+    page.wait_for_load_state("networkidle")
+    box = page.locator("#change_research")
+    start = box.input_value()
+    with page.expect_response("**/save"):
+        box.fill("-9999")
+        page.keyboard.press("Tab")
+    assert "more than this job family has" in page.locator(".toast").inner_text()
+    assert int(page.locator("[data-next]").first.inner_text().replace(",", "")) >= 0
+    with page.expect_response("**/save"):
+        page.locator("#change_research").fill(start)
+        page.keyboard.press("Tab")
+    assert page.errors == []
+
+
 def test_planning_cycle_end_to_end(browser, base_url):
     """VP finishes a draft and submits; the SVP trims and approves it, sends one back, then locks the plan."""
     page = new_page(browser, base_url, role="vp")
@@ -167,19 +206,18 @@ def test_planning_cycle_end_to_end(browser, base_url):
     before = page.locator("#plan-form tfoot").inner_text()
     page.fill("#change_research", "20")
     page.locator("#why_research").click()                      # leaving the field saves it
-    wait_until(lambda: page.locator("#plan-form tfoot").inner_text() != before)      # totals and dollars update in place
+    wait_until(lambda: page.locator("#plan-form tfoot").inner_text() != before)      # totals and dollars update as you type
     assert "+24" in page.locator("#plan-form tfoot").inner_text()
+    page.wait_for_selector("#plan-form .saved")
     page.locator("button", has_text="Submit to").click()
-    page.wait_for_load_state("networkidle")
+    page.wait_for_url("**flash=**")                            # the save goes first, then the page moves on
     assert "Submitted" in page.content() and page.locator("#change_research").count() == 0     # no longer editable
 
     switch_role(page, "svp")
     page.goto(plan_url, wait_until="networkidle")
-    page.fill("#approved_research", "15")                      # approve fewer than asked
-    page.locator("#approved_eng").click()
-    wait_until(lambda: "+19" in page.locator("#plan-form tfoot").inner_text())
-    page.locator("button", has_text="Approve").click()
-    page.wait_for_load_state("networkidle")
+    page.fill("#approved_research", "15")                      # approve fewer than asked, and click straight away:
+    page.locator("button", has_text="Approve").click()         # the autosave has not left yet, and must not be lost
+    page.wait_for_url("**flash=**")
     assert "Approved +19 of the +24 requested" in page.content()
 
     page.goto(base_url + "/planning", wait_until="networkidle")
@@ -293,6 +331,18 @@ def test_org_explorer_expands_and_collapses(browser, base_url):
     assert page.errors == []
 
 
+def test_in_place_changes_do_not_leave_the_page_dimmed(browser, base_url):
+    page = new_page(browser, base_url)
+    page.goto(base_url + "/budget", wait_until="networkidle")
+    page.locator(".pills a", has_text="Engineering").click()
+    page.wait_for_url("**org=**")
+    wait_until(lambda: page.locator("main.swapping").count() == 0)
+    page.locator("thead a", has_text="Run-rate").click()
+    page.wait_for_url("**sort=run_rate**")
+    wait_until(lambda: page.locator("main.swapping").count() == 0)
+    assert page.errors == []
+
+
 def test_org_map_zooms_in_place(browser, base_url):
     page = new_page(browser, base_url)
     page.goto(base_url + "/org", wait_until="networkidle")
@@ -351,6 +401,51 @@ def test_tour_remembers_progress(browser, base_url):
     page.wait_for_load_state("networkidle")
     assert page.locator("[data-tour-label]").inner_text() == "Tour 1 of 4"
     assert page.errors == []
+
+
+def test_what_if_moves_every_number_it_touches(browser, base_url):
+    page = new_page(browser, base_url)
+    page.goto(base_url + "/forecast", wait_until="networkidle")
+    cost, table = page.locator("[data-fc=rr]").inner_text(), page.locator("#breakdown table").inner_text()
+    page.locator("#fc-hires").fill("130")
+    assert page.locator("[data-fc=rr]").inner_text() != cost
+    assert page.locator("#breakdown table").inner_text() != table
+    assert page.locator("[data-fc=projected]").inner_text() == page.locator("tfoot [data-c=projected]").inner_text()
+    for row in page.locator("tbody tr[data-fc-row]").all():                      # seats + hires − exits = projected, on screen
+        seats = float(row.locator("td").nth(1).inner_text().replace(",", ""))
+        hires, exits = float(row.locator("[data-c=hires]").inner_text()), float(row.locator("[data-c=exits]").inner_text().replace("−", ""))
+        assert abs(seats + hires - exits - float(row.locator("[data-c=projected]").inner_text().replace(",", ""))) <= 0.51
+    page.locator("[data-fc=reset]").click()
+    assert page.locator("[data-fc=rr]").inner_text() == cost
+    assert page.locator("#breakdown table").inner_text() == table               # the browser's sum at 100% is the server's, to the character
+    assert page.errors == []
+
+
+def test_no_page_scrolls_sideways_or_clips_a_table(browser, base_url):
+    pages = [("svp", "/"), ("svp", "/budget?org=1"), ("svp", "/forecast"), ("rm", "/exceptions"), ("vp", "/today"), ("vp", "/planning/1"), ("svp", "/requests"), ("rm", "/health")]
+    for width, height in ((320, 568), (768, 1024), (1024, 768)):
+        for role, path in pages:
+            page = new_page(browser, base_url, role=role, width=width, height=height)
+            page.goto(base_url + path, wait_until="networkidle")
+            over = page.evaluate("""() => [document.documentElement.scrollWidth - innerWidth,
+                ...[...document.querySelectorAll('#main .card')].map((c) => c.scrollWidth - c.clientWidth)]""")
+            assert max(over) <= 1, (width, path, over)
+            page.context.close()
+
+
+def test_a_lost_connection_says_so_and_focus_stays_put(browser, base_url):
+    page = new_page(browser, base_url)
+    page.goto(base_url + "/forecast", wait_until="networkidle")
+    chip = page.locator(".pills a", has_text="Engineering")
+    chip.focus()
+    page.keyboard.press("Enter")
+    page.wait_for_url("**org=**")
+    wait_until(lambda: page.evaluate("document.activeElement.textContent.trim()") == "Engineering")
+    page.route("**/forecast?org=*", lambda route: route.abort())
+    page.locator(".pills a", has_text="Operations").click()
+    wait_until(lambda: page.locator(".toast").count() == 1)
+    assert "Couldn't reach the server" in page.locator(".toast").inner_text()
+    assert "swapping" not in (page.locator("#main").get_attribute("class") or "")
 
 
 def test_forecast_chart_and_what_if(browser, base_url):

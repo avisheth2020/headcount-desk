@@ -22,9 +22,11 @@
 <div class="stack">
   {% include "_exceptions_progress.html" %}
 
-  {% if done %}
+  {% if skipped and not done %}
+  <p class="flash flash-bad" role="alert">None of those were resolved: only the owner of a seat can resolve it.</p>
+  {% elif done %}
   <form class="flash row spread" role="status" hx-post="/exceptions/undo-batch" hx-target="#main" hx-select="#main" hx-swap="outerHTML show:none" hx-push-url="true">
-    <span>{{ done }} marked resolved.</span>
+    <span>{{ done }} marked resolved.{% if skipped %} {{ skipped }} skipped: only the owner of a seat can resolve it.{% endif %}</span>
     <input type="hidden" name="batch" value="{{ batch }}"><input type="hidden" name="org" value="{{ org.id }}"><input type="hidden" name="type" value="{{ type or '' }}"><input type="hidden" name="show" value="{{ show }}">
     <button class="btn btn-sm" type="submit">Undo</button>
   </form>
@@ -45,7 +47,7 @@
       <span class="chip {{ 'chip-warn' if g.open else 'chip-good' }}">{% if g.open %}{{ g.open }} to fix{% else %}{{ ico("check") }}All clear{% endif %}</span>
     </summary>
     {% for kind, items in g.rows | groupby("exception_type") %}
-    <div class="type-head"><b>{{ items[0].type_label }}</b> <span class="muted">Fix: {{ items[0].suggested_fix }}</span></div>
+    <div class="type-head"><b>{{ items[0].type_label }}</b> <span class="muted">Fix: {{ items[0].suggested_fix | replace("a staffing request", "a req") }}</span></div>
     <ul class="todo">
       {% for e in items[:6] %}{% include "_exception_row.html" %}{% endfor %}
     </ul>

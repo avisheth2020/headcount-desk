@@ -145,12 +145,25 @@ document.addEventListener("keydown", (e) => {
 // ── HTMX hooks ───────────────────────────────────────────────────────────────
 document.body.addEventListener("htmx:configRequest", (e) => { e.detail.headers["X-CSRF-Token"] = csrf(); });
 
+let cameFrom = {};
+const letters = (el) => el?.textContent?.replace(/[^a-z]/gi, "");   // a sort link's arrow changes, its name does not
 // Optimistic update: show the result at once, then let the server confirm it.
 document.body.addEventListener("htmx:beforeRequest", (e) => {
   e.detail.elt.closest?.("[data-optimistic]")?.classList.add("optimistic");
+  if (e.detail.target?.id === "main") {
+    e.detail.target.classList.add("swapping");   // the new content arrives without this class
+    const a = document.activeElement;
+    cameFrom = { href: a?.getAttribute?.("href"), text: letters(a) };
+  }
+});
+document.body.addEventListener("htmx:sendError", (e) => {
+  e.detail.elt.closest?.("[data-optimistic]")?.classList.remove("optimistic");
+  $("#main")?.classList.remove("swapping");
+  showToast({ message: "Couldn't reach the server. Check your connection and try again." });
 });
 document.body.addEventListener("htmx:responseError", (e) => {
   e.detail.elt.closest?.("[data-optimistic]")?.classList.remove("optimistic");
+  $("#main")?.classList.remove("swapping");
   let message = "That didn't work. Try again.";
   try { message = JSON.parse(e.detail.xhr.responseText).detail || message; } catch (err) {}
   showToast({ message });
@@ -159,6 +172,7 @@ document.body.addEventListener("htmx:responseError", (e) => {
 document.body.addEventListener("htmx:afterSwap", (e) => {
   const target = e.detail.target;
   if (document.getElementById("forecast")) initForecast();
+  if (document.getElementById("bulk-form")) countSelected();
   if (target.id === "palette-results") target.querySelector(".palette-item")?.classList.add("active");
   if (target.id === "drawer-body") {
     const title = target.querySelector("[data-drawer-title]")?.dataset.drawerTitle;
@@ -167,6 +181,10 @@ document.body.addEventListener("htmx:afterSwap", (e) => {
   // After an inline action, move keyboard focus to the next thing to act on.
   if (!target.id) return;
   const fresh = document.getElementById(target.id);
+  if (target.id === "main") {        // the link that was focused has been replaced: stay on its twin, or at the top of the new content
+    const links = [...fresh.querySelectorAll("a[href]")];
+    (links.find((a) => a.getAttribute("href") === cameFrom.href) || links.find((a) => a.closest("th") && letters(a) === cameFrom.text) || fresh).focus({ preventScroll: true });
+  }
   if (fresh?.matches(".req-card")) (document.querySelector(".req-card[tabindex]") || fresh.querySelector("a"))?.focus({ preventScroll: true });
   else if (fresh?.matches(".todo li")) fresh.querySelector("button")?.focus({ preventScroll: true });
 });
@@ -227,6 +245,20 @@ document.addEventListener("focusout", () => { chartTip.hidden = true; });
 
 // ── Forecast: real history, then the likely range to quarter end. What-ifs stay in this browser. ──
 const fmt = (n) => Math.round(n).toLocaleString("en-US");
+const usd = (n) => { const a = Math.abs(n); return a >= 1e9 ? `$${(a / 1e9).toFixed(2)}B` : a >= 1e6 ? `$${(a / 1e6).toFixed(1)}M` : `$${Math.round(a / 1e3)}K`; };
+// One row of the forecast at a given hiring pace and attrition. At 100% each it returns the server's own figures.
+function whatIf(d, hp, ep) {
+  const moved = +d.hires * (hp - 1) - +d.exits * (ep - 1), dollars = +d.seats ? moved * +d.runRate / +d.seats : 0, rr = +d.rr + dollars;
+  const projected = hp === 1 && ep === 1 ? +d.projected : +d.seats + +d.hires * hp - +d.exits * ep;   // from the raw parts, so the row adds up on screen
+  return { hires: +d.hires * hp, exits: +d.exits * ep, projected, low: projected - (+d.projected - +d.low), high: projected + (+d.high - +d.projected), rr, rrLow: +d.rrLow + dollars, rrHigh: +d.rrHigh + dollars,
+           overPlan: Math.round(projected) > +d.approved, overBudget: rr > +d.budget };
+}
+function showFlags(root, sum) {
+  root.querySelector("[data-flag='plan']").hidden = !sum.overPlan;
+  root.querySelector("[data-flag='budget']").hidden = !sum.overBudget;
+  const ok = root.querySelector("[data-flag='ok']");
+  if (ok) ok.hidden = sum.overPlan || sum.overBudget;
+}
 function niceStep(span) {
   const raw = span / 4, unit = 10 ** Math.floor(Math.log10(raw)), m = raw / unit;
   return (m <= 1 ? 1 : m <= 2 ? 2 : m <= 5 ? 5 : 10) * unit;
@@ -254,7 +286,7 @@ function initForecast() {
     const H = svg.clientHeight || 280, W = Math.max(280, svg.clientWidth), L = 46, R = 54, T = 10, B = 26;
     const x = (i) => L + (i / stop) * (W - L - R), y = (v) => T + ((high - v) / (high - low)) * (H - T - B);
     const hp = +hireInput.value / 100, ep = +exitInput.value / 100;
-    const projected = base + hires * (hp - 1) - exits * (ep - 1), lo = projected - below, hi = projected + above;
+    const sum = whatIf(d, hp, ep), projected = sum.projected, lo = sum.low, hi = sum.high;
     svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
     svg.replaceChildren();
     for (let v = low; v <= high; v += step) svg.append(make("line", { x1: L, x2: W - R, y1: y(v), y2: y(v), class: "grid" }), make("text", { x: L - 8, y: y(v) + 4, "text-anchor": "end" }, fmt(v)));
@@ -271,8 +303,20 @@ function initForecast() {
     field("projected").textContent = fmt(projected);
     field("range").textContent = `${fmt(lo)} to ${fmt(hi)}`;
     field("gap").textContent = `${fmt(Math.abs(approved - projected))} ${projected > approved ? "over" : "under"}`;
-    field("hires").textContent = "+" + fmt(hires * hp);
-    field("exits").textContent = "−" + fmt(exits * ep);
+    field("hires").textContent = "+" + (hires * hp).toFixed(1);
+    field("exits").textContent = "−" + (exits * ep).toFixed(1);
+    field("rr").textContent = usd(sum.rr);
+    field("rr-range").textContent = `${usd(sum.rrLow)} to ${usd(sum.rrHigh)}`;
+    showFlags(box, sum);
+    document.querySelectorAll("[data-fc-row]").forEach((row) => {
+      const r = whatIf(row.dataset, hp, ep), cell = (name) => row.querySelector(`[data-c="${name}"]`);
+      cell("hires").textContent = "+" + r.hires.toFixed(1);
+      cell("exits").textContent = "−" + r.exits.toFixed(1);
+      cell("projected").textContent = fmt(r.projected);
+      cell("range").textContent = `${fmt(r.low)} to ${fmt(r.high)}`;
+      cell("spend").textContent = `${usd(r.rr)} of ${usd(+row.dataset.budget)}`;
+      showFlags(row, r);
+    });
     field("hires-pct").textContent = hireInput.value + "%";
     field("exits-pct").textContent = exitInput.value + "%";
     const changed = hp !== 1 || ep !== 1;
@@ -317,9 +361,27 @@ function previewPlan(form) {
   room.querySelector("[data-room-mine-text]").textContent = signed(change);
   room.querySelector("[data-room-left-text]").textContent = left < 0 ? `${-left} over the limit` : `${left} left`;
   form.querySelector("[data-total-next]").textContent = next.toLocaleString("en-US");
-  form.querySelector("[data-total-delta]").textContent = `${signed(change)}, ${change ? money(cost) : "$0"}`;
+  form.querySelector("[data-total-change]").textContent = signed(change);
+  form.querySelector("[data-total-cost]").textContent = change ? money(cost) : "$0";
 }
+// An autosave can come back after the person has moved on. Keep what they have since typed: the next save carries it.
+const planValues = (form) => [...form.querySelectorAll("input:not([type=hidden])")].map((i) => i.value).join("|");
+document.body.addEventListener("htmx:beforeRequest", (e) => { if (e.detail.target?.id === "plan-form") e.detail.target.dataset.sent = planValues(e.detail.target); });
+document.body.addEventListener("htmx:beforeSwap", (e) => {
+  const form = e.detail.target;
+  if (form?.id === "plan-form" && planValues(form) !== form.dataset.sent) e.detail.shouldSwap = false;
+});
 document.addEventListener("input", (e) => { const form = e.target.closest?.("#plan-form"); if (form && e.target.type === "number") previewPlan(form); });
+// The browser will not send a value outside the input's limits, and it says nothing. Bring the value back in range and say why.
+document.addEventListener("change", (e) => {
+  const form = e.target.closest?.("#plan-form"), input = e.target;
+  if (!form || input.type !== "number" || input.value === "") return;
+  const asked = +input.value, kept = Math.min(+input.max, Math.max(+input.min, Math.round(asked)));
+  if (kept === asked) return;
+  input.value = kept;
+  previewPlan(form);
+  showToast({ message: asked < +input.min ? `That is more than this job family has. Set to ${kept}.` : asked > +input.max ? `A change can be at most +${input.max}. Set to ${kept}.` : `Changes are whole positions. Set to ${kept}.` });
+}, true);
 document.addEventListener("click", (e) => {
   const button = e.target.closest?.("[data-step]");
   if (!button) return;
@@ -329,14 +391,36 @@ document.addEventListener("click", (e) => {
   input.dispatchEvent(new Event("change", { bubbles: true }));
 });
 
+// htmx starts listening to a swapped-in form a beat after it appears, and a change in that gap goes unheard.
+// Once it is listening, anything on screen that differs from what the server just sent still needs saving.
+document.body.addEventListener("htmx:afterSettle", () => {
+  const form = $("#plan-form");
+  if (form && [...form.querySelectorAll("input:not([type=hidden])")].some((i) => i.value !== i.defaultValue)) htmx.trigger(form, "change");
+});
+
+// The autosave waits a moment, and leaving the page would cancel it. So Submit and Approve save what is on screen first:
+// someone who types 15 and clicks Approve straight away approves 15.
+document.addEventListener("submit", (e) => {
+  const plan = $("#plan-form"), action = e.target;
+  if (!plan || action === plan || !/\/planning\/\d+\/(submit|approve)$/.test(action.getAttribute("action") || "")) return;
+  e.preventDefault();
+  e.stopPropagation();
+  action.querySelector("button").disabled = true;
+  fetch(plan.getAttribute("action"), { method: "POST", body: new FormData(plan), headers: { "X-CSRF-Token": csrf() } }).finally(() => action.submit());
+}, true);
+
 // ── Exceptions: pick many, resolve together. ─────────────────────────────────
+function countSelected() {
+  const boxes = [...document.querySelectorAll("input[name='items']")], count = boxes.filter((box) => box.checked).length, bar = $("#bulk-form"), all = $("[data-select-all]");
+  if (!bar) return;
+  if (all) all.checked = boxes.length > 0 && count === boxes.length;
+  bar.hidden = count === 0;
+  $("[data-selected]", bar).textContent = count.toLocaleString("en-US");
+}
 document.addEventListener("change", (e) => {
   const all = e.target.closest?.("[data-select-all]");
   if (all) document.querySelectorAll("input[name='items']").forEach((box) => { box.checked = all.checked; });
-  if (!all && e.target.name !== "items") return;
-  const count = document.querySelectorAll("input[name='items']:checked").length, bar = $("#bulk-form");
-  bar.hidden = count === 0;
-  $("[data-selected]", bar).textContent = count.toLocaleString("en-US");
+  if (all || e.target.name === "items") countSelected();
 });
 
 // ── Deep link: /requests#d=/positions/12 opens that position in the drawer. ──
