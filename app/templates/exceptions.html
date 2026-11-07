@@ -10,7 +10,7 @@
   <div>
     <h1>What's wrong in the data, and who fixes it?</h1>
   </div>
-  <nav class="pills" aria-label="Filter by org">
+  <nav class="pills" aria-label="Filter by org" {{ IN_PLACE }}>
     {% for s in svps %}
     <a class="pill" href="/exceptions?org={{ s.id }}{{ q_type }}{{ q_show }}" {% if s.id == org.id %}aria-current="true"{% endif %}>{{ "All of Meridian Labs" if s.id == 1 else s.name }}</a>
     {% endfor %}

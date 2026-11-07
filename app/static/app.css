@@ -286,6 +286,9 @@ a.hero-number:hover { color: var(--accent-ink); text-decoration: none; }
 .vbar i.watch { background: var(--warn); }
 .vbar:hover i { filter: brightness(1.15); }
 
+.vcell { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.vcell .num { min-width: 42px; text-align: right; }
+.vflag { min-width: 58px; }
 .stack-bar { display: flex; gap: 2px; height: 14px; border-radius: 4px; overflow: hidden; }
 .stack-bar i { display: block; min-width: 2px; }
 

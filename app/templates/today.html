@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% import "_macros.html" as m %}
+{% import "_charts.html" as ch %}
 {% block title %}Today{% endblock %}
 
 {% macro check_tile(check) %}
@@ -52,7 +53,7 @@
       <table class="table"><thead><tr><th>VP org</th><th class="r">Usable open</th><th>Of budget</th></tr></thead><tbody>
         {% for v in vps %}
         <tr><td><a class="rowlink" href="/?org={{ v.org_id }}">{{ v.name }}</a></td><td class="r"><a class="usable" href="/?org={{ v.org_id }}">{{ v.usable_open | num }}</a></td>
-          <td><a href="/budget?org={{ v.org_id }}" class="row" style="gap:8px;flex-wrap:nowrap;color:var(--text)">{{ m.meter(v.pct_of_budget, v.state, small=True) }}<span class="num small">{{ v.pct_of_budget }}%</span></a></td></tr>
+          <td><a href="/budget?org={{ v.org_id }}" class="vcell" style="color:var(--text)">{{ ch.variance(v.pct_of_budget, v.state) }}<span class="num small">{{ v.pct_of_budget }}%</span></a></td></tr>
         {% endfor %}
       </tbody></table>
     </section>

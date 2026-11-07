@@ -61,6 +61,10 @@ ICONS = {
 }
 
 
+# Links with these attributes change the page in place and keep the URL in sync.
+IN_PLACE = Markup('hx-boost="true" hx-target="#main" hx-select="#main" hx-swap="outerHTML show:none"')
+
+
 def ico(name: str) -> Markup:
     return Markup(f'<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{ICONS[name]}"/></svg>')
 
@@ -173,7 +177,7 @@ def csrf_input(request: Request) -> Markup:
 
 templates.env.filters.update(num=fmt_num, money=fmt_money, d=fmt_date, dt=fmt_datetime, ago=fmt_ago, clock=fmt_clock)
 templates.env.globals.update(asset_version=int(time.time()), BUCKETS=BUCKETS, FAMILY=FAMILY_LABELS, LEVELS=LEVEL_LABELS,
-                             ROLES=ROLES, FEATURES=FEATURES, url_with=url_with, csrf_input=csrf_input, ico=ico,
+                             ROLES=ROLES, FEATURES=FEATURES, url_with=url_with, csrf_input=csrf_input, ico=ico, IN_PLACE=IN_PLACE,
                              sparkline=charts.sparkline, variance_bar=charts.variance)
 
 

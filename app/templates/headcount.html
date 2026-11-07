@@ -11,7 +11,7 @@
   <div>
     <h1>How many people can we actually hire?</h1>
   </div>
-  <nav class="pills" aria-label="Choose an org">
+  <nav class="pills" aria-label="Choose an org" {{ IN_PLACE }}>
     {% for s in svps %}
     <a class="pill" href="/?org={{ s.id }}" {% if s.id == org.org_id %}aria-current="true"{% endif %}>{{ "All of Meridian Labs" if s.id == 1 else s.name }}</a>
     {% endfor %}
